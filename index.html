@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>हाम्रो वंशावली</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Devanagari:wght@500;700&family=Noto+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF1EE;--ink:#1B2A2F;--mut:#5C6C70;--acc:#14514B;--line:#C5D0CC;--card:#fff;--bad:#8A2D2D}
+@media(prefers-color-scheme:dark){:root{--bg:#131B1C;--ink:#E3ECEA;--mut:#93A5A6;--acc:#5FB3A6;--line:#2C3B3C;--card:#1A2526;--bad:#E08A8A}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Noto Sans Devanagari",system-ui,sans-serif}
+h1,h2,h3{font-family:"Noto Serif Devanagari",serif;margin:0 0 .5rem}
+header{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.9rem 1.2rem;border-bottom:1px solid var(--line);flex-wrap:wrap}
+main{max-width:980px;margin:0 auto;padding:1.2rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:1rem;margin-bottom:1rem}
+button{font:inherit;cursor:pointer;border:1px solid var(--acc);background:var(--acc);color:#fff;padding:.4rem .9rem;border-radius:4px}
+button.ghost{background:transparent;color:var(--acc)}
+button.bad{background:transparent;border-color:var(--bad);color:var(--bad)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,.p:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+input,select,textarea{font:inherit;width:100%;padding:.4rem .5rem;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink)}
+label{display:block;font-size:.9rem;color:var(--mut);margin-top:.7rem}
+nav{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
+nav button.on{background:var(--acc);color:#fff}
+nav button:not(.on){background:transparent;color:var(--acc)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:0 1rem}
+@media(max-width:640px){.grid{grid-template-columns:1fr}}
+.split{display:grid;grid-template-columns:1.3fr 1fr;gap:1rem;align-items:start}
+@media(max-width:820px){.split{grid-template-columns:1fr}}
+ul.tree,ul.tree ul{list-style:none;margin:0;padding-left:1.2rem;border-left:1px solid var(--line)}
+ul.tree{border:0;padding:0}
+ul.tree li{margin:.15rem 0}
+summary{cursor:pointer}
+.p{display:inline-block;padding:.1rem .4rem;border-radius:4px;cursor:pointer}
+.p:hover,.p.sel{background:color-mix(in srgb,var(--acc) 15%,transparent)}
+.dead{color:var(--mut)}
+.mut{color:var(--mut);font-size:.9rem}
+.row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem}
+.msg{color:var(--bad);min-height:1.4rem}
+dialog{max-width:640px;width:94%;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink)}
+.tag{font-size:.8rem;padding:0 .4rem;border:1px solid var(--line);border-radius:3px}
+.split{grid-template-columns:2.2fr 1fr}
+@media(max-width:820px){.split{grid-template-columns:1fr}}
+.chartbox{padding:.7rem}
+.tools{display:flex;gap:.5rem;margin-bottom:.6rem}
+#chart{position:relative;height:68vh;min-height:380px;overflow:hidden;border:1px solid var(--line);border-radius:6px;background:radial-gradient(var(--line) 1px,transparent 1px) 0 0/22px 22px;cursor:grab;touch-action:none}
+#chart:active{cursor:grabbing}
+#stage{position:absolute;left:0;top:0;transform-origin:0 0}
+#stage svg{position:absolute;left:0;top:0}
+.ln{fill:none;stroke:var(--mut);stroke-width:1.5}
+.cd{position:absolute;display:flex;gap:.6rem;align-items:center;padding:.5rem;background:var(--card);border:1px solid var(--line);border-left-width:5px;border-radius:6px;cursor:pointer;user-select:none}
+.cd.gM{border-left-color:#4A78A8}.cd.gF{border-left-color:#B4586F}.cd.gO{border-left-color:var(--mut)}
+.cd.dead{opacity:.8}
+.cd.sel{outline:2px solid var(--acc);outline-offset:2px}
+.av{flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--acc) 18%,transparent);font-weight:600}
+.tx{min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.tx b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.95rem}
+.tx span{font-size:.8rem;color:var(--mut)}
+main#app.wide{max-width:none;padding:.6rem}
+.chartwrap{position:relative;background:var(--bg)}
+.chartwrap #chart{height:calc(100dvh - 175px);min-height:420px}
+.chartwrap:fullscreen{padding:.6rem}
+.chartwrap:fullscreen #chart{height:calc(100dvh - 62px)}
+#det{position:absolute;right:.6rem;top:3.4rem;width:min(340px,calc(100% - 1.2rem));max-height:calc(100% - 4.4rem);overflow:auto;z-index:5;margin:0;box-shadow:0 6px 24px rgba(0,0,0,.28)}
+#det[hidden]{display:none}
+.dhead{display:flex;justify-content:space-between;align-items:start;gap:.5rem}
+.empty{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;text-align:center}
+.pw{position:relative;display:block}.pw input{padding-right:2.6rem}
+button.eye{position:absolute;right:.2rem;top:50%;transform:translateY(-50%);border:0;padding:.3rem;background:transparent;color:var(--mut);display:flex}
+button.lnk{background:none;border:0;padding:0;color:var(--acc);text-decoration:underline}
+</style>
+</head>
+<body>
+<header><h1 style="margin:0">हाम्रो वंशावली</h1><div id="who"></div></header>
+<main id="app"></main>
+<dialog id="dlg"></dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+// ====== यहाँ आफ्नो Supabase को Project URL र anon public key राख्नुहोस् ======
+const CFG = { url: "https://onhznyefbseptuwurqxx.supabase.co", key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uaHpueWVmYnNlcHR1d3VycXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3NTM5NDUsImV4cCI6MjEwNjMyOTk0NX0.4o8tWadbJZ29uXaW7Gbn_2IinDLVtsda757kz-be1z0" };
+// (anon key सार्वजनिक हुनु ठिक छ; सुरक्षा RLS ले गर्छ। service_role key यहाँ कहिल्यै नराख्नुहोस्।)
+
+const db = supabase.createClient(CFG.url, CFG.key);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const LABEL = {name:"नाम",gender:"लिङ्ग",father_id:"बुबा",mother_id:"आमा",spouse_id:"पति/पत्नी",father_name:"बुबा (नयाँ नाम)",mother_name:"आमा (नयाँ नाम)",spouse_name:"पति/पत्नी (नयाँ नाम)",is_living:"जीवित",birth_bs:"जन्म मिति (BS)",death_bs:"मृत्यु मिति (BS)",phone:"फोन",address:"ठेगाना",notes:"टिप्पणी"};
+const FIELDS = Object.keys(LABEL);
+let me = null, people = [], byId = {}, sel = null, tab = "tree";
+
+// ---------- सुरुवात ----------
+let recovering = false;
+db.auth.onAuthStateChange(ev => { if (ev === "PASSWORD_RECOVERY") recovering = true; setTimeout(boot, 0); }); // callback भित्रै await गर्दा supabase-js अड्किन्छ
+async function boot() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { me = null; $("#who").innerHTML = ""; return authView(); }
+  if (recovering) return resetView();
+  const { data } = await db.from("profiles").select("*").eq("id", session.user.id).single();
+  me = data;
+  $("#who").innerHTML = `${esc(me?.full_name || me?.email)} <span class="tag">${esc(me?.role)}</span> <button class="ghost" id="out">बाहिर</button>`;
+  $("#out").onclick = () => db.auth.signOut();
+  if (!me || me.role === "pending") return $("#app").innerHTML =
+    `<div class="card"><h2>स्वीकृतिको पर्खाइमा</h2><p>तपाईंको खाता बनिसकेको छ। एडमिनले स्वीकृत गरेपछि वंशावली हेर्न पाउनुहुनेछ।</p></div>`;
+  await load(); render();
+}
+async function load() {
+  const { data, error } = await db.from("people").select("*").order("created_at");
+  if (error) return alert(error.message);
+  people = data; byId = Object.fromEntries(people.map(p => [p.id, p]));
+}
+
+// ---------- लगइन / दर्ता / पासवर्ड रिसेट ----------
+const EYE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF = EYE.replace("</svg>", '<path d="M3 3l18 18"/></svg>');
+const pwField = (id, label, ac) => `<label>${label}<span class="pw"><input id="${id}" type="password" autocomplete="${ac}"><button type="button" class="eye" data-for="${id}" aria-label="पासवर्ड देखाउनुहोस्">${EYE}</button></span></label>`;
+function wireEyes() {
+  document.querySelectorAll(".eye").forEach(b => b.onclick = () => {
+    const i = $("#" + b.dataset.for), show = i.type === "password";
+    i.type = show ? "text" : "password"; b.innerHTML = show ? EYE_OFF : EYE;
+    b.setAttribute("aria-label", show ? "पासवर्ड लुकाउनुहोस्" : "पासवर्ड देखाउनुहोस्");
+  });
+}
+const say = (t, ok) => { const m = $("#am"); m.textContent = t; m.style.color = ok ? "var(--acc)" : "var(--bad)"; };
+function authView(mode = "login") {
+  const TITLE = { login: "लगइन", signup: "नयाँ खाता बनाउने", forgot: "पासवर्ड बिर्सनुभयो" };
+  const BTN = { login: "लगइन", signup: "खाता बनाउने", forgot: "रिसेट लिंक पठाउने" };
+  $("#app").classList.remove("wide");
+  $("#app").innerHTML = `<div class="card" style="max-width:420px;margin:2rem auto"><h2>${TITLE[mode]}</h2>
+    ${mode === "signup" ? `<label>पूरा नाम<input id="fn" autocomplete="name"></label>` : ""}
+    <label>इमेल<input id="em" type="email" autocomplete="email"></label>
+    ${mode === "forgot" ? "" : pwField("pw", mode === "signup" ? "पासवर्ड (कम्तिमा ८ अक्षर)" : "पासवर्ड", mode === "signup" ? "new-password" : "current-password")}
+    <div class="msg" id="am" role="status"></div>
+    <div class="row"><button id="go">${BTN[mode]}</button></div>
+    <p class="mut">${mode === "login"
+      ? `<button class="lnk" data-m="forgot">पासवर्ड बिर्सनुभयो?</button><br><button class="lnk" data-m="signup">नयाँ खाता बनाउने</button>`
+      : `<button class="lnk" data-m="login">← लगइनमा फर्कने</button>`}</p>
+    ${mode === "signup" ? `<p class="mut">खाता बनेपछि एडमिनले स्वीकृत गर्नुपर्छ।</p>` : ""}</div>`;
+  wireEyes();
+  document.querySelectorAll(".lnk").forEach(b => b.onclick = () => authView(b.dataset.m));
+  const go = async () => {
+    const email = $("#em").value.trim(), password = $("#pw")?.value || "";
+    if (!email) return say("इमेल लेख्नुहोस्।");
+    if (mode === "login") {
+      const { error } = await db.auth.signInWithPassword({ email, password }); if (error) say(error.message);
+    } else if (mode === "signup") {
+      const name = $("#fn").value.trim();
+      if (!name) return say("पूरा नाम लेख्नुहोस्।");
+      if (password.length < 8) return say("पासवर्ड कम्तिमा ८ अक्षरको हुनुपर्छ।");
+      const { error } = await db.auth.signUp({ email, password, options: { data: { full_name: name } } });
+      say(error ? error.message : "खाता बन्यो। इमेल पुष्टि चाहिने भए इमेल जाँच्नुहोस्।", !error);
+    } else {
+      const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: location.href.split("#")[0].split("?")[0] });
+      say(error ? error.message : "यो इमेलको खाता भए रिसेट लिंक पठाइयो। इनबक्स र स्प्याम जाँच्नुहोस्।", !error);
+    }
+  };
+  $("#go").onclick = go;
+  document.querySelectorAll("#app input").forEach(i => i.onkeydown = e => { if (e.key === "Enter") go(); });
+}
+function resetView() {
+  $("#app").classList.remove("wide");
+  $("#app").innerHTML = `<div class="card" style="max-width:420px;margin:2rem auto"><h2>नयाँ पासवर्ड राख्नुहोस्</h2>
+    ${pwField("np", "नयाँ पासवर्ड (कम्तिमा ८ अक्षर)", "new-password")}${pwField("np2", "फेरि लेख्नुहोस्", "new-password")}
+    <div class="msg" id="am" role="status"></div><div class="row"><button id="go">पासवर्ड बदल्ने</button></div></div>`;
+  wireEyes();
+  $("#go").onclick = async () => {
+    const a = $("#np").value;
+    if (a.length < 8) return say("पासवर्ड कम्तिमा ८ अक्षरको हुनुपर्छ।");
+    if (a !== $("#np2").value) return say("दुई पासवर्ड मिलेन।");
+    const { error } = await db.auth.updateUser({ password: a });
+    if (error) return say(error.message);
+    recovering = false; boot();
+  };
+}
+
+// ---------- मुख्य दृश्य ----------
+function render() {
+  const admin = me.role === "admin";
+  $("#app").innerHTML = `<nav>
+    <button data-t="tree" class="${tab==="tree"?"on":""}">वंशवृक्ष</button>
+    <button data-t="mine" class="${tab==="mine"?"on":""}">मेरा अनुरोध</button>
+    ${admin ? `<button data-t="admin" class="${tab==="admin"?"on":""}">एडमिन</button>` : ""}</nav><div id="pane"></div>`;
+  $("#app").classList.toggle("wide", tab === "tree");
+  document.querySelectorAll("nav button").forEach(b => b.onclick = () => { tab = b.dataset.t; render(); });
+  ({ tree: treeView, mine: mineView, admin: adminView })[tab]();
+}
+
+// ---------- वंशवृक्ष (चित्रात्मक: कार्ड, जोडी, रेखा, ड्र्याग/जुम) ----------
+const hasParents = p => p.father_id || p.mother_id;
+const kids = p => people.filter(c => c.father_id === p.id || (!c.father_id && c.mother_id === p.id));
+const isMarriedIn = p => { const s = byId[p.spouse_id]; return !!s && (hasParents(s) || s.id < p.id); };
+const CW = 176, CH = 72, GAP = 16, HG = 26, VG = 64;
+const yr = s => (s || "").slice(0, 4);
+const byBirth = (a, b) => (a.birth_bs || "9999").localeCompare(b.birth_bs || "9999") || a.created_at.localeCompare(b.created_at);
+let V = { x: 0, y: 0, k: 1 }, W = 0, H = 0, cardPos = {};
+
+function build(p, seen) {
+  seen.add(p.id);
+  const s = byId[p.spouse_id], sp = s && !seen.has(s.id) ? s : null;
+  if (sp) seen.add(sp.id);
+  const ks = [...new Map([...kids(p), ...(sp ? kids(sp) : [])].map(k => [k.id, k])).values()].filter(k => !seen.has(k.id)).sort(byBirth);
+  const ch = ks.map(k => build(k, seen)), w = sp ? 2 * CW + GAP : CW;
+  const ct = ch.reduce((a, c) => a + c.tw, 0) + HG * Math.max(0, ch.length - 1);
+  return { p, sp, w, ch, ct, tw: Math.max(w, ct) };
+}
+function place(n, x, y, cards, lines) {
+  const left = n.sp && n.p.gender === "F" && n.sp.gender !== "F" ? n.sp : n.p;
+  const right = n.sp ? (left === n.p ? n.sp : n.p) : null;
+  const ux = x + (n.tw - n.w) / 2;
+  cards.push({ p: left, x: ux, y });
+  if (right) { cards.push({ p: right, x: ux + CW + GAP, y }); lines.push(`M${ux + CW} ${y + CH / 2}H${ux + CW + GAP}`); }
+  n.ax = (n.p === left ? ux : ux + CW + GAP) + CW / 2;
+  const px = ux + n.w / 2;
+  let cx = x + (n.tw - n.ct) / 2;
+  n.ch.forEach(c => {
+    place(c, cx, y + CH + VG, cards, lines);
+    lines.push(`M${px} ${y + CH}V${y + CH + VG / 2}H${c.ax}V${y + CH + VG}`);
+    cx += c.tw + HG;
+  });
+}
+function applyV() { $("#stage").style.transform = `translate(${V.x}px,${V.y}px) scale(${V.k})`; }
+function zoomAt(f, cx, cy) {
+  const k = Math.min(2, Math.max(0.15, V.k * f));
+  V.x = cx - (cx - V.x) * k / V.k; V.y = cy - (cy - V.y) * k / V.k; V.k = k; applyV();
+}
+function fit() {
+  const c = $("#chart"); V.k = Math.min(1, (c.clientWidth - 40) / W, (c.clientHeight - 40) / H);
+  V.x = (c.clientWidth - W * V.k) / 2; V.y = 20; applyV();
+}
+function focusOn(id) {
+  const q = cardPos[id], c = $("#chart"); if (!q) return;
+  V.x = c.clientWidth / 2 - (q.x + CW / 2) * V.k; V.y = c.clientHeight / 2 - (q.y + CH / 2) * V.k; applyV();
+}
+function unpick() { sel = null; document.querySelectorAll(".cd.sel").forEach(c => c.classList.remove("sel")); $("#det").hidden = true; }
+function pick(id) {
+  sel = id;
+  document.querySelectorAll(".cd").forEach(c => c.classList.toggle("sel", c.dataset.id === id));
+  detail();
+}
+function treeView() {
+  sel = null;
+  $("#pane").innerHTML = `<div class="chartwrap" id="cw">
+    <div class="tools"><input id="q" placeholder="नाम खोज्नुहोस्…" aria-label="खोज">
+      <button class="ghost" id="zi" aria-label="ठूलो">+</button><button class="ghost" id="zo" aria-label="सानो">−</button><button class="ghost" id="fit">पूरै</button><button class="ghost" id="fs" aria-label="पूरा स्क्रिन">⛶</button></div>
+    <div id="chart"><div id="stage"></div>${people.length ? "" : `<div class="empty"><p>अझै कोही थपिएको छैन।</p><button id="first">पहिलो व्यक्ति थप्ने अनुरोध</button></div>`}</div>
+    <aside class="card" id="det" hidden></aside></div>`;
+  if ($("#first")) $("#first").onclick = () => form("add");
+  const seen = new Set(), cards = [], lines = [];
+  let trees = people.filter(p => !hasParents(p) && !isMarriedIn(p)).sort(byBirth).map(p => build(p, seen));
+  people.filter(p => !seen.has(p.id)).forEach(p => trees.push(build(p, seen))); // छुटेका (सुरक्षा)
+  let x = 0; trees.forEach(t => { place(t, x, 0, cards, lines); x += t.tw + HG * 3; });
+  W = Math.max(x - HG * 3, CW); H = Math.max(CH, ...cards.map(c => c.y + CH));
+  cardPos = Object.fromEntries(cards.map(c => [c.p.id, c]));
+  $("#stage").style.cssText = `width:${W}px;height:${H}px`;
+  $("#stage").innerHTML = `<svg width="${W}" height="${H}">${lines.map(d => `<path class="ln" d="${d}"/>`).join("")}</svg>` +
+    cards.map(({ p, x, y }) => `<div class="cd g${p.gender || "O"} ${p.is_living ? "" : "dead"} ${sel === p.id ? "sel" : ""}" tabindex="0" data-id="${p.id}" style="left:${x}px;top:${y}px;width:${CW}px;height:${CH}px">
+      <div class="av">${esc(Array.from(p.name)[0])}</div><div class="tx"><b>${esc(p.name)}</b><span>${yr(p.birth_bs) || "?"}${p.is_living ? "" : " – " + (yr(p.death_bs) || "?")}</span></div></div>`).join("");
+  fit();
+  const ch = $("#chart"); let drag = null, moved = false;
+  ch.onpointerdown = e => { drag = { x: e.clientX, y: e.clientY, vx: V.x, vy: V.y }; moved = false; };
+  window.onpointermove = e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 4) moved = true; V.x = drag.vx + dx; V.y = drag.vy + dy; applyV(); };
+  window.onpointerup = () => { drag = null; };
+  ch.onclick = e => { if (moved) return; const t = e.target.closest("[data-id]"); if (t) pick(t.dataset.id); else unpick(); };
+  ch.onkeydown = e => { if (e.key === "Enter" && e.target.dataset.id) pick(e.target.dataset.id); };
+  ch.onwheel = e => { e.preventDefault(); const r = ch.getBoundingClientRect(); zoomAt(e.deltaY < 0 ? 1.12 : 0.89, e.clientX - r.left, e.clientY - r.top); };
+  $("#zi").onclick = () => zoomAt(1.2, ch.clientWidth / 2, ch.clientHeight / 2);
+  $("#zo").onclick = () => zoomAt(0.83, ch.clientWidth / 2, ch.clientHeight / 2);
+  $("#fit").onclick = fit;
+  $("#q").oninput = e => { const q = e.target.value.trim().toLowerCase(); const m = q && people.find(p => p.name.toLowerCase().includes(q)); if (m) { pick(m.id); focusOn(m.id); } };
+  $("#fs").onclick = () => document.fullscreenElement ? document.exitFullscreen() : $("#cw").requestFullscreen?.();
+  document.onfullscreenchange = () => setTimeout(fit, 120);
+  window.onkeydown = e => { if (e.key === "Escape") unpick(); };
+}
+function detail() {
+  const p = byId[sel]; if (!p) return;
+  const rel = id => id && byId[id] ? esc(byId[id].name) : "—";
+  const cs = kids(p).map(k => esc(k.name)).join(", ") || "—";
+  $("#det").hidden = false;
+  $("#det").innerHTML = `<div class="dhead"><h3>${esc(p.name)}</h3><button class="ghost" id="dx" aria-label="बन्द">×</button></div>
+    <p>बुबा: ${rel(p.father_id)}<br>आमा: ${rel(p.mother_id)}<br>पति/पत्नी: ${rel(p.spouse_id)}<br>सन्तान: ${cs}</p>
+    <p>जन्म: ${esc(p.birth_bs) || "—"}${p.is_living ? "" : `<br>मृत्यु: ${esc(p.death_bs) || "—"}`}<br>फोन: ${esc(p.phone) || "—"}<br>ठेगाना: ${esc(p.address) || "—"}</p>
+    ${p.notes ? `<p>${esc(p.notes)}</p>` : ""}
+    <div class="row"><button id="ed">सच्याउने अनुरोध</button><button class="ghost" id="ac">सन्तान थप्ने</button><button class="bad" id="dl">हटाउने अनुरोध</button></div>`;
+  $("#ed").onclick = () => form("update", p);
+  $("#ac").onclick = () => form("add", null, p);
+  $("#dl").onclick = () => form("delete", p);
+  $("#dx").onclick = unpick;
+}
+
+// ---------- अनुरोध फारम ----------
+const opts = (cur) => `<option value="">— छैन —</option>` + people.map(p => `<option value="${p.id}" ${p.id===cur?"selected":""}>${esc(p.name)}</option>`).join("");
+const pSel = (k, lab, v) => `<label>${lab}<select id="f_${k}_id">${opts(v[k + "_id"])}</select><input id="f_${k}_name" placeholder="सूचीमा छैन भने नयाँ नाम लेख्नुहोस्" style="margin-top:.3rem"></label>`;
+function form(action, p = null, parent = null) {
+  const d = $("#dlg");
+  if (action === "delete") {
+    d.innerHTML = `<h3>“${esc(p.name)}” हटाउन अनुरोध</h3><label>कारण<textarea id="nt" rows="3"></textarea></label>
+      <div class="msg" id="fm"></div><div class="row"><button id="go" class="bad">अनुरोध पठाउने</button><button class="ghost" id="cx">रद्द</button></div>`;
+    d.showModal(); $("#cx").onclick = () => d.close();
+    $("#go").onclick = () => send("delete", p.id, {}, d);
+    return;
+  }
+  const v = p ? { ...p } : { is_living: true };
+  if (parent) { // सन्तान थप्दा अभिभावक पहिल्यै भरिन्छ
+    const sp = parent.spouse_id;
+    if (parent.gender === "F") { v.mother_id = parent.id; v.father_id = sp || ""; } else { v.father_id = parent.id; v.mother_id = sp || ""; }
+  }
+  d.innerHTML = `<h3>${action === "add" ? "नयाँ व्यक्ति थप्ने अनुरोध" : `“${esc(p.name)}” सच्याउने अनुरोध`}</h3>
+    <div class="grid">
+    <label>नाम *<input id="f_name" value="${esc(v.name)}"></label>
+    <label>लिङ्ग<select id="f_gender"><option value="">—</option>${["M:पुरुष","F:महिला","O:अन्य"].map(x => { const [k,l]=x.split(":"); return `<option value="${k}" ${v.gender===k?"selected":""}>${l}</option>`; }).join("")}</select></label>
+    ${pSel("father", "बुबा", v)}
+    ${pSel("mother", "आमा", v)}
+    ${pSel("spouse", "पति/पत्नी", v)}
+    <label>जीवित?<select id="f_is_living"><option value="true" ${v.is_living?"selected":""}>हो</option><option value="false" ${v.is_living?"":"selected"}>होइन</option></select></label>
+    <label>जन्म मिति (BS) २०४५-०५-१२<input id="f_birth_bs" value="${esc(v.birth_bs)}"></label>
+    <label>मृत्यु मिति (BS)<input id="f_death_bs" value="${esc(v.death_bs)}"></label>
+    <label>फोन<input id="f_phone" value="${esc(v.phone)}"></label>
+    <label>ठेगाना<input id="f_address" value="${esc(v.address)}"></label></div>
+    <label>टिप्पणी<textarea id="f_notes" rows="2">${esc(v.notes)}</textarea></label>
+    <label>एडमिनलाई सन्देश (स्रोत/प्रमाण)<textarea id="nt" rows="2"></textarea></label>
+    <div class="msg" id="fm"></div>
+    <div class="row"><button id="go">अनुरोध पठाउने</button><button class="ghost" id="cx">रद्द</button></div>`;
+  d.showModal(); $("#cx").onclick = () => d.close();
+  ["father", "mother", "spouse"].forEach(k => { // सूचीबाट छानेपछि नयाँ नाम बन्द हुन्छ
+    const s = $("#f_" + k + "_id"), t = $("#f_" + k + "_name");
+    const sync = () => { t.disabled = !!s.value; if (s.value) t.value = ""; };
+    s.onchange = sync; sync();
+  });
+  $("#go").onclick = () => {
+    const cur = {};
+    FIELDS.forEach(k => { let x = $("#f_" + k).value.trim(); if (k === "is_living") x = x === "true"; cur[k] = x; });
+    if (!cur.name) return $("#fm").textContent = "नाम अनिवार्य छ।";
+    let payload = cur;
+    if (action === "update") { // फेरिएका फिल्ड मात्र
+      payload = {};
+      FIELDS.forEach(k => { const old = p[k] ?? (k === "is_living" ? true : ""); if (String(cur[k]) !== String(old)) payload[k] = cur[k]; });
+      if (!Object.keys(payload).length) return $("#fm").textContent = "कुनै परिवर्तन गरिएको छैन।";
+    }
+    send(action, p?.id ?? null, payload, d);
+  };
+}
+async function send(action, person_id, payload, d) {
+  const { error } = await db.from("change_requests").insert({ requested_by: me.id, action, person_id, payload, note: $("#nt")?.value || null });
+  if (error) return $("#fm").textContent = error.message;
+  d.close(); alert("अनुरोध पठाइयो। एडमिनको स्वीकृतिपछि वंशावलीमा देखिनेछ।");
+}
+
+// ---------- अनुरोध विवरण ----------
+const STATUS = { pending: "पर्खाइमा", approved: "स्वीकृत", rejected: "अस्वीकृत" };
+const ACT = { add: "थप्ने", update: "सच्याउने", delete: "हटाउने" };
+function desc(r) {
+  const who = r.person_id && byId[r.person_id] ? ` — ${esc(byId[r.person_id].name)}` : "";
+  const lines = Object.entries(r.payload || {}).map(([k, v]) => {
+    const val = k.endsWith("_id") ? (byId[v]?.name || "—") : v === true ? "हो" : v === false ? "होइन" : v || "—";
+    return `${LABEL[k] || k}: ${esc(val)}`;
+  }).join("<br>");
+  return `<b>${ACT[r.action]}</b>${who}<br>${lines}${r.note ? `<br><span class="mut">सन्देश: ${esc(r.note)}</span>` : ""}`;
+}
+async function mineView() {
+  const { data } = await db.from("change_requests").select("*").eq("requested_by", me.id).order("created_at", { ascending: false });
+  $("#pane").innerHTML = (data?.length ? data : []).map(r => `<div class="card">${desc(r)}<p class="mut">स्थिति: ${STATUS[r.status]}${r.reject_reason ? ` (${esc(r.reject_reason)})` : ""}</p></div>`).join("") || `<div class="card">अझै कुनै अनुरोध छैन।</div>`;
+}
+
+// ---------- एडमिन ----------
+async function adminView() {
+  const [{ data: reqs }, { data: pend }] = await Promise.all([
+    db.from("change_requests").select("*, profiles!change_requests_requested_by_fkey(full_name,email)").eq("status", "pending").order("created_at"),
+    db.from("profiles").select("*").eq("role", "pending")
+  ]);
+  $("#pane").innerHTML = `<h2>नयाँ सदस्य (${pend?.length || 0})</h2>` +
+    (pend || []).map(u => `<div class="card">${esc(u.full_name)} · ${esc(u.email)}<div class="row"><button data-u="${u.id}" data-r="member">सदस्य बनाउने</button><button class="bad" data-u="${u.id}" data-r="rejected">अस्वीकार</button></div></div>`).join("") +
+    `<h2>परिवर्तन अनुरोध (${reqs?.length || 0})</h2>` +
+    (reqs || []).map(r => `<div class="card">${desc(r)}<p class="mut">अनुरोधकर्ता: ${esc(r.profiles?.full_name || r.profiles?.email)}</p>
+      <div class="row"><button data-a="${r.id}">स्वीकृत</button><button class="bad" data-x="${r.id}">अस्वीकार</button></div></div>`).join("");
+  $("#pane").onclick = async e => {
+    const b = e.target.closest("button"); if (!b) return;
+    let err;
+    if (b.dataset.u) ({ error: err } = b.dataset.r === "rejected"
+      ? await db.rpc("set_member_role", { target: b.dataset.u, new_role: "pending" }) // अस्वीकृत = pending नै रहन्छ
+      : await db.rpc("set_member_role", { target: b.dataset.u, new_role: "member" }));
+    if (b.dataset.a) ({ error: err } = await db.rpc("review_request", { req: b.dataset.a, approve: true }));
+    if (b.dataset.x) { const reason = prompt("अस्वीकार गर्ने कारण?"); if (reason === null) return; ({ error: err } = await db.rpc("review_request", { req: b.dataset.x, approve: false, reason })); }
+    if (err) return alert(err.message);
+    await load(); render();
+  };
+}
+boot();
+</script>
+</body>
+</html>
