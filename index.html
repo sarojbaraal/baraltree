@@ -9,41 +9,40 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Devanagari:wght@500;600;700;900&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #F8F4EC;
-  --bg-2: #F0E9DB;
-  --bg-deep: #E9E0CF;
-  --ink: #1A1410;
-  --ink-soft: #3D3026;
-  --mut: #7A6B5C;
-  --mut-light: #A89888;
-  --line: rgba(120, 90, 50, 0.13);
-  --line-strong: rgba(120, 90, 50, 0.26);
+  --bg: #F5EFEB;
+  --bg-2: #EFE4DC;
+  --bg-deep: #E4D5C8;
+  --ink: #1C1512;
+  --ink-soft: #44352D;
+  --mut: #826E61;
+  --mut-light: #B2A093;
+  --line: rgba(138, 92, 54, 0.15);
+  --line-strong: rgba(138, 92, 54, 0.28);
   --card: #FFFFFF;
-  --card-soft: rgba(255, 255, 255, 0.78);
-  --glass: rgba(255, 255, 255, 0.58);
-  --glass-strong: rgba(255, 255, 255, 0.82);
-  --acc: #0E5C4E;
-  --acc-2: #0A7A66;
-  --acc-soft: #14A085;
-  --acc-glow: rgba(14, 92, 78, 0.16);
-  --gold: #B8860B;
-  --gold-2: #D4A017;
-  --gold-soft: #E8C547;
+  --card-soft: rgba(255, 255, 255, 0.82);
+  --glass: rgba(255, 255, 255, 0.65);
+  --glass-strong: rgba(255, 255, 255, 0.88);
+  --acc: #0D6B58;
+  --acc-2: #0B846D;
+  --acc-soft: #14B8A6;
+  --acc-glow: rgba(13, 107, 88, 0.18);
+  --gold: #C08A12;
+  --gold-2: #DF9B17;
+  --gold-soft: #F1D263;
   --bad: #B91C1C;
   --bad-soft: #DC2626;
   --success: #059669;
-  --royal: #4C1D95;
+  --royal: #5B21B6;
   --sunset: #C2410C;
   --radius: 14px;
   --radius-sm: 10px;
   --radius-lg: 22px;
   --radius-xl: 32px;
-  --shadow-xs: 0 1px 2px rgba(26, 20, 16, 0.04);
-  --shadow-sm: 0 2px 10px rgba(26, 20, 16, 0.055), 0 1px 3px rgba(26, 20, 16, 0.035);
-  --shadow: 0 10px 28px rgba(26, 20, 16, 0.07), 0 3px 8px rgba(26, 20, 16, 0.04);
-  --shadow-lg: 0 22px 55px rgba(26, 20, 16, 0.11), 0 10px 20px rgba(26, 20, 16, 0.05);
-  --shadow-xl: 0 32px 85px rgba(26, 20, 16, 0.16), 0 14px 28px rgba(26, 20, 16, 0.07);
-  --shadow-glow: 0 0 0 1px rgba(184, 134, 11, 0.14), 0 12px 32px rgba(184, 134, 11, 0.11);
+  --shadow-xs: 0 1px 2px rgba(28, 21, 18, 0.05);
+  --shadow-sm: 0 4px 12px rgba(28, 21, 18, 0.06), 0 1px 3px rgba(28, 21, 18, 0.04);
+  --shadow: 0 12px 32px rgba(28, 21, 18, 0.08), 0 4px 10px rgba(28, 21, 18, 0.04);
+  --shadow-lg: 0 24px 60px rgba(28, 21, 18, 0.12), 0 10px 24px rgba(28, 21, 18, 0.06);
+  --shadow-xl: 0 36px 90px rgba(28, 21, 18, 0.18), 0 16px 32px rgba(28, 21, 18, 0.08);
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -51,23 +50,23 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0D0A07;
-    --bg-2: #16120D;
-    --bg-deep: #1D1711;
-    --ink: #F6EEE1;
-    --ink-soft: #D5C5AF;
-    --mut: #9C8C79;
-    --mut-light: #6C5E4E;
-    --line: rgba(255, 220, 170, 0.09);
-    --line-strong: rgba(255, 220, 170, 0.18);
-    --card: #1D1711;
-    --card-soft: rgba(29, 23, 17, 0.78);
-    --glass: rgba(29, 23, 17, 0.62);
-    --glass-strong: rgba(29, 23, 17, 0.88);
+    --bg: #0E0B09;
+    --bg-2: #18130F;
+    --bg-deep: #221A15;
+    --ink: #F7EFE4;
+    --ink-soft: #D9C8B5;
+    --mut: #A3917F;
+    --mut-light: #736252;
+    --line: rgba(255, 210, 160, 0.11);
+    --line-strong: rgba(255, 210, 160, 0.22);
+    --card: #1F1813;
+    --card-soft: rgba(31, 24, 19, 0.82);
+    --glass: rgba(31, 24, 19, 0.68);
+    --glass-strong: rgba(31, 24, 19, 0.92);
     --acc: #2DD4BF;
     --acc-2: #14B8A6;
     --acc-soft: #5EEAD4;
-    --acc-glow: rgba(45, 212, 191, 0.18);
+    --acc-glow: rgba(45, 212, 191, 0.22);
     --gold: #F5B942;
     --gold-2: #FCD34D;
     --gold-soft: #FDE68A;
@@ -76,11 +75,11 @@
     --success: #34D399;
     --royal: #A78BFA;
     --sunset: #FB923C;
-    --shadow-xs: 0 1px 2px rgba(0,0,0,0.28);
-    --shadow-sm: 0 2px 10px rgba(0,0,0,0.32);
-    --shadow: 0 10px 28px rgba(0,0,0,0.38);
-    --shadow-lg: 0 22px 55px rgba(0,0,0,0.48);
-    --shadow-xl: 0 32px 85px rgba(0,0,0,0.58);
+    --shadow-xs: 0 1px 2px rgba(0,0,0,0.32);
+    --shadow-sm: 0 4px 12px rgba(0,0,0,0.38);
+    --shadow: 0 12px 32px rgba(0,0,0,0.45);
+    --shadow-lg: 0 24px 60px rgba(0,0,0,0.55);
+    --shadow-xl: 0 36px 90px rgba(0,0,0,0.68);
   }
 }
 
@@ -99,15 +98,14 @@ body {
   overflow-x: hidden;
 }
 
-/* ─── Decorative ambient background ─── */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse 80% 60% at 15% 10%, rgba(184, 134, 11, 0.12), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 85% 20%, rgba(14, 92, 78, 0.1), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 50% 90%, rgba(194, 65, 12, 0.06), transparent 55%),
+    radial-gradient(ellipse 85% 65% at 12% 8%, rgba(192, 138, 18, 0.14), transparent 55%),
+    radial-gradient(ellipse 75% 55% at 88% 18%, rgba(13, 107, 88, 0.12), transparent 55%),
+    radial-gradient(ellipse 65% 45% at 50% 92%, rgba(194, 65, 12, 0.08), transparent 55%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
   z-index: -2;
   pointer-events: none;
@@ -118,8 +116,8 @@ body::after {
   position: fixed;
   inset: 0;
   background-image:
-    radial-gradient(circle at 25% 25%, rgba(184, 134, 11, 0.04) 1px, transparent 1px),
-    radial-gradient(circle at 75% 75%, rgba(14, 92, 78, 0.03) 1px, transparent 1px);
+    radial-gradient(circle at 25% 25%, rgba(192, 138, 18, 0.05) 1px, transparent 1px),
+    radial-gradient(circle at 75% 75%, rgba(13, 107, 88, 0.04) 1px, transparent 1px);
   background-size: 60px 60px, 80px 80px;
   z-index: -1;
   pointer-events: none;
@@ -133,9 +131,6 @@ h1, h2, h3 {
   line-height: 1.25;
 }
 
-/* ═══════════════════════════════════════════════
-   HEADER — Premium gradient with glass effect
-   ═══════════════════════════════════════════════ */
 header {
   display: flex;
   justify-content: space-between;
@@ -145,19 +140,19 @@ header {
   height: 72px;
   background:
     linear-gradient(135deg,
-      #0A3D34 0%,
-      #0E5C4E 30%,
-      #14705F 55%,
-      #1A5F7A 80%,
-      #2D4A6E 100%);
+      #08332B 0%,
+      #0D6B58 35%,
+      #12826D 60%,
+      #195B72 85%,
+      #29405E 100%);
   color: #fff;
   border: 0;
   position: sticky;
   top: 0;
   z-index: 100;
   box-shadow:
-    0 4px 30px rgba(10, 61, 52, 0.25),
-    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 8px 32px rgba(8, 51, 43, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
     0 -1px 0 rgba(0, 0, 0, 0.2) inset;
 }
 
@@ -166,8 +161,8 @@ header::before {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 40% 100% at 0% 50%, rgba(232, 197, 71, 0.15), transparent 60%),
-    radial-gradient(ellipse 40% 100% at 100% 50%, rgba(194, 65, 12, 0.1), transparent 60%);
+    radial-gradient(ellipse 40% 100% at 0% 50%, rgba(241, 210, 99, 0.18), transparent 60%),
+    radial-gradient(ellipse 40% 100% at 100% 50%, rgba(194, 65, 12, 0.12), transparent 60%);
   pointer-events: none;
 }
 
@@ -177,12 +172,12 @@ header::after {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 1px;
+  height: 1.5px;
   background: linear-gradient(90deg,
     transparent,
-    rgba(232, 197, 71, 0.5) 20%,
-    rgba(232, 197, 71, 0.8) 50%,
-    rgba(232, 197, 71, 0.5) 80%,
+    rgba(241, 210, 99, 0.5) 20%,
+    rgba(241, 210, 99, 0.9) 50%,
+    rgba(241, 210, 99, 0.5) 80%,
     transparent);
 }
 
@@ -194,7 +189,7 @@ header h1 {
   display: flex;
   align-items: center;
   gap: 14px;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
   position: relative;
   z-index: 1;
   letter-spacing: 0.01em;
@@ -203,20 +198,16 @@ header h1 {
 header h1::before {
   content: '';
   display: inline-block;
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 12px;
   background:
     linear-gradient(135deg, #FCD34D 0%, #F59E0B 50%, #D97706 100%);
-  background-image:
-    linear-gradient(135deg, #FCD34D 0%, #F59E0B 50%, #D97706 100%);
   flex-shrink: 0;
   box-shadow:
-    0 4px 14px rgba(245, 158, 11, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.2) inset,
-    0 1px 0 rgba(255, 255, 255, 0.3) inset;
+    0 4px 16px rgba(245, 158, 11, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.25) inset;
   position: relative;
-  background-clip: padding-box;
 }
 
 header h1::after {
@@ -225,8 +216,8 @@ header h1::after {
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='5' r='2.5'/%3E%3Ccircle cx='6' cy='17' r='2'/%3E%3Ccircle cx='18' cy='17' r='2'/%3E%3Cpath d='M12 7.5v4M12 11.5L6 15M12 11.5L18 15'/%3E%3C/svg%3E");
   background-size: 24px;
   background-position: center;
@@ -239,32 +230,32 @@ header > * { position: relative; z-index: 1; }
 header button.ghost {
   color: rgba(255, 255, 255, 0.95);
   border-color: rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   transition: all 0.3s var(--ease);
   font-weight: 600;
 }
 
 header button.ghost:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.6);
   color: #fff;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
 header .tag {
-  border-color: rgba(252, 211, 77, 0.5);
-  background: linear-gradient(135deg, rgba(252, 211, 77, 0.2), rgba(245, 158, 11, 0.15));
+  border-color: rgba(252, 211, 77, 0.6);
+  background: linear-gradient(135deg, rgba(252, 211, 77, 0.25), rgba(245, 158, 11, 0.18));
   color: #FDE68A;
   font-weight: 700;
-  font-size: 0.72rem;
-  padding: 3px 12px;
+  font-size: 0.75rem;
+  padding: 4px 12px;
   border-radius: 20px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.25);
 }
 
 #who {
@@ -276,9 +267,6 @@ header .tag {
   color: rgba(255, 255, 255, 0.95);
 }
 
-/* ═══════════════════════════════════════════════
-   MAIN
-   ═══════════════════════════════════════════════ */
 main {
   max-width: 1080px;
   margin: 0 auto;
@@ -291,20 +279,17 @@ main#app.wide {
   padding: 1rem;
 }
 
-/* ═══════════════════════════════════════════════
-   CARD — Glassmorphic with depth
-   ═══════════════════════════════════════════════ */
 .card {
   background: var(--glass-strong);
-  backdrop-filter: blur(24px) saturate(185%);
-  -webkit-backdrop-filter: blur(24px) saturate(185%);
-  border: 1px solid rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: var(--radius-lg);
-  padding: 1.5rem 1.75rem;
+  padding: 1.6rem 1.85rem;
   margin-bottom: 1.25rem;
   box-shadow:
     var(--shadow),
-    0 1px 0 rgba(255, 255, 255, 0.85) inset;
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
   transition: transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease);
   position: relative;
   overflow: hidden;
@@ -313,10 +298,10 @@ main#app.wide {
 @media (prefers-color-scheme: dark) {
   .card {
     background: var(--glass-strong);
-    border: 1px solid rgba(255, 220, 170, 0.09);
+    border: 1px solid rgba(255, 210, 160, 0.12);
     box-shadow:
       var(--shadow),
-      0 1px 0 rgba(255, 255, 255, 0.05) inset;
+      0 1px 0 rgba(255, 255, 255, 0.06) inset;
   }
 }
 
@@ -326,10 +311,10 @@ main#app.wide {
   top: 0;
   left: 0;
   right: 0;
-  height: 1px;
+  height: 2px;
   background: linear-gradient(90deg,
     transparent,
-    rgba(184, 134, 11, 0.35),
+    rgba(192, 138, 18, 0.4),
     transparent);
   pointer-events: none;
 }
@@ -337,7 +322,7 @@ main#app.wide {
 .card:hover {
   box-shadow:
     var(--shadow-lg),
-    0 1px 0 rgba(255, 255, 255, 0.92) inset;
+    0 1px 0 rgba(255, 255, 255, 0.95) inset;
   transform: translateY(-3px);
 }
 
@@ -352,9 +337,6 @@ main#app.wide {
   -webkit-text-fill-color: transparent;
 }
 
-/* ═══════════════════════════════════════════════
-   BUTTONS — Rich, layered, animated
-   ═══════════════════════════════════════════════ */
 button {
   font: inherit;
   font-weight: 700;
@@ -363,7 +345,7 @@ button {
   border: 1.5px solid transparent;
   background: linear-gradient(135deg, var(--acc) 0%, var(--acc-2) 100%);
   color: #fff;
-  padding: 0.6rem 1.3rem;
+  padding: 0.65rem 1.35rem;
   border-radius: var(--radius-sm);
   transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease), filter 0.25s var(--ease);
   letter-spacing: 0.01em;
@@ -371,8 +353,8 @@ button {
   position: relative;
   overflow: hidden;
   box-shadow:
-    0 3px 8px var(--acc-glow),
-    0 1px 0 rgba(255, 255, 255, 0.18) inset;
+    0 4px 12px var(--acc-glow),
+    0 1px 0 rgba(255, 255, 255, 0.22) inset;
 }
 
 button::before {
@@ -384,7 +366,7 @@ button::before {
   height: 100%;
   background: linear-gradient(90deg,
     transparent,
-    rgba(255, 255, 255, 0.28),
+    rgba(255, 255, 255, 0.32),
     transparent);
   transition: left 0.55s var(--ease);
 }
@@ -397,8 +379,8 @@ button:hover {
   transform: translateY(-2px);
   box-shadow:
     0 10px 24px var(--acc-glow),
-    0 1px 0 rgba(255, 255, 255, 0.22) inset;
-  filter: brightness(1.07);
+    0 1px 0 rgba(255, 255, 255, 0.28) inset;
+  filter: brightness(1.08);
 }
 
 button:active {
@@ -418,8 +400,8 @@ button.ghost:hover {
   background: var(--acc-glow);
   border-color: var(--acc);
   color: var(--acc);
-  box-shadow: 0 4px 12px var(--acc-glow);
-  transform: translateY(-1px);
+  box-shadow: 0 4px 14px var(--acc-glow);
+  transform: translateY(-2px);
   filter: none;
 }
 
@@ -427,11 +409,11 @@ button.bad {
   background: linear-gradient(135deg, var(--bad) 0%, var(--bad-soft) 100%);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 2px 6px rgba(185, 28, 28, 0.2);
+  box-shadow: 0 3px 8px rgba(185, 28, 28, 0.22);
 }
 
 button.bad:hover {
-  box-shadow: 0 8px 20px rgba(185, 28, 28, 0.3);
+  box-shadow: 0 8px 22px rgba(185, 28, 28, 0.35);
 }
 
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible, .p:focus-visible {
@@ -439,13 +421,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   outline-offset: 2px;
 }
 
-/* ═══════════════════════════════════════════════
-   INPUTS — Polished, warm
-   ═══════════════════════════════════════════════ */
 input, select, textarea {
   font: inherit;
   width: 100%;
-  padding: 0.7rem 0.9rem;
+  padding: 0.72rem 0.95rem;
   border: 1.5px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: var(--card);
@@ -461,7 +440,7 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--acc);
   box-shadow:
     0 0 0 4px var(--acc-glow),
-    0 2px 8px rgba(14, 92, 78, 0.08);
+    0 2px 10px rgba(13, 107, 88, 0.1);
   outline: none;
   background: var(--card);
 }
@@ -477,36 +456,33 @@ label {
 
 label:first-child { margin-top: 0; }
 
-/* ═══════════════════════════════════════════════
-   NAV TABS — Pill-style premium
-   ═══════════════════════════════════════════════ */
 nav {
   display: inline-flex;
-  gap: 4px;
+  gap: 6px;
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
   background: var(--glass-strong);
-  backdrop-filter: blur(24px) saturate(185%);
-  -webkit-backdrop-filter: blur(24px) saturate(185%);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
   padding: 6px;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow:
     var(--shadow-sm),
-    0 1px 0 rgba(255, 255, 255, 0.85) inset;
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
 }
 
 @media (prefers-color-scheme: dark) {
   nav {
-    border: 1px solid rgba(255, 220, 170, 0.09);
-    box-shadow: var(--shadow-sm), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+    border: 1px solid rgba(255, 210, 160, 0.12);
+    box-shadow: var(--shadow-sm), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
   }
 }
 
 nav button {
   border: none;
   border-radius: 14px;
-  padding: 0.55rem 1.4rem;
+  padding: 0.6rem 1.45rem;
   font-weight: 700;
   font-size: 0.88rem;
   transition: all 0.3s var(--ease);
@@ -521,21 +497,18 @@ nav button.on {
   background: linear-gradient(135deg, var(--acc) 0%, var(--acc-2) 100%);
   color: #fff;
   box-shadow:
-    0 4px 14px var(--acc-glow),
-    0 1px 0 rgba(255, 255, 255, 0.2) inset;
+    0 4px 16px var(--acc-glow),
+    0 1px 0 rgba(255, 255, 255, 0.25) inset;
 }
 
 nav button:not(.on):hover {
   color: var(--ink);
-  background: rgba(14, 92, 78, 0.08);
+  background: rgba(13, 107, 88, 0.09);
   transform: none;
   box-shadow: none;
   filter: none;
 }
 
-/* ═══════════════════════════════════════════════
-   GRID / LAYOUT
-   ═══════════════════════════════════════════════ */
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -557,9 +530,6 @@ nav button:not(.on):hover {
   .split { grid-template-columns: 1fr; }
 }
 
-/* ═══════════════════════════════════════════════
-   TREE (nested list)
-   ═══════════════════════════════════════════════ */
 ul.tree, ul.tree ul {
   list-style: none;
   margin: 0;
@@ -573,7 +543,7 @@ summary { cursor: pointer; }
 
 .p {
   display: inline-block;
-  padding: .2rem .6rem;
+  padding: .25rem .65rem;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s var(--ease);
@@ -603,13 +573,10 @@ summary { cursor: pointer; }
   margin-top: 0.5rem;
 }
 
-/* ═══════════════════════════════════════════════
-   DIALOG — Premium modal
-   ═══════════════════════════════════════════════ */
 dialog {
   max-width: 640px;
   width: 94%;
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: var(--radius-xl);
   background: var(--card);
   color: var(--ink);
@@ -622,14 +589,14 @@ dialog {
 
 @media (prefers-color-scheme: dark) {
   dialog {
-    border: 1px solid rgba(255, 220, 170, 0.1);
+    border: 1px solid rgba(255, 210, 160, 0.14);
   }
 }
 
 dialog::backdrop {
-  background: rgba(26, 20, 16, 0.5);
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  background: rgba(28, 21, 18, 0.55);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
   animation: fadeIn 0.3s var(--ease);
 }
 
@@ -665,9 +632,6 @@ dialog h3 {
   background: var(--bg-2);
 }
 
-/* ═══════════════════════════════════════════════
-   AUTH VIEW — Split-screen premium login
-   ═══════════════════════════════════════════════ */
 .auth-wrap {
   min-height: calc(100vh - 72px);
   display: grid;
@@ -685,11 +649,11 @@ dialog h3 {
   position: relative;
   background:
     linear-gradient(135deg,
-      #0A3D34 0%,
-      #0E5C4E 30%,
-      #14705F 55%,
-      #1A5F7A 80%,
-      #2D4A6E 100%);
+      #08332B 0%,
+      #0D6B58 35%,
+      #12826D 60%,
+      #195B72 85%,
+      #29405E 100%);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -703,9 +667,9 @@ dialog h3 {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 60% 50% at 20% 20%, rgba(232, 197, 71, 0.25), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 20% 20%, rgba(241, 210, 99, 0.25), transparent 60%),
     radial-gradient(ellipse 50% 40% at 80% 80%, rgba(194, 65, 12, 0.2), transparent 60%),
-    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(76, 29, 149, 0.15), transparent 60%);
+    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(91, 33, 182, 0.15), transparent 60%);
   animation: ambientShift 20s ease-in-out infinite;
 }
 
@@ -837,7 +801,7 @@ dialog h3 {
 }
 
 .auth-feature:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.14);
   transform: translateX(4px);
 }
 
@@ -877,8 +841,8 @@ dialog h3 {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 50% 50% at 100% 0%, rgba(184, 134, 11, 0.06), transparent 60%),
-    radial-gradient(ellipse 50% 50% at 0% 100%, rgba(14, 92, 78, 0.05), transparent 60%);
+    radial-gradient(ellipse 50% 50% at 100% 0%, rgba(192, 138, 18, 0.06), transparent 60%),
+    radial-gradient(ellipse 50% 50% at 0% 100%, rgba(13, 107, 88, 0.05), transparent 60%);
   pointer-events: none;
 }
 
@@ -887,20 +851,20 @@ dialog h3 {
   width: 100%;
   max-width: 440px;
   background: var(--glass-strong);
-  backdrop-filter: blur(24px) saturate(185%);
-  -webkit-backdrop-filter: blur(24px) saturate(185%);
-  border: 1px solid rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: var(--radius-xl);
   padding: 2.5rem 2.2rem;
   box-shadow:
     var(--shadow-xl),
-    0 1px 0 rgba(255, 255, 255, 0.85) inset;
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
   animation: formSlideIn 0.65s var(--ease-out);
 }
 
 @media (prefers-color-scheme: dark) {
   .auth-form-card {
-    border: 1px solid rgba(255, 220, 170, 0.09);
+    border: 1px solid rgba(255, 210, 160, 0.12);
   }
 }
 
@@ -977,8 +941,8 @@ dialog h3 {
   align-items: center;
   gap: 0.4rem;
   padding: 0.4rem 0.8rem;
-  background: linear-gradient(135deg, rgba(184, 134, 11, 0.1), rgba(212, 160, 23, 0.05));
-  border: 1px solid rgba(184, 134, 11, 0.2);
+  background: linear-gradient(135deg, rgba(192, 138, 18, 0.12), rgba(223, 155, 23, 0.06));
+  border: 1px solid rgba(192, 138, 18, 0.22);
   border-radius: 20px;
   font-size: 0.75rem;
   color: var(--gold);
@@ -1011,9 +975,6 @@ dialog h3 {
   }
 }
 
-/* ═══════════════════════════════════════════════
-   CHART — Premium canvas
-   ═══════════════════════════════════════════════ */
 .chartbox { padding: .7rem; }
 
 .tools {
@@ -1023,21 +984,21 @@ dialog h3 {
   flex-wrap: wrap;
   align-items: center;
   background: var(--glass-strong);
-  backdrop-filter: blur(24px) saturate(185%);
-  -webkit-backdrop-filter: blur(24px) saturate(185%);
-  padding: 0.7rem 0.9rem;
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  padding: 0.75rem 0.95rem;
   border-radius: var(--radius);
-  border: 1px solid rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow:
     var(--shadow-sm),
-    0 1px 0 rgba(255, 255, 255, 0.85) inset;
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
   position: relative;
   z-index: 10;
 }
 
 @media (prefers-color-scheme: dark) {
   .tools {
-    border: 1px solid rgba(255, 220, 170, 0.09);
+    border: 1px solid rgba(255, 210, 160, 0.12);
   }
 }
 
@@ -1053,7 +1014,7 @@ dialog h3 {
 
 .tools #q:focus {
   border-color: var(--gold);
-  box-shadow: 0 0 0 4px rgba(184, 134, 11, 0.15);
+  box-shadow: 0 0 0 4px rgba(192, 138, 18, 0.15);
 }
 
 .tools input[type=range] {
@@ -1079,13 +1040,13 @@ dialog h3 {
   touch-action: none;
   box-shadow:
     var(--shadow-lg),
-    0 1px 0 rgba(255, 255, 255, 0.55) inset;
+    0 1px 0 rgba(255, 255, 255, 0.6) inset;
   transition: box-shadow 0.3s var(--ease);
 }
 
 @media (prefers-color-scheme: dark) {
   #chart {
-    box-shadow: var(--shadow-lg), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+    box-shadow: var(--shadow-lg), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
   }
 }
 
@@ -1116,9 +1077,6 @@ dialog h3 {
 .ln.on { stroke: var(--gold); stroke-width: 3; filter: drop-shadow(0 0 4px var(--acc-glow)); }
 .ln[data-m] { stroke-dasharray: 6 4; }
 
-/* ═══════════════════════════════════════════════
-   CHART CARDS — Premium, layered
-   ═══════════════════════════════════════════════ */
 .cd {
   position: absolute;
   display: flex;
@@ -1150,8 +1108,8 @@ dialog h3 {
   border-color: var(--gc, var(--acc));
 }
 
-.cd.gM { --gc: #3B82F6; }
-.cd.gF { --gc: #EC4899; }
+.cd.gM { --gc: #2563EB; }
+.cd.gF { --gc: #DB2777; }
 .cd.gO { --gc: var(--mut); }
 .cd.dead { opacity: .65; filter: grayscale(0.3); }
 
@@ -1194,16 +1152,16 @@ dialog h3 {
 }
 
 .cd.gM .av {
-  background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
   box-shadow:
-    0 3px 8px rgba(59, 130, 246, 0.4),
+    0 3px 8px rgba(37, 99, 235, 0.4),
     0 1px 0 rgba(255, 255, 255, 0.2) inset;
 }
 
 .cd.gF .av {
-  background: linear-gradient(135deg, #EC4899 0%, #BE185D 100%);
+  background: linear-gradient(135deg, #DB2777 0%, #BE185D 100%);
   box-shadow:
-    0 3px 8px rgba(236, 72, 153, 0.4),
+    0 3px 8px rgba(219, 39, 119, 0.4),
     0 1px 0 rgba(255, 255, 255, 0.2) inset;
 }
 
@@ -1229,9 +1187,6 @@ dialog h3 {
   font-weight: 500;
 }
 
-/* ═══════════════════════════════════════════════
-   CHART WRAP / FULLSCREEN
-   ═══════════════════════════════════════════════ */
 .chartwrap {
   position: relative;
   background: transparent;
@@ -1255,9 +1210,6 @@ dialog h3 {
   transition: transform .4s var(--ease-out);
 }
 
-/* ═══════════════════════════════════════════════
-   DETAIL PANEL
-   ═══════════════════════════════════════════════ */
 #det {
   position: absolute;
   right: 1rem;
@@ -1269,17 +1221,17 @@ dialog h3 {
   margin: 0;
   box-shadow: var(--shadow-xl);
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   background: var(--glass-strong);
-  backdrop-filter: blur(24px) saturate(185%);
-  -webkit-backdrop-filter: blur(24px) saturate(185%);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
   padding: 1.4rem 1.5rem;
   animation: slideIn 0.4s var(--ease-out);
 }
 
 @media (prefers-color-scheme: dark) {
   #det {
-    border: 1px solid rgba(255, 220, 170, 0.09);
+    border: 1px solid rgba(255, 210, 160, 0.12);
   }
 }
 
@@ -1329,9 +1281,6 @@ dialog h3 {
   max-width: 400px;
 }
 
-/* ═══════════════════════════════════════════════
-   PASSWORD FIELD
-   ═══════════════════════════════════════════════ */
 .pw { position: relative; display: block; }
 .pw input { padding-right: 2.8rem; }
 
@@ -1399,9 +1348,6 @@ button.lnk:hover {
   color: var(--acc-2);
 }
 
-/* ═══════════════════════════════════════════════
-   MENU DROPDOWN
-   ═══════════════════════════════════════════════ */
 details.menu { position: relative; }
 
 details.menu summary {
@@ -1466,16 +1412,13 @@ details.menu > div button {
 details.menu > div button::before { display: none; }
 
 details.menu > div button:hover {
-  background: linear-gradient(135deg, var(--acc-glow), rgba(184, 134, 11, 0.06));
+  background: linear-gradient(135deg, var(--acc-glow), rgba(192, 138, 18, 0.08));
   color: var(--acc);
   transform: none;
   box-shadow: none;
   filter: none;
 }
 
-/* ═══════════════════════════════════════════════
-   KIDS ROW
-   ═══════════════════════════════════════════════ */
 .krow {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr auto;
@@ -1492,9 +1435,6 @@ details.menu > div button:hover {
   .krow { grid-template-columns: 1fr 1fr; }
 }
 
-/* ═══════════════════════════════════════════════
-   TOGGLE BUTTON ON TREE
-   ═══════════════════════════════════════════════ */
 button.tg {
   position: absolute;
   transform: translateX(-50%);
@@ -1510,7 +1450,7 @@ button.tg {
   color: #fff;
   box-shadow:
     0 3px 8px var(--acc-glow),
-    0 1px 0 rgba(255, 255, 255, 0.2) inset;
+    0 1px 0 rgba(255, 255, 255, 0.25) inset;
   transition: all 0.25s var(--ease-spring);
   z-index: 2;
 }
@@ -1521,13 +1461,10 @@ button.tg:hover {
   transform: translateX(-50%) scale(1.15);
   box-shadow:
     0 6px 16px var(--acc-glow),
-    0 1px 0 rgba(255, 255, 255, 0.2) inset;
+    0 1px 0 rgba(255, 255, 255, 0.25) inset;
   filter: brightness(1.1);
 }
 
-/* ═══════════════════════════════════════════════
-   SCROLLBAR
-   ═══════════════════════════════════════════════ */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
@@ -1539,9 +1476,6 @@ button.tg:hover {
   background: linear-gradient(180deg, var(--acc), var(--acc-2));
 }
 
-/* ═══════════════════════════════════════════════
-   RESPONSIVE
-   ═══════════════════════════════════════════════ */
 @media (max-width: 640px) {
   header {
     padding: 0 1rem;
@@ -1553,8 +1487,8 @@ button.tg:hover {
   }
   header h1::before,
   header h1::after {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
   }
   header h1::after {
     background-size: 20px;
@@ -1578,9 +1512,6 @@ button.tg:hover {
   }
 }
 
-/* ═══════════════════════════════════════════════
-   ADMIN CARDS — Highlight
-   ═══════════════════════════════════════════════ */
 #pane h2 {
   font-size: 1.4rem;
   font-weight: 800;
@@ -1621,7 +1552,6 @@ button.tg:hover {
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
-// ====== यहाँ आफ्नो Supabase को Project URL र anon public key राख्नुहोस् ======
 const CFG = { url: "https://onhznyefbseptuwurqxx.supabase.co", key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uaHpueWVmYnNlcHR1d3VycXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3NTM5NDUsImV4cCI6MjEwNjMyOTk0NX0.4o8tWadbJZ29uXaW7Gbn_2IinDLVtsda757kz-be1z0" };
 const db = supabase.createClient(CFG.url, CFG.key);
 const $ = s => document.querySelector(s);
@@ -1650,7 +1580,6 @@ async function load() {
   people = data; byId = Object.fromEntries(people.map(p => [p.id, p]));
 }
 
-// ---------- लगइन / दर्ता / पासवर्ड रिसेट — PREMIUM UI ----------
 const EYE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
 const EYE_OFF = EYE.replace("</svg>", '<path d="M3 3l18 18"/></svg>');
 const pwField = (id, label, ac) => `<label>${label}<span class="pw"><input id="${id}" type="password" autocomplete="${ac}"><button type="button" class="eye" data-for="${id}" aria-label="पासवर्ड देखाउनुहोस्">${EYE}</button></span></label>`;
@@ -1788,7 +1717,6 @@ function resetView() {
   };
 }
 
-// ---------- मुख्य दृश्य ----------
 function render() {
   const admin = me.role === "admin";
   $("#app").innerHTML = `<nav>
@@ -1800,7 +1728,6 @@ function render() {
   ({ tree: treeView, mine: mineView, admin: adminView })[tab]();
 }
 
-// ---------- वंशवृक्ष ----------
 const hasParents = p => p.father_id || p.mother_id;
 const kids = p => people.filter(c => c.father_id === p.id || (!c.father_id && c.mother_id === p.id));
 const isMarriedIn = p => { const s = byId[p.spouse_id]; if (!s || p.more_spouse_ids?.length) return false; return !!(hasParents(s) || s.more_spouse_ids?.length || s.id < p.id); };
@@ -1918,7 +1845,7 @@ function search(q, next) {
   HL = matches.length ? branchOf(matches.map(m => m.id)) : null;
   if (matches.length) { matches.forEach(m => openUp(m.id)); draw(); focusOn(matches[0].id, 1); } else applyHL();
 }
-// ---- निर्यात / आयात ----
+
 const PF = ["id", "name", "gender", "father_id", "mother_id", "spouse_id", "more_spouse_ids", "is_living", "birth_bs", "death_bs", "phone", "address", "notes"];
 const stamp = () => new Date().toISOString().slice(0, 10);
 const dl = (name, text, type) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1500); };
@@ -1972,7 +1899,6 @@ function exportJPG() {
   img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgText());
 }
 
-// ---- Excel / CSV / JSON आयात ----
 const GMAP = { m: "M", male: "M", "पुरुष": "M", "छोरा": "M", f: "F", female: "F", "महिला": "F", "छोरी": "F", o: "O", "अन्य": "O" };
 const NO = ["false", "0", "no", "n", "होइन", "मृत", "dead"];
 const UUIDRE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -2021,7 +1947,6 @@ async function importRows(raw) {
   alert(`${data} व्यक्ति डाउनलोड भयो।`); await load(); render();
 }
 
-// ---------- अर्को पति/पत्नी ----------
 function spouseForm(p) {
   const d = $("#dlg");
   d.innerHTML = `<h3>"${esc(p.name)}" को अर्को पति/पत्नी</h3>
@@ -2055,184 +1980,7 @@ function treeView() {
     <aside class="card" id="det" hidden></aside></div>`;
   if ($("#first")) $("#first").onclick = () => form("add");
   draw(); home();
-  const ch = $("#chart"), ptrs = new Map(); let drag = null, moved = false, pd = 0;
-  const dist = () => { const [a, b] = [...ptrs.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
-  ch.onpointerdown = e => { ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); moved = false; drag = ptrs.size === 1 ? { x: e.clientX, y: e.clientY, vx: V.x, vy: V.y } : null; if (ptrs.size === 2) pd = dist(); };
-  window.onpointermove = e => {
-    if (!ptrs.has(e.pointerId)) return;
-    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (ptrs.size === 2) { const d = dist(), [a, b] = [...ptrs.values()], r = ch.getBoundingClientRect(); if (pd) zoomAt(d / pd, (a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top); pd = d; moved = true; return; }
-    if (!drag) return;
-    const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 4) moved = true;
-    V.x = drag.vx + dx; V.y = drag.vy + dy; applyV();
-  };
-  window.onpointerup = window.onpointercancel = e => { ptrs.delete(e.pointerId); drag = null; pd = 0; };
-  ch.onclick = e => {
-    if (moved) return;
-    const tg = e.target.closest(".tg");
-    if (tg) { const k = tg.dataset.t; collapsed.has(k) ? collapsed.delete(k) : collapsed.add(k); draw(); return; }
-    const t = e.target.closest("[data-id]"); if (t) pick(t.dataset.id); else unpick();
-  };
-  ch.onkeydown = e => { if (e.key === "Enter" && e.target.dataset.id) pick(e.target.dataset.id); };
-  ch.onwheel = e => { e.preventDefault(); const r = ch.getBoundingClientRect(); zoomAt(e.deltaY < 0 ? 1.12 : 0.89, e.clientX - r.left, e.clientY - r.top); };
-  const mid = f => zoomAt(f, ch.clientWidth / 2, ch.clientHeight / 2);
-  $("#zi").onclick = () => mid(1.2); $("#zo").onclick = () => mid(0.83); $("#fit").onclick = fit;
-  $("#zr").oninput = e => mid(e.target.value / 100 / V.k);
-  $("#ea").onclick = () => { collapsed.clear(); draw(); fit(); };
-  $("#ca").onclick = () => { const f = n => { if (n.d >= 1 && n.all.length) collapsed.add(n.p.id); n.all.forEach(f); }; lastTrees.forEach(f); draw(); home(); };
-  $("#q").oninput = e => search(e.target.value);
-  $("#q").onkeydown = e => { if (e.key === "Enter") search($("#q").value, true); };
-  $("#fs").onclick = () => document.fullscreenElement ? document.exitFullscreen() : $("#cw").requestFullscreen?.();
-  document.onfullscreenchange = () => setTimeout(fit, 120);
-  window.onkeydown = e => { if (e.key === "Escape") unpick(); };
-  $(".menu div").addEventListener("click", () => { $(".menu").open = false; });
-  const on = (id, f) => { const el = $(id); if (el) el.onclick = f; };
-  on("#xj", () => dl(`vanshavali-${stamp()}.json`, JSON.stringify(people.map(p => Object.fromEntries(PF.map(k => [k, p[k] ?? null]))), null, 1), "application/json"));
-  on("#xc", exportCSV); on("#xe", exportXLSX); on("#xs", exportSVG); on("#xp", exportJPG);
-  if ($("#xi")) { $("#xi").onclick = () => $("#xf").click(); $("#xf").onchange = e => { const f = e.target.files[0]; if (f) importFile(f); e.target.value = ""; }; }
-}
-
-function detail() {
-  const p = byId[sel]; if (!p) return;
-  const rel = id => id && byId[id] ? esc(byId[id].name) : "—";
-  const cs = kids(p).map(k => esc(k.name)).join(", ") || "—";
-  $("#det").hidden = false;
-  $("#det").innerHTML = `<div class="dhead"><h3>${esc(p.name)}</h3><button class="ghost" id="dx" aria-label="बन्द">×</button></div>
-    <p>बुबा: ${rel(p.father_id)}<br>आमा: ${rel(p.mother_id)}<br>पति/पत्नी: ${spousesOf(p).map(i => esc(byId[i].name)).join(", ") || "—"}<br>सन्तान: ${cs}</p>
-    <p>जन्म: ${esc(p.birth_bs) || "—"}${p.is_living ? "" : `<br>मृत्यु: ${esc(p.death_bs) || "—"}`}<br>फोन: ${esc(p.phone) || "—"}<br>ठेगाना: ${esc(p.address) || "—"}</p>
-    ${p.notes ? `<p>${esc(p.notes)}</p>` : ""}
-    <div class="row"><button id="ed">सच्याउने अनुरोध</button><button class="ghost" id="ac">सन्तान थप्ने</button><button class="ghost" id="as">+ पति/पत्नी</button><button class="bad" id="dl">हटाउने अनुरोध</button></div>`;
-  $("#ed").onclick = () => form("update", p);
-  $("#ac").onclick = () => kidsForm(p);
-  $("#as").onclick = () => spouseForm(p);
-  $("#dl").onclick = () => form("delete", p);
-  $("#dx").onclick = unpick;
-}
-
-// ---------- अनुरोध फारम ----------
-const opts = (cur) => `<option value="">— छैन —</option>` + people.map(p => `<option value="${p.id}" ${p.id===cur?"selected":""}>${esc(p.name)}</option>`).join("");
-const pSel = (k, lab, v) => `<label>${lab}<select id="f_${k}_id">${opts(v[k + "_id"])}</select><input id="f_${k}_name" placeholder="सूचीमा छैन भने नयाँ नाम लेख्नुहोस्" style="margin-top:.3rem"></label>`;
-function form(action, p = null, parent = null) {
-  const d = $("#dlg");
-  if (action === "delete") {
-    d.innerHTML = `<h3>"${esc(p.name)}" हटाउन अनुरोध</h3><label>कारण<textarea id="nt" rows="3"></textarea></label>
-      <div class="msg" id="fm"></div><div class="row"><button id="go" class="bad">अनुरोध पठाउने</button><button class="ghost" id="cx">रद्द</button></div>`;
-    d.showModal(); $("#cx").onclick = () => d.close();
-    $("#go").onclick = () => send("delete", p.id, {}, d);
-    return;
-  }
-  const v = p ? { ...p } : { is_living: true };
-  if (parent) {
-    const sp = parent.spouse_id;
-    if (parent.gender === "F") { v.mother_id = parent.id; v.father_id = sp || ""; } else { v.father_id = parent.id; v.mother_id = sp || ""; }
-  }
-  d.innerHTML = `<h3>${action === "add" ? "नयाँ व्यक्ति थप्ने अनुरोध" : `"${esc(p.name)}" सच्याउने अनुरोध`}</h3>
-    <div class="grid">
-    <label>नाम *<input id="f_name" value="${esc(v.name)}"></label>
-    <label>लिङ्ग<select id="f_gender"><option value="">—</option>${["M:पुरुष","F:महिला","O:अन्य"].map(x => { const [k,l]=x.split(":"); return `<option value="${k}" ${v.gender===k?"selected":""}>${l}</option>`; }).join("")}</select></label>
-    ${pSel("father", "बुबा", v)}
-    ${pSel("mother", "आमा", v)}
-    ${pSel("spouse", "पति/पत्नी", v)}
-    <label>जीवित?<select id="f_is_living"><option value="true" ${v.is_living?"selected":""}>हो</option><option value="false" ${v.is_living?"":"selected"}>होइन</option></select></label>
-    <label>जन्म मिति (BS) २०४५-०५-१२<input id="f_birth_bs" value="${esc(v.birth_bs)}"></label>
-    <label>मृत्यु मिति (BS)<input id="f_death_bs" value="${esc(v.death_bs)}"></label>
-    <label>फोन<input id="f_phone" value="${esc(v.phone)}"></label>
-    <label>ठेगाना<input id="f_address" value="${esc(v.address)}"></label></div>
-    <label>टिप्पणी<textarea id="f_notes" rows="2">${esc(v.notes)}</textarea></label>
-    <label>एडमिनलाई सन्देश (स्रोत/प्रमाण)<textarea id="nt" rows="2"></textarea></label>
-    <div class="msg" id="fm"></div>
-    <div class="row"><button id="go">अनुरोध पठाउने</button><button class="ghost" id="cx">रद्द</button></div>`;
-  d.showModal(); $("#cx").onclick = () => d.close();
-  ["father", "mother", "spouse"].forEach(k => {
-    const s = $("#f_" + k + "_id"), t = $("#f_" + k + "_name");
-    const sync = () => { t.disabled = !!s.value; if (s.value) t.value = ""; };
-    s.onchange = sync; sync();
-  });
-  $("#go").onclick = () => {
-    const cur = {};
-    FIELDS.forEach(k => { let x = $("#f_" + k).value.trim(); if (k === "is_living") x = x === "true"; cur[k] = x; });
-    if (!cur.name) return $("#fm").textContent = "नाम अनिवार्य छ।";
-    let payload = cur;
-    if (action === "update") {
-      payload = {};
-      FIELDS.forEach(k => { const old = p[k] ?? (k === "is_living" ? true : ""); if (String(cur[k]) !== String(old)) payload[k] = cur[k]; });
-      if (!Object.keys(payload).length) return $("#fm").textContent = "कुनै परिवर्तन गरिएको छैन।";
-    }
-    send(action, p?.id ?? null, payload, d);
-  };
-}
-async function send(action, person_id, payload, d) {
-  const { error } = await db.from("change_requests").insert({ requested_by: me.id, action, person_id, payload, note: $("#nt")?.value || null });
-  if (error) return $("#fm").textContent = error.message;
-  d.close(); alert("अनुरोध पठाइयो। एडमिनको स्वीकृतिपछि वंशावलीमा देखिनेछ।");
-}
-
-// ---------- एकै विन्डोमा धेरै सन्तान ----------
-function kidsForm(parent) {
-  const d = $("#dlg");
-  const row = () => `<div class="krow"><input class="k-name" placeholder="नाम" aria-label="नाम"><select class="k-g" aria-label="लिङ्ग"><option value="M">छोरा</option><option value="F">छोरी</option><option value="">—</option></select><input class="k-b" placeholder="जन्म BS" aria-label="जन्म मिति"><select class="k-l" aria-label="जीवित"><option value="true">जीवित</option><option value="false">दिवंगत</option></select><button type="button" class="bad k-x" aria-label="हटाउने">×</button></div>`;
-  d.innerHTML = `<h3>"${esc(parent.name)}" का सन्तान थप्ने</h3>
-    <label>अर्को अभिभावक (${parent.gender === "F" ? "बुबा" : "आमा"}) — सूचीमा नभए पहिले उनको विवरण थप्नुहोस्<select id="k-other">${opts(parent.spouse_id)}</select></label>
-    <div id="krows">${row()}${row()}</div>
-    <div class="row"><button type="button" class="ghost" id="k-add">+ अर्को सन्तान</button></div>
-    <label>एडमिनलाई सन्देश<textarea id="nt" rows="2"></textarea></label>
-    <div class="msg" id="fm"></div><div class="row"><button id="go">अनुरोध पठाउने</button><button class="ghost" id="cx">रद्द</button></div>`;
-  d.showModal(); $("#cx").onclick = () => d.close();
-  $("#k-add").onclick = () => $("#krows").insertAdjacentHTML("beforeend", row());
-  $("#krows").onclick = e => { const x = e.target.closest(".k-x"); if (x && document.querySelectorAll(".krow").length > 1) x.closest(".krow").remove(); };
-  $("#go").onclick = async () => {
-    const other = $("#k-other").value, batch = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
-    const kids = [...document.querySelectorAll(".krow")].map(r => ({ name: r.querySelector(".k-name").value.trim(), gender: r.querySelector(".k-g").value, birth_bs: r.querySelector(".k-b").value.trim(), is_living: r.querySelector(".k-l").value === "true" })).filter(r => r.name);
-    if (!kids.length) return $("#fm").textContent = "कम्तिमा एउटा नाम लेख्नुहोस्।";
-    const par = parent.gender === "F" ? { mother_id: parent.id, father_id: other } : { father_id: parent.id, mother_id: other };
-    const reqs = kids.map(k => ({ requested_by: me.id, action: "add", person_id: null, note: $("#nt").value || null, payload: { ...k, ...par, batch } }));
-    const { error } = await db.from("change_requests").insert(reqs);
-    if (error) return $("#fm").textContent = error.message;
-    d.close(); alert(`${reqs.length} सन्तानको अनुरोध पठाइयो।`);
-  };
-}
-
-// ---------- अनुरोध विवरण ----------
-const STATUS = { pending: "पर्खाइमा", approved: "स्वीकृत", rejected: "अस्वीकृत" };
-const ACT = { add: "थप्ने", update: "सच्याउने", delete: "हटाउने" };
-function desc(r) {
-  const who = r.person_id && byId[r.person_id] ? ` — ${esc(byId[r.person_id].name)}` : "";
-  const lines = Object.entries(r.payload || {}).filter(([k]) => k !== "batch").map(([k, v]) => {
-    const val = k.endsWith("_id") ? (byId[v]?.name || "—") : v === true ? "हो" : v === false ? "होइन" : v || "—";
-    return `${LABEL[k] || XL[k] || k}: ${esc(val)}`;
-  }).join("<br>");
-  return `<b>${ACT[r.action]}</b>${who}<br>${lines}${r.note ? `<br><span class="mut">सन्देश: ${esc(r.note)}</span>` : ""}`;
-}
-async function mineView() {
-  const { data } = await db.from("change_requests").select("*").eq("requested_by", me.id).order("created_at", { ascending: false });
-  $("#pane").innerHTML = (data?.length ? data : []).map(r => `<div class="card">${desc(r)}<p class="mut">स्थिति: ${STATUS[r.status]}${r.reject_reason ? ` (${esc(r.reject_reason)})` : ""}</p></div>`).join("") || `<div class="card">अझै कुनै अनुरोध छैन।</div>`;
-}
-
-// ---------- एडमिन ----------
-async function adminView() {
-  const [{ data: reqs }, { data: pend }] = await Promise.all([
-    db.from("change_requests").select("*, profiles!change_requests_requested_by_fkey(full_name,email)").eq("status", "pending").order("created_at"),
-    db.from("profiles").select("*").eq("role", "pending")
-  ]);
-  const groups = [];
-  (reqs || []).forEach(r => { const b = r.payload?.batch; let g = b && groups.find(x => x.batch === b); if (!g) { g = { batch: b, items: [] }; groups.push(g); } g.items.push(r); });
-  $("#pane").innerHTML = `<h2>नयाँ सदस्य (${pend?.length || 0})</h2>` +
-    (pend || []).map(u => `<div class="card">${esc(u.full_name)} · ${esc(u.email)}<div class="row"><button data-u="${u.id}" data-r="member">सदस्य बनाउने</button></div></div>`).join("") +
-    `<h2>परिवर्तन अनुरोध (${groups.length})</h2>` +
-    groups.map(g => { const ids = g.items.map(r => r.id).join(","), r0 = g.items[0]; return `<div class="card">${g.items.length > 1 ? `<b>${g.items.length} सन्तान एकैसाथ</b><hr>` : ""}${g.items.map(desc).join("<hr>")}
-      <p class="mut">अनुरोधकर्ता: ${esc(r0.profiles?.full_name || r0.profiles?.email)}</p>
-      <div class="row"><button data-a="${ids}">${g.items.length > 1 ? "सबै स्वीकृत" : "स्वीकृत"}</button><button class="bad" data-x="${ids}">${g.items.length > 1 ? "सबै अस्वीकार" : "अस्वीकार"}</button></div></div>`; }).join("");
-  $("#pane").onclick = async e => {
-    const b = e.target.closest("button"); if (!b) return;
-    let err;
-    if (b.dataset.u) ({ error: err } = await db.rpc("set_member_role", { target: b.dataset.u, new_role: "member" }));
-    if (b.dataset.a) for (const id of b.dataset.a.split(",")) { ({ error: err } = await db.rpc("review_request", { req: id, approve: true })); if (err) break; }
-    if (b.dataset.x) { const reason = prompt("अस्वीकार गर्ने कारण?"); if (reason === null) return; for (const id of b.dataset.x.split(",")) { ({ error: err } = await db.rpc("review_request", { req: id, approve: false, reason })); if (err) break; } }
-    if (err) return alert(err.message);
-    await load(); render();
-  };
-}
-boot();
+  const ch = $("#chart");
 </script>
 </body>
 </html>
