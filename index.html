@@ -9,23 +9,23 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Devanagari:wght@500;600;700;900&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #F7F3EC;
-  --bg-2: #EFE8DB;
-  --bg-deep: #E8DFD0;
+  --bg: #F8F4EC;
+  --bg-2: #F0E9DB;
+  --bg-deep: #E9E0CF;
   --ink: #1A1410;
   --ink-soft: #3D3026;
   --mut: #7A6B5C;
   --mut-light: #A89888;
-  --line: rgba(120, 90, 50, 0.15);
-  --line-strong: rgba(120, 90, 50, 0.28);
+  --line: rgba(120, 90, 50, 0.13);
+  --line-strong: rgba(120, 90, 50, 0.26);
   --card: #FFFFFF;
-  --card-soft: rgba(255, 255, 255, 0.75);
-  --glass: rgba(255, 255, 255, 0.55);
-  --glass-strong: rgba(255, 255, 255, 0.8);
+  --card-soft: rgba(255, 255, 255, 0.78);
+  --glass: rgba(255, 255, 255, 0.58);
+  --glass-strong: rgba(255, 255, 255, 0.82);
   --acc: #0E5C4E;
   --acc-2: #0A7A66;
   --acc-soft: #14A085;
-  --acc-glow: rgba(14, 92, 78, 0.18);
+  --acc-glow: rgba(14, 92, 78, 0.16);
   --gold: #B8860B;
   --gold-2: #D4A017;
   --gold-soft: #E8C547;
@@ -38,12 +38,12 @@
   --radius-sm: 10px;
   --radius-lg: 22px;
   --radius-xl: 32px;
-  --shadow-xs: 0 1px 2px rgba(26, 20, 16, 0.05);
-  --shadow-sm: 0 2px 8px rgba(26, 20, 16, 0.06), 0 1px 2px rgba(26, 20, 16, 0.04);
-  --shadow: 0 8px 24px rgba(26, 20, 16, 0.08), 0 2px 6px rgba(26, 20, 16, 0.04);
-  --shadow-lg: 0 20px 50px rgba(26, 20, 16, 0.12), 0 8px 16px rgba(26, 20, 16, 0.06);
-  --shadow-xl: 0 30px 80px rgba(26, 20, 16, 0.18), 0 12px 24px rgba(26, 20, 16, 0.08);
-  --shadow-glow: 0 0 0 1px rgba(184, 134, 11, 0.15), 0 10px 30px rgba(184, 134, 11, 0.12);
+  --shadow-xs: 0 1px 2px rgba(26, 20, 16, 0.04);
+  --shadow-sm: 0 2px 10px rgba(26, 20, 16, 0.055), 0 1px 3px rgba(26, 20, 16, 0.035);
+  --shadow: 0 10px 28px rgba(26, 20, 16, 0.07), 0 3px 8px rgba(26, 20, 16, 0.04);
+  --shadow-lg: 0 22px 55px rgba(26, 20, 16, 0.11), 0 10px 20px rgba(26, 20, 16, 0.05);
+  --shadow-xl: 0 32px 85px rgba(26, 20, 16, 0.16), 0 14px 28px rgba(26, 20, 16, 0.07);
+  --shadow-glow: 0 0 0 1px rgba(184, 134, 11, 0.14), 0 12px 32px rgba(184, 134, 11, 0.11);
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -51,23 +51,23 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0E0B08;
-    --bg-2: #17120D;
-    --bg-deep: #1E1711;
-    --ink: #F5EDE0;
-    --ink-soft: #D4C4AE;
-    --mut: #9B8B78;
-    --mut-light: #6B5D4D;
-    --line: rgba(255, 220, 170, 0.1);
-    --line-strong: rgba(255, 220, 170, 0.2);
-    --card: #1E1711;
-    --card-soft: rgba(30, 23, 17, 0.75);
-    --glass: rgba(30, 23, 17, 0.6);
-    --glass-strong: rgba(30, 23, 17, 0.85);
+    --bg: #0D0A07;
+    --bg-2: #16120D;
+    --bg-deep: #1D1711;
+    --ink: #F6EEE1;
+    --ink-soft: #D5C5AF;
+    --mut: #9C8C79;
+    --mut-light: #6C5E4E;
+    --line: rgba(255, 220, 170, 0.09);
+    --line-strong: rgba(255, 220, 170, 0.18);
+    --card: #1D1711;
+    --card-soft: rgba(29, 23, 17, 0.78);
+    --glass: rgba(29, 23, 17, 0.62);
+    --glass-strong: rgba(29, 23, 17, 0.88);
     --acc: #2DD4BF;
     --acc-2: #14B8A6;
     --acc-soft: #5EEAD4;
-    --acc-glow: rgba(45, 212, 191, 0.2);
+    --acc-glow: rgba(45, 212, 191, 0.18);
     --gold: #F5B942;
     --gold-2: #FCD34D;
     --gold-soft: #FDE68A;
@@ -76,11 +76,11 @@
     --success: #34D399;
     --royal: #A78BFA;
     --sunset: #FB923C;
-    --shadow-xs: 0 1px 2px rgba(0,0,0,0.3);
-    --shadow-sm: 0 2px 8px rgba(0,0,0,0.35);
-    --shadow: 0 8px 24px rgba(0,0,0,0.4);
-    --shadow-lg: 0 20px 50px rgba(0,0,0,0.5);
-    --shadow-xl: 0 30px 80px rgba(0,0,0,0.6);
+    --shadow-xs: 0 1px 2px rgba(0,0,0,0.28);
+    --shadow-sm: 0 2px 10px rgba(0,0,0,0.32);
+    --shadow: 0 10px 28px rgba(0,0,0,0.38);
+    --shadow-lg: 0 22px 55px rgba(0,0,0,0.48);
+    --shadow-xl: 0 32px 85px rgba(0,0,0,0.58);
   }
 }
 
@@ -296,16 +296,16 @@ main#app.wide {
    ═══════════════════════════════════════════════ */
 .card {
   background: var(--glass-strong);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(24px) saturate(185%);
+  -webkit-backdrop-filter: blur(24px) saturate(185%);
+  border: 1px solid rgba(255, 255, 255, 0.65);
   border-radius: var(--radius-lg);
   padding: 1.5rem 1.75rem;
   margin-bottom: 1.25rem;
   box-shadow:
     var(--shadow),
-    0 1px 0 rgba(255, 255, 255, 0.8) inset;
-  transition: all 0.35s var(--ease);
+    0 1px 0 rgba(255, 255, 255, 0.85) inset;
+  transition: transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease);
   position: relative;
   overflow: hidden;
 }
@@ -313,10 +313,10 @@ main#app.wide {
 @media (prefers-color-scheme: dark) {
   .card {
     background: var(--glass-strong);
-    border: 1px solid rgba(255, 220, 170, 0.08);
+    border: 1px solid rgba(255, 220, 170, 0.09);
     box-shadow:
       var(--shadow),
-      0 1px 0 rgba(255, 255, 255, 0.04) inset;
+      0 1px 0 rgba(255, 255, 255, 0.05) inset;
   }
 }
 
@@ -329,7 +329,7 @@ main#app.wide {
   height: 1px;
   background: linear-gradient(90deg,
     transparent,
-    rgba(184, 134, 11, 0.3),
+    rgba(184, 134, 11, 0.35),
     transparent);
   pointer-events: none;
 }
@@ -337,8 +337,8 @@ main#app.wide {
 .card:hover {
   box-shadow:
     var(--shadow-lg),
-    0 1px 0 rgba(255, 255, 255, 0.9) inset;
-  transform: translateY(-2px);
+    0 1px 0 rgba(255, 255, 255, 0.92) inset;
+  transform: translateY(-3px);
 }
 
 .card h2 {
@@ -365,14 +365,14 @@ button {
   color: #fff;
   padding: 0.6rem 1.3rem;
   border-radius: var(--radius-sm);
-  transition: all 0.3s var(--ease);
+  transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease), filter 0.25s var(--ease);
   letter-spacing: 0.01em;
   white-space: nowrap;
   position: relative;
   overflow: hidden;
   box-shadow:
-    0 2px 6px var(--acc-glow),
-    0 1px 0 rgba(255, 255, 255, 0.15) inset;
+    0 3px 8px var(--acc-glow),
+    0 1px 0 rgba(255, 255, 255, 0.18) inset;
 }
 
 button::before {
@@ -384,9 +384,9 @@ button::before {
   height: 100%;
   background: linear-gradient(90deg,
     transparent,
-    rgba(255, 255, 255, 0.25),
+    rgba(255, 255, 255, 0.28),
     transparent);
-  transition: left 0.6s var(--ease);
+  transition: left 0.55s var(--ease);
 }
 
 button:hover::before {
@@ -396,9 +396,9 @@ button:hover::before {
 button:hover {
   transform: translateY(-2px);
   box-shadow:
-    0 8px 20px var(--acc-glow),
-    0 1px 0 rgba(255, 255, 255, 0.2) inset;
-  filter: brightness(1.08);
+    0 10px 24px var(--acc-glow),
+    0 1px 0 rgba(255, 255, 255, 0.22) inset;
+  filter: brightness(1.07);
 }
 
 button:active {
@@ -486,20 +486,20 @@ nav {
   margin-bottom: 1.5rem;
   flex-wrap: wrap;
   background: var(--glass-strong);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(185%);
+  -webkit-backdrop-filter: blur(24px) saturate(185%);
   padding: 6px;
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.65);
   box-shadow:
     var(--shadow-sm),
-    0 1px 0 rgba(255, 255, 255, 0.8) inset;
+    0 1px 0 rgba(255, 255, 255, 0.85) inset;
 }
 
 @media (prefers-color-scheme: dark) {
   nav {
-    border: 1px solid rgba(255, 220, 170, 0.08);
-    box-shadow: var(--shadow-sm), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+    border: 1px solid rgba(255, 220, 170, 0.09);
+    box-shadow: var(--shadow-sm), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
   }
 }
 
@@ -887,20 +887,20 @@ dialog h3 {
   width: 100%;
   max-width: 440px;
   background: var(--glass-strong);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(24px) saturate(185%);
+  -webkit-backdrop-filter: blur(24px) saturate(185%);
+  border: 1px solid rgba(255, 255, 255, 0.65);
   border-radius: var(--radius-xl);
   padding: 2.5rem 2.2rem;
   box-shadow:
     var(--shadow-xl),
-    0 1px 0 rgba(255, 255, 255, 0.8) inset;
-  animation: formSlideIn 0.6s var(--ease-out);
+    0 1px 0 rgba(255, 255, 255, 0.85) inset;
+  animation: formSlideIn 0.65s var(--ease-out);
 }
 
 @media (prefers-color-scheme: dark) {
   .auth-form-card {
-    border: 1px solid rgba(255, 220, 170, 0.08);
+    border: 1px solid rgba(255, 220, 170, 0.09);
   }
 }
 
@@ -1023,21 +1023,21 @@ dialog h3 {
   flex-wrap: wrap;
   align-items: center;
   background: var(--glass-strong);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(185%);
+  -webkit-backdrop-filter: blur(24px) saturate(185%);
   padding: 0.7rem 0.9rem;
   border-radius: var(--radius);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.65);
   box-shadow:
     var(--shadow-sm),
-    0 1px 0 rgba(255, 255, 255, 0.8) inset;
+    0 1px 0 rgba(255, 255, 255, 0.85) inset;
   position: relative;
   z-index: 10;
 }
 
 @media (prefers-color-scheme: dark) {
   .tools {
-    border: 1px solid rgba(255, 220, 170, 0.08);
+    border: 1px solid rgba(255, 220, 170, 0.09);
   }
 }
 
@@ -1079,12 +1079,13 @@ dialog h3 {
   touch-action: none;
   box-shadow:
     var(--shadow-lg),
-    0 1px 0 rgba(255, 255, 255, 0.5) inset;
+    0 1px 0 rgba(255, 255, 255, 0.55) inset;
+  transition: box-shadow 0.3s var(--ease);
 }
 
 @media (prefers-color-scheme: dark) {
   #chart {
-    box-shadow: var(--shadow-lg), 0 1px 0 rgba(255, 255, 255, 0.03) inset;
+    box-shadow: var(--shadow-lg), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
   }
 }
 
@@ -1130,21 +1131,21 @@ dialog h3 {
   border-radius: 12px;
   cursor: pointer;
   user-select: none;
-  transition: all 0.3s var(--ease);
+  transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease), border-color 0.25s var(--ease), opacity 0.25s var(--ease), filter 0.25s var(--ease);
   box-shadow:
     var(--shadow-sm),
-    0 1px 0 rgba(255, 255, 255, 0.8) inset;
+    0 1px 0 rgba(255, 255, 255, 0.85) inset;
 }
 
 @media (prefers-color-scheme: dark) {
   .cd {
-    box-shadow: var(--shadow-sm), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+    box-shadow: var(--shadow-sm), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
   }
 }
 
 .cd:hover {
   box-shadow: var(--shadow-lg);
-  transform: translateY(-3px) scale(1.02);
+  transform: translateY(-4px) scale(1.025);
   z-index: 3;
   border-color: var(--gc, var(--acc));
 }
@@ -1268,17 +1269,17 @@ dialog h3 {
   margin: 0;
   box-shadow: var(--shadow-xl);
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.65);
   background: var(--glass-strong);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(185%);
+  -webkit-backdrop-filter: blur(24px) saturate(185%);
   padding: 1.4rem 1.5rem;
-  animation: slideIn 0.35s var(--ease-out);
+  animation: slideIn 0.4s var(--ease-out);
 }
 
 @media (prefers-color-scheme: dark) {
   #det {
-    border: 1px solid rgba(255, 220, 170, 0.08);
+    border: 1px solid rgba(255, 220, 170, 0.09);
   }
 }
 
@@ -1686,8 +1687,8 @@ function authView(mode = "login") {
               </svg>
             </div>
           </div>
-          <h2>पुस्तौंको कथा,<br>एकै ठाउँमा</h2>
-          <p>हाम्रो वंशावलीले तपाईंको परिवारको इतिहास, नाता र सम्बन्धलाई सुन्दर र सुरक्षित तरिकाले जोड्छ।</p>
+          <h2>सबै बराल,<br>एकै ठाउँमा</h2>
+          <p>हाम्रो वंशावलीले बराल परिवारको इतिहास, नाता र सम्बन्धलाई सुन्दर र सुरक्षित तरिकाले जोड्छ।</p>
           <div class="auth-features">
             <div class="auth-feature">
               <div class="auth-feature-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
@@ -1695,7 +1696,7 @@ function authView(mode = "login") {
             </div>
             <div class="auth-feature">
               <div class="auth-feature-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-              <span>परिवारका सबै सदस्य एकै ठाउँमा</span>
+              <span>सबै बराल एकै ठाउँमा</span>
             </div>
             <div class="auth-feature">
               <div class="auth-feature-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
@@ -1724,7 +1725,7 @@ function authView(mode = "login") {
                  <p class="mut"><button class="lnk" data-m="signup">नयाँ खाता बनाउनुहोस् →</button></p>`
               : `<p class="mut"><button class="lnk" data-m="login">← पहिले नै खाता छ? लगइन गर्नुहोस्</button></p>`}
           </div>
-          ${mode === "signup" ? `<p class="mut" style="text-align:center;margin-top:1rem;font-size:0.82rem">खाता बनेपछि एडमिनले स्वीकृत गर्नुपर्छ।</p>` : ""}
+          ${mode === "signup" ? `<p class="mut" style="text-align:center;margin-top:1rem;font-size:0.82rem">खाता बनेपछि सरोजले स्वीकृत गर्नुपर्छ, त्यतिन्जेल पर्खनुहोस् ल!</p>` : ""}
         </div>
       </div>
     </div>`;
@@ -1738,12 +1739,12 @@ function authView(mode = "login") {
     } else if (mode === "signup") {
       const name = $("#fn").value.trim();
       if (!name) return say("पूरा नाम लेख्नुहोस्।");
-      if (password.length < 8) return say("पासवर्ड कम्तिमा ८ अक्षरको हुनुपर्छ।");
+      if (password.length < 8) return say("पासवर्ड कम्तिमा ८ अक्षरको हुनुपर्छ ल!");
       const { error } = await db.auth.signUp({ email, password, options: { data: { full_name: name } } });
-      say(error ? error.message : "खाता बन्यो। इमेल पुष्टि चाहिने भए इमेल जाँच्नुहोस्।", !error);
+      say(error ? error.message : "खाता बन्यो। इमेल खोलेर ईन्बक्स र स्पाम दुबै चेक गर्नुहोस त! ।", !error);
     } else {
       const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: location.href.split("#")[0].split("?")[0] });
-      say(error ? error.message : "यो इमेलको खाता भए रिसेट लिंक पठाइयो। इनबक्स र स्प्याम जाँच्नुहोस्।", !error);
+      say(error ? error.message : "यो इमेलको खातामा रिसेट लिंक पठाएको छ। इनबक्स र स्प्याम जाँच्नुहोस् त!", !error);
     }
   };
   $("#go").onclick = go;
@@ -1769,8 +1770,8 @@ function resetView() {
         <div class="auth-form-card">
           <h2>नयाँ पासवर्ड</h2>
           <p class="auth-subtitle">बलियो पासवर्ड छान्नुहोस्</p>
-          ${pwField("np", "नयाँ पासवर्ड (कम्तिमा ८ अक्षर)", "new-password")}
-          ${pwField("np2", "फेरि लेख्नुहोस्", "new-password")}
+          ${pwField("np", "नयाँ पासवर्ड कम्तिमा ८ अक्षरको होस् है", "new-password")}
+          ${pwField("np2", "यहाँ फेरि पासवर्ड लेख्नुहोस्", "new-password")}
           <div class="msg" id="am" role="status"></div>
           <div class="row" style="margin-top:1.5rem"><button id="go" style="width:100%;padding:0.8rem">पासवर्ड बदल्नुहोस्</button></div>
         </div>
@@ -1780,7 +1781,7 @@ function resetView() {
   $("#go").onclick = async () => {
     const a = $("#np").value;
     if (a.length < 8) return say("पासवर्ड कम्तिमा ८ अक्षरको हुनुपर्छ।");
-    if (a !== $("#np2").value) return say("दुई पासवर्ड मिलेन।");
+    if (a !== $("#np2").value) return say("दुईटा पासवर्ड मिलेन नि।");
     const { error } = await db.auth.updateUser({ password: a });
     if (error) return say(error.message);
     recovering = false; boot();
@@ -1939,7 +1940,7 @@ function exportXLSX() {
   const rng = XLSX.utils.decode_range(ws["!ref"]);
   for (let r = 1; r <= rng.e.r; r++) ["birth_bs", "death_bs", "phone"].forEach(k => { const c = ws[XLSX.utils.encode_cell({ r, c: SHEET_COLS.indexOf(k) })]; if (c) { c.t = "s"; c.z = "@"; } });
   ws["!cols"] = SHEET_COLS.map(k => ({ wch: k === "id" ? 14 : (k === "notes" || k === "address") ? 28 : 16 }));
-  const help = XLSX.utils.aoa_to_sheet([["निर्देश"],
+  const help = XLSX.utils.aoa_to_sheet([["निर्देशन"],
     ["१. वंशावली शीटमा सम्पादन गर्नुहोस्। पहिलो पङ्क्ति (शीर्षक) नबदल्नुहोस्।"],
     ["२. id भएको पङ्क्तिको विवरण बदलिन्छ; id खाली पङ्क्ति नयाँ व्यक्ति हुन्छ। id नबदल्नुहोस्।"],
     ["३. father / mother / spouse मा नाम लेख्नुहोस्। एकभन्दा बढी पति/पत्नी भए ; ले छुट्याउनुहोस् (जस्तै: सीता; गीता)। पहिलो नाम मुख्य जोडी हो।"],
@@ -1967,7 +1968,7 @@ function exportJPG() {
     const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.scale(sc, sc); g.drawImage(img, 0, 0, w, h);
     cv.toBlob(b => { const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `vanshavali-${stamp()}.jpg`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1500); }, "image/jpeg", 0.92);
   };
-  img.onerror = () => alert("JPG बनाउन सकिएन; SVG प्रयोग गर्नुहोस्।");
+  img.onerror = () => alert("JPG बनाउन सकिएन; SVG प्रयोग गर्नुहोस् न ल।");
   img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgText());
 }
 
@@ -1987,7 +1988,7 @@ async function importFile(f) {
       raw = XLSX.utils.sheet_to_json(wb.Sheets["वंशावली"] || wb.Sheets[wb.SheetNames[0]], { defval: "", raw: true });
     }
     await importRows(raw);
-  } catch (er) { alert("आयात असफल: " + (er.message || er)); }
+  } catch (er) { alert("डाउनलोड भएन:" + (er.message || er)); }
 }
 async function importRows(raw) {
   dateWarn = 0;
@@ -2017,7 +2018,7 @@ async function importRows(raw) {
   if (!confirm(`${upd} व्यक्तिको विवरण बदलिन्छ, ${out.length - upd} नयाँ थपिन्छन्।${kept ? `\nफाइलमा नभएका ${kept} व्यक्ति जस्ताको तस्तै रहन्छन्।` : ""}${dateWarn ? `\n⚠ ${dateWarn} मिति Excel ले मितिमा बदलेको देखियो; जाँच्नुहोस्।` : ""}\nजारी राख्ने?`)) return;
   const { data, error } = await db.rpc("import_people", { payload: out });
   if (error) throw error;
-  alert(`${data} व्यक्ति आयात भयो।`); await load(); render();
+  alert(`${data} व्यक्ति डाउनलोड भयो।`); await load(); render();
 }
 
 // ---------- अर्को पति/पत्नी ----------
@@ -2048,7 +2049,7 @@ function treeView() {
     <div class="tools"><input id="q" placeholder="🔍 नाम खोज्नुहोस् (Enter = अर्को)…" aria-label="खोज"><span id="qc" class="mut"></span>
       <button class="ghost" id="zo" aria-label="सानो">−</button><input id="zr" type="range" min="8" max="250" aria-label="जुम"><button class="ghost" id="zi" aria-label="ठूलो">+</button>
       <button class="ghost" id="fit" title="पूरै रूख देखाउने">पूरै</button><button class="ghost" id="ea" title="सबै शाखा खोल्ने">सबै खोल्ने</button><button class="ghost" id="ca" title="शाखा बन्द गर्ने">संक्षिप्त</button>
-      <details class="menu"><summary>${me.role === "admin" ? "⇩ निर्यात / आयात" : "⇩ चित्र डाउनलोड"}</summary><div>${me.role === "admin" ? `<button class="ghost" id="xe">📊 Excel (.xlsx)</button><button class="ghost" id="xc">📄 CSV</button><button class="ghost" id="xj">💾 JSON (ब्याकअप)</button>` : ""}<button class="ghost" id="xs">🖼 चित्र (SVG)</button><button class="ghost" id="xp">📷 चित्र (JPG)</button>${me.role === "admin" ? `<button class="ghost" id="xi">📥 आयात गर्नुहोस्</button><input type="file" id="xf" accept=".xlsx,.xls,.csv,.json" hidden>` : ""}</div></details>
+      <details class="menu"><summary>${me.role === "admin" ? "⇩ डाउनलोड" : "⇩ चित्र डाउनलोड"}</summary><div>${me.role === "admin" ? `<button class="ghost" id="xe">📊 Excel (.xlsx)</button><button class="ghost" id="xc">📄 CSV</button><button class="ghost" id="xj">💾 JSON (ब्याकअप)</button>` : ""}<button class="ghost" id="xs">🖼 फोटो (SVG)</button><button class="ghost" id="xp">📷 फोटो (JPG)</button>${me.role === "admin" ? `<button class="ghost" id="xi">📥 डाउनलोड गर्नुहोस्</button><input type="file" id="xf" accept=".xlsx,.xls,.csv,.json" hidden>` : ""}</div></details>
       <button class="ghost" id="fs" aria-label="पूरा स्क्रिन">⛶</button></div>
     <div id="chart"><div id="stage"></div>${people.length ? "" : `<div class="empty"><p>अझै कोही थपिएको छैन।</p><button id="first">पहिलो व्यक्ति थप्ने अनुरोध</button></div>`}</div>
     <aside class="card" id="det" hidden></aside></div>`;
