@@ -92,6 +92,7 @@ details.menu summary{list-style:none;cursor:pointer;padding:.4rem .9rem;border:1
 details.menu>div{position:absolute;right:0;top:110%;z-index:20;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:.4rem;display:grid;gap:.3rem;min-width:200px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
 .krow{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:.4rem;margin-top:.5rem}
 @media(max-width:640px){.krow{grid-template-columns:1fr 1fr}}
+.ln[data-m]{stroke-dasharray:5 4}
 </style>
 </head>
 <body>
@@ -100,6 +101,7 @@ details.menu>div{position:absolute;right:0;top:110%;z-index:20;background:var(--
 <dialog id="dlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 // ====== यहाँ आफ्नो Supabase को Project URL र anon public key राख्नुहोस् ======
 const CFG = { url: "https://onhznyefbseptuwurqxx.supabase.co", key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uaHpueWVmYnNlcHR1d3VycXh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3NTM5NDUsImV4cCI6MjEwNjMyOTk0NX0.4o8tWadbJZ29uXaW7Gbn_2IinDLVtsda757kz-be1z0" };
@@ -211,7 +213,7 @@ function render() {
 // ---------- वंशवृक्ष (रङ्गीन कार्ड, शाखा बन्द/खोल्ने, हाइलाइट, जुम) ----------
 const hasParents = p => p.father_id || p.mother_id;
 const kids = p => people.filter(c => c.father_id === p.id || (!c.father_id && c.mother_id === p.id));
-const isMarriedIn = p => { const s = byId[p.spouse_id]; return !!s && (hasParents(s) || s.id < p.id); };
+const isMarriedIn = p => { const s = byId[p.spouse_id]; if (!s || p.more_spouse_ids?.length) return false; return !!(hasParents(s) || s.more_spouse_ids?.length || s.id < p.id); };
 const CW = 176, CH = 72, GAP = 16, HG = 26, VG = 64;
 const GEN = ["#E4572E", "#F3A712", "#29A19C", "#3A7CA5", "#7B5EA7", "#D1477A", "#5B8C5A", "#C17C3B"];
 const yr = s => (s || "").slice(0, 4);
@@ -219,12 +221,20 @@ const byBirth = (a, b) => (a.birth_bs || "9999").localeCompare(b.birth_bs || "99
 let V = { x: 0, y: 0, k: 1 }, W = 0, H = 0, cardPos = {}, collapsed = new Set(), collInit = false, HL = null;
 let lastCards = [], lastLines = [], lastTrees = [], matches = [], mi = 0;
 
+const spousesOf = p => [p.spouse_id, ...(p.more_spouse_ids || [])].filter(id => id && byId[id]);
+const kidsOf = x => people.filter(c => c.father_id === x.id || c.mother_id === x.id);
 function build(p, seen, d) {
   seen.add(p.id);
-  const s = byId[p.spouse_id], sp = s && !seen.has(s.id) ? s : null;
-  if (sp) seen.add(sp.id);
-  const ks = [...new Map([...kids(p), ...(sp ? kids(sp) : [])].map(k => [k.id, k])).values()].filter(k => !seen.has(k.id)).sort(byBirth);
-  return { p, sp, d, w: sp ? 2 * CW + GAP : CW, all: ks.map(k => build(k, seen, d + 1)) };
+  const sps = spousesOf(p).map(id => byId[id]).filter((s, i, a) => !seen.has(s.id) && a.indexOf(s) === i);
+  sps.forEach(s => seen.add(s.id));
+  const uniq = a => [...new Map(a.map(k => [k.id, k])).values()].sort(byBirth);
+  // एकभन्दा बढी पति/पत्नी: सन्तान आ-आफ्नी आमा/बुबाको मुनि समूहमा
+  const groups = sps.length >= 2
+    ? [...sps.map(s => ({ from: s.id, ks: uniq(kidsOf(s)) })), { from: null, ks: uniq(kidsOf(p)) }]
+    : [{ from: null, ks: uniq([...kids(p), ...(sps[0] ? kids(sps[0]) : [])]) }];
+  const all = [];
+  groups.forEach(g => g.ks.forEach(k => { if (!seen.has(k.id)) { const c = build(k, seen, d + 1); c.from = g.from; all.push(c); } }));
+  return { p, sps, d, w: (sps.length + 1) * CW + sps.length * GAP, all };
 }
 function measure(n) {
   n.vis = collapsed.has(n.p.id) ? [] : n.all;
@@ -232,19 +242,29 @@ function measure(n) {
   n.ct = n.vis.reduce((a, c) => a + c.tw, 0) + HG * Math.max(0, n.vis.length - 1);
   n.tw = Math.max(n.w, n.ct);
 }
+function rowOf(n) {
+  const { p, sps } = n;
+  if (!sps.length) return [p];
+  if (sps.length === 1) { const s = sps[0]; return p.gender === "F" && s.gender !== "F" ? [s, p] : [p, s]; }
+  return [sps[0], p, ...sps.slice(1)]; // [पत्नी१][पति][पत्नी२]...
+}
 function place(n, x, y, cards, lines, units) {
-  const left = n.sp && n.p.gender === "F" && n.sp.gender !== "F" ? n.sp : n.p;
-  const right = n.sp ? (left === n.p ? n.sp : n.p) : null;
-  const ux = x + (n.tw - n.w) / 2, px = ux + n.w / 2;
-  cards.push({ p: left, x: ux, y, d: n.d });
-  if (right) { cards.push({ p: right, x: ux + CW + GAP, y, d: n.d }); lines.push({ d: `M${ux + CW} ${y + CH / 2}H${ux + CW + GAP}`, c: n.p.id }); }
-  n.ax = (n.p === left ? ux : ux + CW + GAP) + CW / 2;
+  const row = rowOf(n), ux = x + (n.tw - n.w) / 2, px = ux + n.w / 2, cx = {};
+  row.forEach((q, i) => { const qx = ux + i * (CW + GAP); cards.push({ p: q, x: qx, y, d: n.d }); cx[q.id] = qx + CW / 2; });
+  const pi = row.indexOf(n.p);
+  n.sps.forEach(s => {
+    const si = row.indexOf(s);
+    if (Math.abs(si - pi) === 1) { const a = Math.min(si, pi); lines.push({ d: `M${ux + a * (CW + GAP) + CW} ${y + CH / 2}H${ux + (a + 1) * (CW + GAP)}`, c: n.p.id }); }
+    else lines.push({ d: `M${cx[n.p.id]} ${y + CH}V${y + CH + 12}H${cx[s.id]}V${y + CH}`, c: n.p.id, m: 1 });
+  });
+  n.ax = cx[n.p.id];
   if (n.all.length) units.push({ key: n.p.id, px, y, n: n.all.length, open: n.vis.length > 0 });
-  let cx = x + (n.tw - n.ct) / 2;
+  let cur = x + (n.tw - n.ct) / 2;
   n.vis.forEach(c => {
-    place(c, cx, y + CH + VG, cards, lines, units);
-    lines.push({ d: `M${px} ${y + CH}V${y + CH + VG / 2}H${c.ax}V${y + CH + VG}`, c: c.p.id });
-    cx += c.tw + HG;
+    const fx = n.sps.length >= 2 && c.from && cx[c.from] != null ? cx[c.from] : px;
+    place(c, cur, y + CH + VG, cards, lines, units);
+    lines.push({ d: `M${fx} ${y + CH}V${y + CH + VG / 2}H${c.ax}V${y + CH + VG}`, c: c.p.id });
+    cur += c.tw + HG;
   });
 }
 const cardHtml = ({ p, x, y, d }) => `<div class="cd g${p.gender || "O"} ${p.is_living ? "" : "dead"} ${sel === p.id ? "sel" : ""}" tabindex="0" data-id="${p.id}" style="left:${x}px;top:${y}px;width:${CW}px;height:${CH}px;--gc:${GEN[d % GEN.length]}"><div class="av">${esc(Array.from(p.name)[0])}</div><div class="tx"><b>${esc(p.name)}</b><span>${yr(p.birth_bs) || "?"}${p.is_living ? "" : " – " + (yr(p.death_bs) || "?")}</span></div></div>`;
@@ -257,17 +277,17 @@ function draw() {
   W = Math.max(x - HG * 3, CW); H = Math.max(CH, ...cards.map(c => c.y + CH)) + 34;
   lastCards = cards; lastLines = lines; lastTrees = trees; cardPos = Object.fromEntries(cards.map(c => [c.p.id, c]));
   const st = $("#stage"); st.style.cssText = `width:${W}px;height:${H}px`;
-  st.innerHTML = `<svg width="${W}" height="${H}">${lines.map(l => `<path class="ln" data-c="${l.c}" d="${l.d}"/>`).join("")}</svg>` +
+  st.innerHTML = `<svg width="${W}" height="${H}">${lines.map(l => `<path class="ln" data-c="${l.c}"${l.m ? ' data-m="1"' : ""} d="${l.d}"/>`).join("")}</svg>` +
     cards.map(cardHtml).join("") +
     units.map(u => `<button class="tg" data-t="${u.key}" style="left:${u.px}px;top:${u.y + CH + 3}px" aria-label="शाखा खोल्ने/बन्द गर्ने">${u.open ? "−" : "+" + u.n}</button>`).join("");
   applyHL();
 }
 // पूर्खा + आफू + सन्तान (+ जोडी) को शाखा
 function branchOf(ids) {
-  const S = new Set();
-  const up = id => { const p = byId[id]; if (!p || S.has(id)) return; S.add(id); if (p.spouse_id) S.add(p.spouse_id); up(p.father_id); up(p.mother_id); };
-  const down = id => people.filter(c => c.father_id === id || c.mother_id === id).forEach(c => { if (!S.has(c.id)) { S.add(c.id); if (c.spouse_id) S.add(c.spouse_id); down(c.id); } });
-  ids.forEach(id => { up(id); down(id); const p = byId[id]; if (p?.spouse_id) down(p.spouse_id); });
+  const S = new Set(), addSp = p => spousesOf(p).forEach(s => S.add(s));
+  const up = id => { const p = byId[id]; if (!p || S.has(id)) return; S.add(id); addSp(p); up(p.father_id); up(p.mother_id); };
+  const down = id => people.filter(c => c.father_id === id || c.mother_id === id).forEach(c => { if (!S.has(c.id)) { S.add(c.id); addSp(c); down(c.id); } });
+  ids.forEach(id => { up(id); down(id); const p = byId[id]; if (p) spousesOf(p).forEach(down); });
   return S;
 }
 function applyHL() {
@@ -311,32 +331,129 @@ function search(q, next) {
   if (matches.length) { matches.forEach(m => openUp(m.id)); draw(); focusOn(matches[0].id, 1); } else applyHL();
 }
 // ---- निर्यात / आयात ----
-const PF = ["id", "name", "gender", "father_id", "mother_id", "spouse_id", "is_living", "birth_bs", "death_bs", "phone", "address", "notes"];
+const PF = ["id", "name", "gender", "father_id", "mother_id", "spouse_id", "more_spouse_ids", "is_living", "birth_bs", "death_bs", "phone", "address", "notes"];
 const stamp = () => new Date().toISOString().slice(0, 10);
 const dl = (name, text, type) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1500); };
 const csvq = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+const SHEET_COLS = ["id", "name", "gender", "father", "mother", "spouse", "is_living", "birth_bs", "death_bs", "phone", "address", "notes"];
+const nameRef = id => { const q = byId[id]; if (!q) return ""; return people.filter(x => x.name === q.name).length > 1 ? q.id : q.name; };
+function sheetRows() {
+  return people.map(p => ({ id: p.id, name: p.name, gender: p.gender || "", father: nameRef(p.father_id), mother: nameRef(p.mother_id),
+    spouse: spousesOf(p).map(nameRef).join("; "), is_living: p.is_living ? "हो" : "होइन",
+    birth_bs: p.birth_bs || "", death_bs: p.death_bs || "", phone: p.phone || "", address: p.address || "", notes: p.notes || "" }));
+}
 function exportCSV() {
-  const nmOf = id => byId[id]?.name || "";
-  const head = ["id", "name", "gender", "father", "mother", "spouse", "is_living", "birth_bs", "death_bs", "phone", "address", "notes"];
-  const rows = people.map(p => [p.id, p.name, p.gender, nmOf(p.father_id), nmOf(p.mother_id), nmOf(p.spouse_id), p.is_living, p.birth_bs, p.death_bs, p.phone, p.address, p.notes]);
-  dl(`vanshavali-${stamp()}.csv`, "\ufeff" + [head, ...rows].map(r => r.map(csvq).join(",")).join("\n"), "text/csv;charset=utf-8");
+  const rows = sheetRows();
+  dl(`vanshavali-${stamp()}.csv`, "\ufeff" + [SHEET_COLS, ...rows.map(r => SHEET_COLS.map(k => r[k]))].map(r => r.map(csvq).join(",")).join("\n"), "text/csv;charset=utf-8");
 }
-function exportSVG() {
+function exportXLSX() {
+  if (!window.XLSX) return alert("Excel library लोड भएन (इन्टरनेट जाँच्नुहोस्)।");
+  const ws = XLSX.utils.json_to_sheet(sheetRows(), { header: SHEET_COLS });
+  const rng = XLSX.utils.decode_range(ws["!ref"]);
+  for (let r = 1; r <= rng.e.r; r++) ["birth_bs", "death_bs", "phone"].forEach(k => { const c = ws[XLSX.utils.encode_cell({ r, c: SHEET_COLS.indexOf(k) })]; if (c) { c.t = "s"; c.z = "@"; } });
+  ws["!cols"] = SHEET_COLS.map(k => ({ wch: k === "id" ? 14 : (k === "notes" || k === "address") ? 28 : 16 }));
+  const help = XLSX.utils.aoa_to_sheet([["निर्देश"],
+    ["१. वंशावली शीटमा सम्पादन गर्नुहोस्। पहिलो पङ्क्ति (शीर्षक) नबदल्नुहोस्।"],
+    ["२. id भएको पङ्क्तिको विवरण बदलिन्छ; id खाली पङ्क्ति नयाँ व्यक्ति हुन्छ। id नबदल्नुहोस्।"],
+    ["३. father / mother / spouse मा नाम लेख्नुहोस्। एकभन्दा बढी पति/पत्नी भए ; ले छुट्याउनुहोस् (जस्तै: सीता; गीता)। पहिलो नाम मुख्य जोडी हो।"],
+    ["४. एउटै नाम दोहोरिएको व्यक्तिलाई जोड्न नामको सट्टा उसको id लेख्नुहोस्।"],
+    ["५. gender: M (पुरुष), F (महिला), O (अन्य)। is_living: हो / होइन।"],
+    ["६. मिति BS मा, जस्तै 2045-05-12। कक्षको ढाँचा Text राख्नुहोस्, नत्र Excel ले मिति बदल्न सक्छ।"],
+    ["७. फाइलमा नभएका व्यक्ति हटाइँदैनन्। हटाउन साइटबाट हटाउने अनुरोध गर्नुहोस्।"],
+    ["८. आयात गर्नुअघि JSON ब्याकअप लिनुहोस्।"]]);
+  help["!cols"] = [{ wch: 110 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "वंशावली"); XLSX.utils.book_append_sheet(wb, help, "निर्देश");
+  XLSX.writeFile(wb, `vanshavali-${stamp()}.xlsx`);
+}
+function svgText() {
   const F = 'font-family="Noto Sans Devanagari,sans-serif"', cut = s => esc(s.length > 20 ? s.slice(0, 19) + "…" : s);
-  const body = lastLines.map(l => `<path d="${l.d}" fill="none" stroke="#8A9A9C" stroke-width="1.5"/>`).join("") +
+  const body = lastLines.map(l => `<path d="${l.d}" fill="none" stroke="#8A9A9C" stroke-width="1.5"${l.m ? ' stroke-dasharray="5 4"' : ""}/>`).join("") +
     lastCards.map(({ p, x, y, d }) => `<rect x="${x}" y="${y}" width="${CW}" height="${CH}" rx="10" fill="#fff" stroke="#C5D0CC"/><rect x="${x}" y="${y}" width="${CW}" height="5" rx="2" fill="${GEN[d % GEN.length]}"/><circle cx="${x + 30}" cy="${y + CH / 2 + 2}" r="19" fill="${p.gender === "M" ? "#4A78A8" : p.gender === "F" ? "#C0587A" : "#7A8C8F"}"/><text x="${x + 30}" y="${y + CH / 2 + 8}" text-anchor="middle" font-size="18" fill="#fff" ${F}>${esc(Array.from(p.name)[0])}</text><text x="${x + 58}" y="${y + CH / 2}" font-size="14" font-weight="600" fill="#1B2A2F" ${F}>${cut(p.name)}</text><text x="${x + 58}" y="${y + CH / 2 + 18}" font-size="12" fill="#5C6C70" ${F}>${yr(p.birth_bs) || "?"}${p.is_living ? "" : " – " + (yr(p.death_bs) || "?")}</text>`).join("");
-  dl(`vanshavali-${stamp()}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -20 ${W + 40} ${H + 40}" width="${W + 40}" height="${H + 40}"><rect x="-20" y="-20" width="${W + 40}" height="${H + 40}" fill="#fff"/>${body}</svg>`, "image/svg+xml");
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -20 ${W + 40} ${H + 40}" width="${W + 40}" height="${H + 40}"><rect x="-20" y="-20" width="${W + 40}" height="${H + 40}" fill="#fff"/>${body}</svg>`;
 }
-async function importJSON(file) {
+const exportSVG = () => dl(`vanshavali-${stamp()}.svg`, svgText(), "image/svg+xml");
+function exportJPG() {
+  const w = W + 40, h = H + 40, sc = Math.min(2, 8000 / Math.max(w, h)), img = new Image();
+  img.onload = () => {
+    const cv = document.createElement("canvas"); cv.width = Math.round(w * sc); cv.height = Math.round(h * sc);
+    const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.scale(sc, sc); g.drawImage(img, 0, 0, w, h);
+    cv.toBlob(b => { const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `vanshavali-${stamp()}.jpg`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1500); }, "image/jpeg", 0.92);
+  };
+  img.onerror = () => alert("JPG बनाउन सकिएन; SVG प्रयोग गर्नुहोस्।");
+  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgText());
+}
+
+// ---- Excel / CSV / JSON आयात (एडमिन) ----
+const GMAP = { m: "M", male: "M", "पुरुष": "M", "छोरा": "M", f: "F", female: "F", "महिला": "F", "छोरी": "F", o: "O", "अन्य": "O" };
+const NO = ["false", "0", "no", "n", "होइन", "मृत", "dead"];
+const UUIDRE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+let dateWarn = 0;
+const cell = v => { if (v instanceof Date) { dateWarn++; return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, "0")}-${String(v.getDate()).padStart(2, "0")}`; } return String(v ?? "").trim(); };
+async function importFile(f) {
   try {
-    const rows = JSON.parse(await file.text());
-    if (!Array.isArray(rows) || rows.some(r => !r.id || !r.name)) throw new Error("ढाँचा मिलेन (हरेक व्यक्तिमा id र name चाहिन्छ)");
-    if (!confirm(`${rows.length} व्यक्ति आयात हुन्छ। एउटै id मिले विवरण बदलिन्छ। जारी राख्ने?`)) return;
-    const { data, error } = await db.rpc("import_people", { payload: rows });
-    if (error) throw error;
-    alert(`${data} व्यक्ति आयात भयो।`); await load(); render();
+    const n = f.name.toLowerCase(); let raw;
+    if (n.endsWith(".json")) { raw = JSON.parse(await f.text()); if (!Array.isArray(raw)) raw = raw.people; }
+    else {
+      if (!window.XLSX) throw new Error("Excel library लोड भएन");
+      const csv = n.endsWith(".csv"), wb = XLSX.read(csv ? (await f.text()).replace(/^\ufeff/, "") : await f.arrayBuffer(), { type: csv ? "string" : "array", cellDates: !csv, raw: csv });
+      raw = XLSX.utils.sheet_to_json(wb.Sheets["वंशावली"] || wb.Sheets[wb.SheetNames[0]], { defval: "", raw: true });
+    }
+    await importRows(raw);
   } catch (er) { alert("आयात असफल: " + (er.message || er)); }
 }
+async function importRows(raw) {
+  dateWarn = 0;
+  const rows = (raw || []).map(r => { const o = {}; Object.keys(r).forEach(k => o[k.trim().toLowerCase()] = r[k]); return o; }).filter(o => Object.values(o).some(v => cell(v)));
+  if (!rows.length) throw new Error("फाइलमा कुनै पङ्क्ति भेटिएन");
+  rows.forEach((o, i) => { o._row = i + 2; o._id = cell(o.id) || "new" + (i + 1); if (!cell(o.name)) throw new Error(`पङ्क्ति ${o._row}: नाम खाली छ`); });
+  const ids = new Set(rows.map(o => o._id)); if (ids.size !== rows.length) throw new Error("id दोहोरिएको छ");
+  const cand = {};
+  rows.forEach(o => (cand[cell(o.name)] ||= []).push(o._id));
+  people.filter(p => !ids.has(p.id)).forEach(p => (cand[p.name] ||= []).push(p.id));
+  const ref = (v, o, what) => {
+    v = cell(v); if (!v) return ""; if (ids.has(v) || UUIDRE.test(v)) return v;
+    const m = cand[v];
+    if (!m) throw new Error(`पङ्क्ति ${o._row}: ${what} “${v}” भेटिएन`);
+    if (m.length > 1) throw new Error(`पङ्क्ति ${o._row}: ${what} “${v}” नाम दोहोरिएको छ — नामको सट्टा id लेख्नुहोस्`);
+    return m[0];
+  };
+  const out = rows.map(o => {
+    const sps = [...cell(o.spouse || o.spouse_id).split(/\s*[;|；]\s*/), ...(Array.isArray(o.more_spouse_ids) ? o.more_spouse_ids : [])].filter(Boolean).map(s => ref(s, o, "पति/पत्नी"));
+    const g = cell(o.gender);
+    return { id: o._id, name: cell(o.name), gender: GMAP[g.toLowerCase()] || (["M", "F", "O"].includes(g) ? g : ""),
+      father_id: ref(o.father || o.father_id, o, "बुबा"), mother_id: ref(o.mother || o.mother_id, o, "आमा"),
+      spouse_id: sps[0] || "", more_spouse_ids: sps.slice(1), is_living: !NO.includes(cell(o.is_living).toLowerCase()),
+      birth_bs: cell(o.birth_bs), death_bs: cell(o.death_bs), phone: cell(o.phone), address: cell(o.address), notes: cell(o.notes) };
+  });
+  const upd = out.filter(o => byId[o.id]).length, kept = people.filter(p => !ids.has(p.id)).length;
+  if (!confirm(`${upd} व्यक्तिको विवरण बदलिन्छ, ${out.length - upd} नयाँ थपिन्छन्।${kept ? `\nफाइलमा नभएका ${kept} व्यक्ति जस्ताको तस्तै रहन्छन्।` : ""}${dateWarn ? `\n⚠ ${dateWarn} मिति Excel ले मितिमा बदलेको देखियो; जाँच्नुहोस्।` : ""}\nजारी राख्ने?`)) return;
+  const { data, error } = await db.rpc("import_people", { payload: out });
+  if (error) throw error;
+  alert(`${data} व्यक्ति आयात भयो।`); await load(); render();
+}
+
+// ---------- अर्को पति/पत्नी (बहुविवाह) ----------
+function spouseForm(p) {
+  const d = $("#dlg");
+  d.innerHTML = `<h3>“${esc(p.name)}” को अर्को पति/पत्नी</h3>
+    <label>सूचीबाट छान्नुहोस्<select id="sp_id">${opts("")}</select></label>
+    <label>वा नयाँ नाम लेख्नुहोस्<input id="sp_name" placeholder="सूचीमा छैन भने"></label>
+    <p class="mut">सन्तान थप्दा "अर्को अभिभावक" मा सम्बन्धित पत्नी/पति छान्नुहोस्, सन्तान आ-आफ्नी आमाको मुनि देखिन्छन्।</p>
+    <label>एडमिनलाई सन्देश<textarea id="nt" rows="2"></textarea></label><div class="msg" id="fm"></div>
+    <div class="row"><button id="go">अनुरोध पठाउने</button><button class="ghost" id="cx">रद्द</button></div>`;
+  d.showModal(); $("#cx").onclick = () => d.close();
+  const s = $("#sp_id"), t = $("#sp_name");
+  s.onchange = () => { t.disabled = !!s.value; if (s.value) t.value = ""; };
+  $("#go").onclick = () => {
+    const pl = {};
+    if (s.value) { if (s.value === p.id) return $("#fm").textContent = "आफैंलाई छान्न मिल्दैन।"; pl.add_spouse_id = s.value; }
+    else if (t.value.trim()) pl.add_spouse_name = t.value.trim();
+    else return $("#fm").textContent = "सूचीबाट छान्नुहोस् वा नाम लेख्नुहोस्।";
+    send("update", p.id, pl, d);
+  };
+}
+const XL = { add_spouse_id: "अर्को पति/पत्नी", add_spouse_name: "अर्को पति/पत्नी (नयाँ नाम)" };
 
 function treeView() {
   sel = null; HL = null; matches = [];
@@ -344,7 +461,7 @@ function treeView() {
     <div class="tools"><input id="q" placeholder="नाम खोज्नुहोस् (Enter = अर्को)…" aria-label="खोज"><span id="qc" class="mut"></span>
       <button class="ghost" id="zo" aria-label="सानो">−</button><input id="zr" type="range" min="8" max="250" aria-label="जुम"><button class="ghost" id="zi" aria-label="ठूलो">+</button>
       <button class="ghost" id="fit" title="पूरै रूख देखाउने">पूरै</button><button class="ghost" id="ea" title="सबै शाखा खोल्ने">सबै खोल्ने</button><button class="ghost" id="ca" title="शाखा बन्द गर्ने">संक्षिप्त</button>
-      <details class="menu"><summary>⇩ निर्यात / आयात</summary><div><button class="ghost" id="xj">JSON (ब्याकअप)</button><button class="ghost" id="xc">CSV (Excel)</button><button class="ghost" id="xs">चित्र (SVG)</button>${me.role === "admin" ? `<button class="ghost" id="xi">JSON आयात (admin)</button><input type="file" id="xf" accept=".json,application/json" hidden>` : ""}</div></details>
+      <details class="menu"><summary>${me.role === "admin" ? "⇩ निर्यात / आयात" : "⇩ चित्र डाउनलोड"}</summary><div>${me.role === "admin" ? `<button class="ghost" id="xe">Excel (.xlsx) — सम्पादन गरेर आयात</button><button class="ghost" id="xc">CSV</button><button class="ghost" id="xj">JSON (ब्याकअप)</button>` : ""}<button class="ghost" id="xs">चित्र (SVG)</button><button class="ghost" id="xp">चित्र (JPG)</button>${me.role === "admin" ? `<button class="ghost" id="xi">Excel / CSV / JSON आयात</button><input type="file" id="xf" accept=".xlsx,.xls,.csv,.json" hidden>` : ""}</div></details>
       <button class="ghost" id="fs" aria-label="पूरा स्क्रिन">⛶</button></div>
     <div id="chart"><div id="stage"></div>${people.length ? "" : `<div class="empty"><p>अझै कोही थपिएको छैन।</p><button id="first">पहिलो व्यक्ति थप्ने अनुरोध</button></div>`}</div>
     <aside class="card" id="det" hidden></aside></div>`;
@@ -381,9 +498,10 @@ function treeView() {
   document.onfullscreenchange = () => setTimeout(fit, 120);
   window.onkeydown = e => { if (e.key === "Escape") unpick(); };
   $(".menu div").addEventListener("click", () => { $(".menu").open = false; });
-  $("#xj").onclick = () => dl(`vanshavali-${stamp()}.json`, JSON.stringify(people.map(p => Object.fromEntries(PF.map(k => [k, p[k] ?? null]))), null, 1), "application/json");
-  $("#xc").onclick = exportCSV; $("#xs").onclick = exportSVG;
-  if ($("#xi")) { $("#xi").onclick = () => $("#xf").click(); $("#xf").onchange = e => { const f = e.target.files[0]; if (f) importJSON(f); e.target.value = ""; }; }
+  const on = (id, f) => { const el = $(id); if (el) el.onclick = f; };
+  on("#xj", () => dl(`vanshavali-${stamp()}.json`, JSON.stringify(people.map(p => Object.fromEntries(PF.map(k => [k, p[k] ?? null]))), null, 1), "application/json"));
+  on("#xc", exportCSV); on("#xe", exportXLSX); on("#xs", exportSVG); on("#xp", exportJPG);
+  if ($("#xi")) { $("#xi").onclick = () => $("#xf").click(); $("#xf").onchange = e => { const f = e.target.files[0]; if (f) importFile(f); e.target.value = ""; }; }
 }
 
 function detail() {
@@ -392,12 +510,13 @@ function detail() {
   const cs = kids(p).map(k => esc(k.name)).join(", ") || "—";
   $("#det").hidden = false;
   $("#det").innerHTML = `<div class="dhead"><h3>${esc(p.name)}</h3><button class="ghost" id="dx" aria-label="बन्द">×</button></div>
-    <p>बुबा: ${rel(p.father_id)}<br>आमा: ${rel(p.mother_id)}<br>पति/पत्नी: ${rel(p.spouse_id)}<br>सन्तान: ${cs}</p>
+    <p>बुबा: ${rel(p.father_id)}<br>आमा: ${rel(p.mother_id)}<br>पति/पत्नी: ${spousesOf(p).map(i => esc(byId[i].name)).join(", ") || "—"}<br>सन्तान: ${cs}</p>
     <p>जन्म: ${esc(p.birth_bs) || "—"}${p.is_living ? "" : `<br>मृत्यु: ${esc(p.death_bs) || "—"}`}<br>फोन: ${esc(p.phone) || "—"}<br>ठेगाना: ${esc(p.address) || "—"}</p>
     ${p.notes ? `<p>${esc(p.notes)}</p>` : ""}
-    <div class="row"><button id="ed">सच्याउने अनुरोध</button><button class="ghost" id="ac">सन्तान थप्ने</button><button class="bad" id="dl">हटाउने अनुरोध</button></div>`;
+    <div class="row"><button id="ed">सच्याउने अनुरोध</button><button class="ghost" id="ac">सन्तान थप्ने</button><button class="ghost" id="as">+ पति/पत्नी</button><button class="bad" id="dl">हटाउने अनुरोध</button></div>`;
   $("#ed").onclick = () => form("update", p);
   $("#ac").onclick = () => kidsForm(p);
+  $("#as").onclick = () => spouseForm(p);
   $("#dl").onclick = () => form("delete", p);
   $("#dx").onclick = unpick;
 }
@@ -492,7 +611,7 @@ function desc(r) {
   const who = r.person_id && byId[r.person_id] ? ` — ${esc(byId[r.person_id].name)}` : "";
   const lines = Object.entries(r.payload || {}).filter(([k]) => k !== "batch").map(([k, v]) => {
     const val = k.endsWith("_id") ? (byId[v]?.name || "—") : v === true ? "हो" : v === false ? "होइन" : v || "—";
-    return `${LABEL[k] || k}: ${esc(val)}`;
+    return `${LABEL[k] || XL[k] || k}: ${esc(val)}`;
   }).join("<br>");
   return `<b>${ACT[r.action]}</b>${who}<br>${lines}${r.note ? `<br><span class="mut">सन्देश: ${esc(r.note)}</span>` : ""}`;
 }
