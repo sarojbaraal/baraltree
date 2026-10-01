@@ -1561,7 +1561,14 @@ const FIELDS = Object.keys(LABEL);
 let me = null, people = [], byId = {}, sel = null, tab = "tree";
 
 let recovering = false;
-db.auth.onAuthStateChange(ev => { if (ev === "PASSWORD_RECOVERY") recovering = true; setTimeout(boot, 0); });
+db.auth.onAuthStateChange(ev => { 
+  if (ev === "PASSWORD_RECOVERY") {
+    recovering = true;
+  } else if (ev === "SIGNED_IN" || ev === "SIGNED_OUT" || ev === "USER_UPDATED") {
+    recovering = false; // अन्य अवस्थामा रिसेट गर्ने
+  }
+  setTimeout(boot, 0); 
+});
 async function boot() {
   const { data: { session } } = await db.auth.getSession();
   if (!session) { me = null; $("#who").innerHTML = ""; return authView(); }
@@ -1590,7 +1597,12 @@ function wireEyes() {
     b.setAttribute("aria-label", show ? "पासवर्ड लुकाउनुहोस्" : "पासवर्ड देखाउनुहोस्");
   });
 }
-const say = (t, ok) => { const m = $("#am"); m.textContent = t; m.style.color = ok ? "var(--acc)" : "var(--bad)"; };
+const say = (t, ok) => { 
+  const m = $("#am"); 
+  if (!m) return; // एलिमेन्ट छैन भने केही नगर्ने
+  m.textContent = t; 
+  m.style.color = ok ? "var(--acc)" : "var(--bad)"; 
+};
 
 function authView(mode = "login") {
   const TITLE = { login: "स्वागत छ", signup: "खाता बनाउनुहोस्", forgot: "पासवर्ड रिसेट" };
@@ -1608,43 +1620,19 @@ function authView(mode = "login") {
         <div class="auth-visual-content">
           <div class="auth-mandala">
             <div class="auth-mandala-core">
-              <svg viewBox="0 0 24 24">
-                <circle cx="12" cy="5" r="2.5"/>
-                <circle cx="6" cy="17" r="2"/>
-                <circle cx="18" cy="17" r="2"/>
-                <path d="M12 7.5v4M12 11.5L6 15M12 11.5L18 15"/>
-              </svg>
+              <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             </div>
           </div>
-          <h2>सबै बराल,<br>एकै ठाउँमा</h2>
-          <p>हाम्रो वंशावलीले बराल परिवारको इतिहास, नाता र सम्बन्धलाई सुन्दर र सुरक्षित तरिकाले जोड्छ।</p>
-          <div class="auth-features">
-            <div class="auth-feature">
-              <div class="auth-feature-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
-              <span>पुस्तौं सम्मको वंशवृक्ष</span>
-            </div>
-            <div class="auth-feature">
-              <div class="auth-feature-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-              <span>सबै बराल एकै ठाउँमा</span>
-            </div>
-            <div class="auth-feature">
-              <div class="auth-feature-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-              <span>सुरक्षित र निजी डाटा</span>
-            </div>
-          </div>
+          <h2>नयाँ सुरुवात</h2>
+          <p>सुरक्षित नयाँ पासवर्ड राख्नुहोस्।</p>
         </div>
       </div>
       <div class="auth-form-side">
         <div class="auth-form-card">
-          <div class="auth-badge">
-            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>
-            हाम्रो वंशावली
-          </div>
-          <h2>${TITLE[mode]}</h2>
-          <p class="auth-subtitle">${SUBTITLE[mode]}</p>
-          ${mode === "signup" ? `<label>पूरा नाम<input id="fn" autocomplete="name" placeholder="तपाईंको नाम"></label>` : ""}
-          <label>इमेल ठेगाना<input id="em" type="email" autocomplete="email" placeholder="name@example.com"></label>
-          ${mode === "forgot" ? "" : pwField("pw", mode === "signup" ? "पासवर्ड (कम्तिमा ८ अक्षर)" : "पासवर्ड", mode === "signup" ? "new-password" : "current-password")}
+          <h2>नयाँ पासवर्ड</h2>
+          <p class="auth-subtitle">बलियो पासवर्ड छान्नुहोस्</p>
+          ${pwField("np", "नयाँ पासवर्ड कम्तिमा ८ अक्षरको होस् है", "new-password")}
+          ${pwField("np2", "यहाँ फेरि पासवर्ड लेख्नुहोस्", "new-password")}
           <div class="msg" id="am" role="status"></div>
           <div class="row" style="margin-top:1.5rem"><button id="go" style="width:100%;padding:0.8rem;font-size:0.95rem">${BTN[mode]}</button></div>
           <div class="auth-footer-links">
@@ -1702,7 +1690,7 @@ function resetView() {
           ${pwField("np", "नयाँ पासवर्ड कम्तिमा ८ अक्षरको होस् है", "new-password")}
           ${pwField("np2", "यहाँ फेरि पासवर्ड लेख्नुहोस्", "new-password")}
           <div class="msg" id="am" role="status"></div>
-          <div class="row" style="margin-top:1.5rem"><button id="go" style="width:100%;padding:0.8rem">पासवर्ड बदल्नुहोस्</button></div>
+          <div class="row" style="margin-top:1.5rem"><button id="go" style="width:100%;padding:0.8rem;font-size:0.95rem">पासवर्ड बदल्नुहोस्</button></div>
         </div>
       </div>
     </div>`;
@@ -1839,7 +1827,7 @@ const openUp = (id, s = new Set()) => { const p = byId[id]; if (!p || s.has(id))
 function search(q, next) {
   q = q.trim().toLowerCase(); const qc = $("#qc");
   if (next) { if (matches.length) { mi = (mi + 1) % matches.length; focusOn(matches[mi].id, 1); qc.textContent = `${mi + 1}/${matches.length}`; } return; }
-  matches = q ? people.filter(p => p.name.toLowerCase().includes(q)) : []; mi = 0;
+  matches = q ? people.filter(p => (p.name || "").toLowerCase().includes(q)) : [];
   qc.textContent = q ? (matches.length ? `${matches.length} मिल्यो` : "भेटिएन") : "";
   sel = null; $("#det").hidden = true;
   HL = matches.length ? branchOf(matches.map(m => m.id)) : null;
@@ -1873,7 +1861,6 @@ function exportXLSX() {
     ["३. father / mother / spouse मा नाम लेख्नुहोस्। एकभन्दा बढी पति/पत्नी भए ; ले छुट्याउनुहोस् (जस्तै: सीता; गीता)। पहिलो नाम मुख्य जोडी हो।"],
     ["४. एउटै नाम दोहोरिएको व्यक्तिलाई जोड्न नामको सट्टा उसको id लेख्नुहोस्।"],
     ["५. gender: M (पुरुष), F (महिला), O (अन्य)। is_living: हो / होइन।"],
-    ["६. मिति BS मा, जस्तै 2045-05-12। कक्षको ढाँचा Text राख्नुहोस्, नत्र Excel ले मिति बदल्न सक्छ।"],
     ["७. फाइलमा नभएका व्यक्ति हटाइँदैनन्। हटाउन साइटबाट हटाउने अनुरोध गर्नुहोस्।"],
     ["८. आयात गर्नुअघि JSON ब्याकअप लिनुहोस्।"]]);
   help["!cols"] = [{ wch: 110 }];
@@ -1981,6 +1968,7 @@ function treeView() {
   if ($("#first")) $("#first").onclick = () => form("add");
   draw(); home();
   const ch = $("#chart");
+}
 </script>
 </body>
 </html>
