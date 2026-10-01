@@ -1,0 +1,22 @@
+{
+  "id": "./index%20Claude%20V2.html",
+  "name": "हाम्रो वंशावली",
+  "short_name": "वंशावली",
+  "description": "बराल परिवारको वंशवृक्ष र सदस्य विवरण",
+  "lang": "ne",
+  "start_url": "./index%20Claude%20V2.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FFF8F0",
+  "theme_color": "#1A1A2E",
+  "categories": ["lifestyle", "family"],
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
