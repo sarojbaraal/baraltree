@@ -2,10 +2,13 @@
 <html lang="ne">
 <head>
 <meta charset="utf-8"><script>try{document.documentElement.dataset.theme=localStorage.getItem("vv_theme")||"light"}catch(e){document.documentElement.dataset.theme="light"}</script>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>हाम्रो वंशावली</title>
 <meta name="theme-color" content="#1A1A2E">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-title" content="वंशावली">
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./icon-192.png">
@@ -1828,6 +1831,28 @@ header h1{background:none;-webkit-text-fill-color:initial;-webkit-background-cli
 header h1 span{background:linear-gradient(135deg,#F5D061,#D4A017 60%,#F5D061);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#F5D061}
 .logo{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:none;box-shadow:0 0 18px rgba(212,160,23,.45);animation:glowPulse 3.5s ease-in-out infinite}
 @media (max-width:640px){.logo{width:32px;height:32px}}
+
+/* ═════ v7 — popup बीचमा + मोबाइल एप-जस्तो अनुभव ═════ */
+@media (min-width:641px){dialog{margin:auto}}
+html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
+button,nav,.mc,.cd,.mlc,.tools,summary{-webkit-user-select:none;user-select:none;touch-action:manipulation;-webkit-touch-callout:none}
+dialog{overscroll-behavior:contain}
+@supports (height:100dvh){body{min-height:100dvh}}
+@media (max-width:640px){
+  header{position:sticky;top:0;padding-top:calc(.45rem + env(safe-area-inset-top));padding-left:max(.75rem,env(safe-area-inset-left));padding-right:max(.75rem,env(safe-area-inset-right));backdrop-filter:none;-webkit-backdrop-filter:none;background:linear-gradient(135deg,#1A1A2E,#16213E 60%,#0F3460)}
+  header nav{position:fixed;left:0;right:0;bottom:0;order:0;width:100%;max-width:none;margin:0;border-radius:0;border:0;border-top:1px solid rgba(245,208,97,.35);padding:6px 6px calc(6px + env(safe-area-inset-bottom));gap:2px;background:rgba(26,26,46,.97);box-shadow:0 -8px 28px rgba(0,0,0,.28);z-index:120;overflow:visible}
+  header nav button{flex:1 1 0;min-height:50px;padding:.3rem .2rem;font-size:.72rem;line-height:1.25;white-space:normal;border-radius:14px}
+  main{padding:.75rem .75rem calc(5.8rem + env(safe-area-inset-bottom))}
+  main#app.wide{padding:.5rem .5rem calc(5.8rem + env(safe-area-inset-bottom))}
+  .chartwrap #chart{height:calc(100dvh - 250px - env(safe-area-inset-bottom));min-height:320px}
+  #toast,#inst{bottom:calc(5.8rem + env(safe-area-inset-bottom))}
+  input,select,textarea{font-size:16px}
+  button{min-height:44px}
+  .cgrid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.8rem}
+  .mgrid{grid-template-columns:1fr}
+  dialog{padding-bottom:calc(1.25rem + env(safe-area-inset-bottom))}
+}
+@media (display-mode:standalone){body{-webkit-user-select:none;user-select:none}input,textarea,select{-webkit-user-select:text;user-select:text}}
 </style>
 </head>
 <body>
