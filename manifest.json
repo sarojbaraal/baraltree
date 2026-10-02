@@ -3,10 +3,11 @@
   "short_name": "वंशावली",
   "description": "परिवारको वंशावली — हेर्ने र अनुरोध पठाउने एप",
   "lang": "ne",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "background_color": "#1A1A2E",
   "theme_color": "#1A1A2E",
   "icons": [
