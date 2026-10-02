@@ -451,8 +451,8 @@ function spouseForm(p) {
     <label>सूचीबाट छान्नुहोस्<select id="sp_id">${opts("")}</select></label>
     <label>वा नयाँ नाम लेख्नुहोस्<input id="sp_name" placeholder="सूचीमा छैन भने"></label>
     <p class="mut">सन्तान थप्दा "अर्को अभिभावक" मा सम्बन्धित पत्नी/पति छान्नुहोस्, सन्तान आ-आफ्नी आमाको मुनि देखिन्छन्।</p>
-    <label>एडमिनलाई सन्देश<textarea id="nt" rows="2"></textarea></label><div class="msg" id="fm"></div>
-    <div class="row"><button id="go">अनुरोध पठाउने</button><button class="ghost" id="cx">रद्द</button></div>`;
+    ${NOTE()}<div class="msg" id="fm"></div>
+    <div class="row"><button id="go">${GOT()}</button><button class="ghost" id="cx">रद्द</button></div>`;
   (d.open || d.showModal()); $("#cx").onclick = () => d.close();
   const s = $("#sp_id"), t = $("#sp_name");
   s.onchange = () => { t.disabled = !!s.value; if (s.value) t.value = ""; };
@@ -474,7 +474,7 @@ function treeView() {
       <button class="ghost" id="gm" title="मेरो स्थानमा जाने">📍 मेरो स्थान</button><button class="ghost" id="fit" title="पूरै रूख देखाउने">पूरै रुख हेर्ने</button><button class="ghost" id="ea" title="सबै शाखा खोल्ने">सबै शाखा खोल्ने</button><button class="ghost" id="ca" title="शाखा बन्द गर्ने">संक्षिप्त</button>
       <details class="menu"><summary>${isAdm() ? "⇩ डाउनलोड" : "⇩ बंशावली डाउनलोड"}</summary><div>${isAdm() ? `<button class="ghost" id="xe">📊 Excel (.xlsx)</button><button class="ghost" id="xc">📄 CSV</button><button class="ghost" id="xj">💾 JSON (ब्याकअप)</button>` : ""}<button class="ghost" id="xs">🖼 फोटो (HD) (SVG)</button><button class="ghost" id="xp">📷 फोटो (SD) (JPG)</button>${isAdm() ? `<button class="ghost" id="xi">📥 अपलोड गर्नुहोस्</button><input type="file" id="xf" accept=".xlsx,.xls,.csv,.json" hidden>` : ""}</div></details>
       <button class="ghost" id="fs" aria-label="पूरा स्क्रिन">⛶</button></div>
-    <div id="chart"><div id="stage"></div>${people.length ? "" : `<div class="empty"><p>अझै कोही थपिएको छैन।</p><button id="first">पहिलो व्यक्ति थप्ने अनुरोध</button></div>`}</div>
+    <div id="chart"><div id="stage"></div>${people.length ? "" : `<div class="empty"><p>अझै कोही थपिएको छैन।</p><button id="first">${isAdm() ? "पहिलो व्यक्ति थप्ने" : "पहिलो व्यक्ति थप्ने अनुरोध"}</button></div>`}</div>
     <aside class="card" id="det" hidden></aside></div>`;
   if ($("#first")) $("#first").onclick = () => form("add");
   draw(); home();
@@ -562,7 +562,7 @@ function detail(dlg) {
   const sp = spousesOf(p).map(i => esc(nm(byId[i]))).join(", "), cs = kids(p).map(k => esc(nm(k))).join(", ");
   el.innerHTML = `<div class="dhead"><div class="dwho g${p.gender || "O"}"><div class="mav2 sm">${esc(Array.from(p.name)[0])}</div><div><h3>${esc(p.name)}</h3>${rl ? `<span class="hchip2">${esc(rl)}</span>` : ""}${p.is_living ? "" : '<span class="hchip2 dd">दिवंगत</span>'}</div></div><button class="ghost" id="dx" aria-label="बन्द">×</button></div>
     <div class="dg">${box("#3B82F6", "👨", "बुबा", rel(p.father_id))}${box("#EC4899", "👩", "आमा", rel(p.mother_id))}${box("#EF4444", "💞", "पति/पत्नी", sp)}${box("#F59E0B", "🎂", "जन्म मिति (BS)", esc(p.birth_bs))}${p.is_living ? "" : box("#6B7280", "🕊", "मृत्यु मिति (BS)", esc(p.death_bs))}${box("#14B8A6", "📞", "फोन", esc(p.phone))}${box("#10B981", "👶", "सन्तान", cs, 1)}${box("#8B5CF6", "📍", "ठेगाना", esc(p.address), 1)}${p.notes ? box("#D97706", "📝", "टिप्पणी", esc(p.notes), 1) : ""}</div>
-    <div class="row"><button id="ed">सच्याउने अनुरोध</button><button class="ghost" id="ac">सन्तान थप्ने</button><button class="ghost" id="as">+ पति/पत्नी</button><button class="bad" id="dl">हटाउने अनुरोध</button></div>`;
+    <div class="row"><button id="ed">${isAdm() ? "सच्याउने" : "सच्याउने अनुरोध"}</button><button class="ghost" id="ac">सन्तान थप्ने</button><button class="ghost" id="as">+ पति/पत्नी</button><button class="bad" id="dl">${isAdm() ? "हटाउने" : "हटाउने अनुरोध"}</button></div>`;
   if (dlg) (el.open || el.showModal()); else el.hidden = false;
   $("#ed").onclick = () => form("update", p); $("#ac").onclick = () => kidsForm(p);
   $("#as").onclick = () => spouseForm(p); $("#dl").onclick = () => form("delete", p);
@@ -581,7 +581,7 @@ function famView() {
   const msg = !ACC ? "सबै वंशावली तपाईंको सामु खुला छ।" : base ? "तपाईंको, बुबाको र आमाको पक्षको परिवार खुला छ। बाँकी शाखा चार्टमा धमिला र बन्द छन्।" : "तपाईंको स्थान अझै तोकिएको छैन। एडमिनले तोकेपछि शाखा खुल्नेछ।";
   $("#pane").innerHTML = `<section class="hero2"><div class="hello"><span class="hchip">${ROLE_L[act]}</span><h2>नमस्ते, ${esc(me.full_name || "")}</h2><p>${msg}</p></div>
     <div class="stats"><div><b>${np(core.length)}</b><span>मुख्य परिवार</span></div><div><b>${np(ACC ? ACC.size : people.length)}</b><span>खुला सदस्य</span></div><div><b>${np(people.length)}</b><span>कुल सदस्य</span></div></div>
-    <div class="row"><button id="gome" ${base ? "" : "disabled"}>📍 मेरो स्थान</button><button class="ghost" id="addp">+ सदस्य थप्ने अनुरोध</button></div></section>
+    <div class="row"><button id="gome" ${base ? "" : "disabled"}>📍 मेरो स्थान</button><button class="ghost" id="addp">${isAdm() ? "+ सदस्य थप्ने" : "+ सदस्य थप्ने अनुरोध"}</button></div></section>
     <section class="fsec"><h2 class="fh">🏠 मुख्य परिवार <small>${np(core.length)}</small></h2>${core.length ? `<div class="cgrid">${core.map(p => mcard(p, 1)).join("")}</div>` : '<div class="card">बुबा, आमा, दाजुभाइ, दिदीबहिनी, काका/काकी र भतिजभतिजी यहाँ देखिन्छन्। तपाईंको स्थान तोकिएपछि यो खण्ड भरिन्छ।</div>'}</section>
     <section class="fsec"><h2 class="fh">👥 सबै सदस्य <small>${np(rest.length)}</small></h2><input id="fq" class="msearch" placeholder="🔍 नाम वा साइनो खोज्नुहोस्…"><div class="cgrid" id="fall"></div></section>`;
   const dr = q => $("#fall").innerHTML = rest.filter(p => !q || p.name.toLowerCase().includes(q) || (R[p.id] || "").includes(q)).map(p => mcard(p)).join("") || '<div class="card">कोही भेटिएन।</div>';
@@ -598,13 +598,16 @@ function memView() {
 }
 
 // ---------- अनुरोध फारम ----------
+const GOT = () => isAdm() ? "सुरक्षित गर्ने" : "अनुरोध पठाउने";
+const NOTE = (l = "एडमिनलाई सन्देश") => isAdm() ? "" : `<label>${l}<textarea id="nt" rows="2"></textarea></label>`;
 const opts = (cur) => `<option value="">— छैन —</option>` + people.filter(p => can(p.id)).map(p => `<option value="${p.id}" ${p.id===cur?"selected":""}>${esc(p.name)}</option>`).join("");
 const pSel = (k, lab, v) => `<label>${lab}<select id="f_${k}_id">${opts(v[k + "_id"])}</select><input id="f_${k}_name" placeholder="सूचीमा छैन भने नयाँ नाम लेख्नुहोस्" style="margin-top:.3rem"></label>`;
 function form(action, p = null, parent = null) {
   const d = $("#dlg");
   if (action === "delete") {
-    d.innerHTML = `<h3>"${esc(p.name)}" हटाउन अनुरोध</h3><label>कारण<textarea id="nt" rows="3"></textarea></label>
-      <div class="msg" id="fm"></div><div class="row"><button id="go" class="bad">अनुरोध पठाउने</button><button class="ghost" id="cx">रद्द</button></div>`;
+    d.innerHTML = `<h3>"${esc(p.name)}" ${isAdm() ? "हटाउने" : "हटाउन अनुरोध"}</h3>
+      ${isAdm() ? `<p class="mut">यो व्यक्ति स्थायी रूपमा हटाइनेछ। पक्का हुनुहुन्छ?</p>` : `<label>कारण<textarea id="nt" rows="3"></textarea></label>`}
+      <div class="msg" id="fm"></div><div class="row"><button id="go" class="bad">${isAdm() ? "हो, हटाउने" : "अनुरोध पठाउने"}</button><button class="ghost" id="cx">रद्द</button></div>`;
     (d.open || d.showModal()); $("#cx").onclick = () => d.close();
     $("#go").onclick = () => send("delete", p.id, {}, d);
     return;
@@ -614,7 +617,7 @@ function form(action, p = null, parent = null) {
     const sp = parent.spouse_id;
     if (parent.gender === "F") { v.mother_id = parent.id; v.father_id = sp || ""; } else { v.father_id = parent.id; v.mother_id = sp || ""; }
   }
-  d.innerHTML = `<h3>${action === "add" ? "नयाँ व्यक्ति थप्ने अनुरोध" : `"${esc(p.name)}" सच्याउने अनुरोध`}</h3>
+  d.innerHTML = `<h3>${action === "add" ? (isAdm() ? "नयाँ व्यक्ति थप्ने" : "नयाँ व्यक्ति थप्ने अनुरोध") : `"${esc(p.name)}" ${isAdm() ? "सच्याउने" : "सच्याउने अनुरोध"}`}</h3>
     <div class="grid">
     <label>नाम *<input id="f_name" value="${esc(v.name)}"></label>
     <label>लिङ्ग<select id="f_gender"><option value="">—</option>${["M:पुरुष","F:महिला","O:अन्य"].map(x => { const [k,l]=x.split(":"); return `<option value="${k}" ${v.gender===k?"selected":""}>${l}</option>`; }).join("")}</select></label>
@@ -627,9 +630,9 @@ function form(action, p = null, parent = null) {
     <label>फोन<input id="f_phone" value="${esc(v.phone)}"></label>
     <label>ठेगाना<input id="f_address" value="${esc(v.address)}"></label></div>
     <label>टिप्पणी<textarea id="f_notes" rows="2">${esc(v.notes)}</textarea></label>
-    <label>एडमिनलाई सन्देश (स्रोत/प्रमाण)<textarea id="nt" rows="2"></textarea></label>
+    ${NOTE("एडमिनलाई सन्देश (स्रोत/प्रमाण)")}
     <div class="msg" id="fm"></div>
-    <div class="row"><button id="go">अनुरोध पठाउने</button><button class="ghost" id="cx">रद्द</button></div>`;
+    <div class="row"><button id="go">${GOT()}</button><button class="ghost" id="cx">रद्द</button></div>`;
   (d.open || d.showModal()); $("#cx").onclick = () => d.close();
   ["father", "mother", "spouse"].forEach(k => {
     const s = $("#f_" + k + "_id"), t = $("#f_" + k + "_name");
@@ -649,6 +652,19 @@ function form(action, p = null, parent = null) {
     send(action, p?.id ?? null, payload, d);
   };
 }
+// अनुरोध बनाउने; एडमिन भए तुरुन्तै स्वीकृत गरेर लागू गर्ने
+async function submit(rows, d, okMsg) {
+  const { data, error } = await db.from("change_requests").insert(rows).select("id");
+  if (error) return $("#fm").textContent = error.message;
+  if (isAdm()) {
+    for (const r of data || []) {
+      const { error: e } = await db.rpc("review_request", { req: r.id, approve: true });
+      if (e) return $("#fm").textContent = "अनुरोध बन्यो तर लागू हुन सकेन: " + e.message;
+    }
+    d.close(); toast("✅ सुरक्षित भयो"); await load(); render(); return;
+  }
+  d.close(); toast(okMsg);
+}
 async function send(action, person_id, payload, d) {
   if (ACC && people.length) {
     const P = payload || {}, bad = m => { $("#fm").textContent = m; return true; };
@@ -656,9 +672,7 @@ async function send(action, person_id, payload, d) {
     if (action === "add" && !((P.father_id && can(P.father_id)) || (P.mother_id && can(P.mother_id)) || (P.spouse_id && can(P.spouse_id))) && bad("आफ्नो शाखा भित्रको बुबा/आमा/जोडी छान्नुहोस्।")) return;
     if (P.add_spouse_id && !can(P.add_spouse_id) && bad("यो व्यक्ति तपाईंको शाखामा हुनुहुन्न।")) return;
   }
-  const { error } = await db.from("change_requests").insert({ requested_by: me.id, action, person_id, payload, note: $("#nt")?.value || null });
-  if (error) return $("#fm").textContent = error.message;
-  d.close(); toast("✅ अनुरोध पठाइयो — एडमिनको स्वीकृतिपछि देखिनेछ");
+  await submit([{ requested_by: me.id, action, person_id, payload, note: $("#nt")?.value || null }], d, "✅ अनुरोध पठाइयो — एडमिनको स्वीकृतिपछि देखिनेछ");
 }
 
 // ---------- एकै विन्डोमा धेरै सन्तान ----------
@@ -669,8 +683,8 @@ function kidsForm(parent) {
     <label>अर्को अभिभावक (${parent.gender === "F" ? "बुबा" : "आमा"}) — सूचीमा नभए पहिले उनको विवरण थप्नुहोस्<select id="k-other">${opts(parent.spouse_id)}</select></label>
     <div id="krows">${row()}${row()}</div>
     <div class="row"><button type="button" class="ghost" id="k-add">+ अर्को सन्तान</button></div>
-    <label>एडमिनलाई सन्देश<textarea id="nt" rows="2"></textarea></label>
-    <div class="msg" id="fm"></div><div class="row"><button id="go">अनुरोध पठाउने</button><button class="ghost" id="cx">रद्द</button></div>`;
+    ${NOTE()}
+    <div class="msg" id="fm"></div><div class="row"><button id="go">${GOT()}</button><button class="ghost" id="cx">रद्द</button></div>`;
   (d.open || d.showModal()); $("#cx").onclick = () => d.close();
   $("#k-add").onclick = () => $("#krows").insertAdjacentHTML("beforeend", row());
   $("#krows").onclick = e => { const x = e.target.closest(".k-x"); if (x && document.querySelectorAll(".krow").length > 1) x.closest(".krow").remove(); };
@@ -679,10 +693,8 @@ function kidsForm(parent) {
     const kids = [...document.querySelectorAll(".krow")].map(r => ({ name: r.querySelector(".k-name").value.trim(), gender: r.querySelector(".k-g").value, birth_bs: r.querySelector(".k-b").value.trim(), is_living: r.querySelector(".k-l").value === "true" })).filter(r => r.name);
     if (!kids.length) return $("#fm").textContent = "कम्तिमा एउटा नाम लेख्नुहोस्।";
     const par = parent.gender === "F" ? { mother_id: parent.id, father_id: other } : { father_id: parent.id, mother_id: other };
-    const reqs = kids.map(k => ({ requested_by: me.id, action: "add", person_id: null, note: $("#nt").value || null, payload: { ...k, ...par, batch } }));
-    const { error } = await db.from("change_requests").insert(reqs);
-    if (error) return $("#fm").textContent = error.message;
-    d.close(); toast(`✅ ${reqs.length} सन्तानको अनुरोध पठाइयो`);
+    const reqs = kids.map(k => ({ requested_by: me.id, action: "add", person_id: null, note: $("#nt")?.value || null, payload: { ...k, ...par, batch } }));
+    await submit(reqs, d, `✅ ${reqs.length} सन्तानको अनुरोध पठाइयो`);
   };
 }
 
