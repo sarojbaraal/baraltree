@@ -723,8 +723,8 @@ async function adminView() {
   const SEC = {
     new: ["🆕 नयाँ सदस्य", pend.length, pend.map(u => `<div class="card" data-id="${u.id}"><b>${esc(u.full_name)}</b> · ${esc(u.email)}<p class="mut">${claim(u)}</p><div class="roles">${rc(u)}</div>${ps(u)}<div class="row"><button data-s="1">स्वीकृत गर्ने</button></div></div>`).join("")],
     mem: ["🛡 सदस्य भूमिका", mem.length, mem.map(u => `<div class="card" data-id="${u.id}"><b>${esc(u.full_name || "—")}</b> · <span class="mut">${esc(u.email)}</span><div class="roles">${rc(u)}</div>${ps(u)}<div class="row"><button class="ghost" data-s="1">सुरक्षित गर्ने</button></div></div>`).join("")],
-    req: ["📨 परिवर्तन अनुरोध", groups.length, groups.map(g => { const ids = g.items.map(r => r.id).join(","), r0 = g.items[0]; return `<div class="card">${g.items.length > 1 ? `<b>${g.items.length} सन्तान एकैसाथ</b><hr>` : ""}${g.items.map(desc).join("<hr>")}
-      <p class="mut">अनुरोधकर्ता: ${esc(r0.profiles?.full_name || r0.profiles?.email)}</p>
+    req: ["📨 परिवर्तन अनुरोध", groups.length, groups.map(g => { const ids = g.items.map(r => r.id).join(","), r0 = g.items[0]; return `<div class="card req-card"><div class="req-content">${g.items.length > 1 ? `<b>${g.items.length} सन्तान एकैसाथ</b><hr>` : ""}${g.items.map(desc).join("<hr>")}
+      <p class="mut">अनुरोधकर्ता: ${esc(r0.profiles?.full_name || r0.profiles?.email)}</p></div>
       <div class="row"><button data-a="${ids}">${g.items.length > 1 ? "सबै स्वीकृत" : "स्वीकृत"}</button><button class="bad" data-x="${ids}">${g.items.length > 1 ? "सबै अस्वीकार" : "अस्वीकार"}</button></div></div>`; }).join("")],
     hist: ["🕘 अनुरोध इतिहास", hist?.length || 0, (okIds.length ? `<div class="row" style="margin-bottom:.8rem"><button class="bad" data-d="${okIds.join(",")}">सबै स्वीकृत इतिहास मेट्ने (${okIds.length})</button></div>` : "") + histH]
   };
