@@ -382,24 +382,63 @@ function exportXLSX() {
   XLSX.utils.book_append_sheet(wb, ws, "वंशावली"); XLSX.utils.book_append_sheet(wb, help, "निर्देश");
   XLSX.writeFile(wb, `vanshavali-${stamp()}.xlsx`);
 }
-function svgText() {
+// ---- देवनागरी फन्ट SVG भित्रै embed गर्ने ----
+let _fontCss = null;
+const blobToDataUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
+async function fontCSS() {
+  if (_fontCss !== null) return _fontCss;
+  try {
+    const U = "https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600&display=swap";
+    const css = await (await fetch(U)).text();
+    // केवल देवनागरी र latin (अङ्क/अंग्रेजी) खण्ड राख्ने, फाइल सानो हुन
+    const blocks = css.split("/*").slice(1).map(b => { const i = b.indexOf("*/"); return { n: b.slice(0, i).trim(), t: b.slice(i + 2).trim() }; })
+      .filter(b => b.n === "devanagari" || b.n === "latin");
+    const out = [];
+    for (const b of blocks) {
+      const m = b.t.match(/url\((https:[^)]+)\)/); if (!m) continue;
+      const blob = await (await fetch(m[1])).blob();
+      out.push(b.t.replace(m[1], await blobToDataUrl(blob)));
+    }
+    _fontCss = out.join("\n");
+  } catch (e) { _fontCss = ""; }   // अफलाइन भए सादा फन्ट
+  return _fontCss;
+}
+function svgText(fcss = "") {
   const F = 'font-family="Noto Sans Devanagari,sans-serif"', cut = s => esc(s.length > 20 ? s.slice(0, 19) + "…" : s);
   const body = lastLines.map(l => `<path d="${l.d}" fill="none" stroke="#8A9A9C" stroke-width="1.5"${l.m ? ' stroke-dasharray="5 4"' : ""}/>`).join("") +
     lastCards.map(({ p, x, y, d }) => `<rect x="${x}" y="${y}" width="${CW}" height="${CH}" rx="10" fill="#fff" stroke="#C5D0CC"/><rect x="${x}" y="${y}" width="${CW}" height="5" rx="2" fill="${GEN[d % GEN.length]}"/><circle cx="${x + 30}" cy="${y + CH / 2 + 2}" r="19" fill="${p.gender === "M" ? "#4A78A8" : p.gender === "F" ? "#C0587A" : "#7A8C8F"}"/><text x="${x + 30}" y="${y + CH / 2 + 8}" text-anchor="middle" font-size="18" fill="#fff" ${F}>${esc(can(p.id) ? Array.from(p.name)[0] : "🔒")}</text><text x="${x + 58}" y="${y + CH / 2}" font-size="14" font-weight="600" fill="#1B2A2F" ${F}>${cut(nm(p))}</text><text x="${x + 58}" y="${y + CH / 2 + 18}" font-size="12" fill="#5C6C70" ${F}>${yr(p.birth_bs) || "?"}${p.is_living ? "" : " – " + (yr(p.death_bs) || "?")}</text>`).join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -20 ${W + 40} ${H + 40}" width="${W + 40}" height="${H + 40}"><rect x="-20" y="-20" width="${W + 40}" height="${H + 40}" fill="#fff"/>${body}</svg>`;
+   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -20 ${W + 40} ${H + 40}" width="${W + 40}" height="${H + 40}">${fcss ? `<defs><style>${fcss}</style></defs>` : ""}<rect x="-20" y="-20" width="${W + 40}" height="${H + 40}" fill="#fff"/>${body}</svg>`;
 }
-const exportSVG = () => dl(`vanshavali-${stamp()}.svg`, svgText(), "image/svg+xml");
-function exportJPG() {
-  const w = W + 40, h = H + 40, sc = Math.min(2, 8000 / Math.max(w, h)), img = new Image();
+const exportSVG = async () => {
+  toast("⏳ फन्ट तयार गर्दै…");
+  const f = await fontCSS();
+  if (!f) toast("⚠ फन्ट लोड भएन, सादा फन्ट प्रयोग भयो");
+  dl(`vanshavali-${stamp()}.svg`, svgText(f), "image/svg+xml");
+};
+async function exportJPG() {
+  toast("⏳ फोटो तयार गर्दै…");
+  const fcss = await fontCSS();
+  const w = W + 40, h = H + 40, img = new Image();
+  const mob = matchMedia("(max-width:640px)").matches;
+  const MAXSIDE = mob ? 8000 : 16000, MAXAREA = mob ? 36e6 : 100e6;
+  let sc = Math.min(4, MAXSIDE / Math.max(w, h), Math.sqrt(MAXAREA / (w * h)));
   img.onload = () => {
-    const cv = document.createElement("canvas"); cv.width = Math.round(w * sc); cv.height = Math.round(h * sc);
-    const g = cv.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height); g.scale(sc, sc); g.drawImage(img, 0, 0, w, h);
-    cv.toBlob(b => { const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `vanshavali-${stamp()}.jpg`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1500); }, "image/jpeg", 0.92);
+    const cv = document.createElement("canvas");
+    cv.width = Math.round(w * sc); cv.height = Math.round(h * sc);
+    const g = cv.getContext("2d");
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+    g.fillStyle = "#fff"; g.fillRect(0, 0, cv.width, cv.height);
+    g.drawImage(img, 0, 0, cv.width, cv.height);
+    cv.toBlob(b => {
+      if (!b) return alert("फोटो ठूलो भयो, मेमोरी पुगेन। SVG प्रयोग गर्नुहोस्।");
+      const a = document.createElement("a"); a.href = URL.createObjectURL(b);
+      a.download = `vanshavali-${stamp()}.jpg`; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+    }, "image/jpeg", 0.98);
   };
   img.onerror = () => alert("JPG बनाउन सकिएन; SVG प्रयोग गर्नुहोस् न ल।");
-  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgText());
+  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgText(fcss));
 }
-
 // ---- Excel / CSV / JSON आयात ----
 const GMAP = { m: "M", male: "M", "पुरुष": "M", "छोरा": "M", f: "F", female: "F", "महिला": "F", "छोरी": "F", o: "O", "अन्य": "O" };
 const NO = ["false", "0", "no", "n", "होइन", "मृत", "dead"];
