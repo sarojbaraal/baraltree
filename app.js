@@ -416,7 +416,44 @@ async function importFile(f) {
       raw = XLSX.utils.sheet_to_json(wb.Sheets["वंशावली"] || wb.Sheets[wb.SheetNames[0]], { defval: "", raw: true });
     }
     await importRows(raw);
-  } catch (er) { alert("डाउनलोड भएन:" + (er.message || er)); }
+  } catch (er) { alert("आयात भएन: " + (er.message || er)); }
+}
+// ---- आयात अघि तुलना (preview) ----
+function previewImport(out, kept) {
+  const nameOf = id => id ? (byId[id]?.name || out.find(o => o.id === id)?.name || "?") : "";
+  const G = { M: "पुरुष", F: "महिला", O: "अन्य" };
+  const KEYS = ["name", "gender", "father", "mother", "spouse", "is_living", "birth_bs", "death_bs", "phone", "address", "notes"];
+  const LB = { ...LABEL, father: "बुबा", mother: "आमा", spouse: "पति/पत्नी" };
+  const view = o => ({ name: o.name || "", gender: G[o.gender] || "", father: nameOf(o.father_id), mother: nameOf(o.mother_id),
+    spouse: [o.spouse_id, ...(o.more_spouse_ids || [])].filter(Boolean).map(nameOf).join("; "), is_living: o.is_living === false ? "होइन" : "हो",
+    birth_bs: o.birth_bs || "", death_bs: o.death_bs || "", phone: o.phone || "", address: o.address || "", notes: o.notes || "" });
+  const add = [], chg = []; let same = 0, cleared = 0;
+  out.forEach(o => {
+    const p = byId[o.id], nv = view(o);
+    if (!p) return add.push(nv);
+    const ov = view(p), ch = KEYS.filter(k => ov[k] !== nv[k]).map(k => ({ k, a: ov[k], b: nv[k] }));
+    if (!ch.length) return same++;
+    cleared += ch.filter(c => c.a && !c.b).length;
+    chg.push({ n: ov.name, ch });
+  });
+  const row = "padding:.55rem 0;border-bottom:1px solid var(--line);font-size:.88rem";
+  const addH = add.map(v => `<div style="${row}"><b>➕ ${esc(v.name)}</b><br><span class="mut">${[v.father && "बुबा: " + v.father, v.mother && "आमा: " + v.mother, v.spouse && "पति/पत्नी: " + v.spouse, v.birth_bs].filter(Boolean).map(esc).join(" · ") || "—"}</span></div>`).join("");
+  const chgH = chg.map(x => `<div style="${row}"><b>${esc(x.n)}</b>${x.ch.map(c => `<br>${esc(LB[c.k])}: <s class="mut">${esc(c.a) || "खाली"}</s> → ${c.b ? `<b>${esc(c.b)}</b>` : `<b style="color:var(--bad)">खाली (मेटिन्छ)</b>`}`).join("")}</div>`).join("");
+  const none = !add.length && !chg.length;
+  const d = $("#dlg"); d.returnValue = "";
+  d.innerHTML = `<h3>आयात अघि तुलना</h3>
+    <p><b>${np(add.length)}</b> नयाँ · <b>${np(chg.length)}</b> परिवर्तन · <b>${np(same)}</b> उस्तै${kept ? ` · <b>${np(kept)}</b> फाइलमा नभएका (जस्ताको तस्तै)` : ""}</p>
+    ${cleared ? `<p class="msg">⚠ ${np(cleared)} ठाउँमा भरिएको डाटा खाली भएर मेटिन्छ। जाँच्नुहोस्।</p>` : ""}
+    ${dateWarn ? `<p class="msg">⚠ ${np(dateWarn)} मिति Excel ले मितिमा बदलेको देखियो; जाँच्नुहोस्।</p>` : ""}
+    ${none ? `<div class="card">कुनै परिवर्तन छैन।</div>` : ""}
+    ${add.length ? `<details ${chg.length ? "" : "open"}><summary><b>नयाँ थपिने (${np(add.length)})</b></summary>${addH}</details>` : ""}
+    ${chg.length ? `<details open><summary><b>परिवर्तन हुने (${np(chg.length)})</b></summary>${chgH}</details>` : ""}
+    <div class="row"><button id="pv-ok" ${none ? "disabled" : ""}>लागू गर्ने</button><button class="ghost" id="pv-no">रद्द</button></div>`;
+  return new Promise(res => {
+    d.onclose = () => { d.onclose = null; res(d.returnValue === "ok"); };
+    $("#pv-ok").onclick = () => d.close("ok"); $("#pv-no").onclick = () => d.close("no");
+    d.open || d.showModal();
+  });
 }
 async function importRows(raw) {
   dateWarn = 0;
@@ -443,10 +480,10 @@ async function importRows(raw) {
       birth_bs: cell(o.birth_bs), death_bs: cell(o.death_bs), phone: cell(o.phone), address: cell(o.address), notes: cell(o.notes) };
   });
   const upd = out.filter(o => byId[o.id]).length, kept = people.filter(p => !ids.has(p.id)).length;
-  if (!confirm(`${upd} व्यक्तिको विवरण बदलिन्छ, ${out.length - upd} नयाँ थपिन्छन्।${kept ? `\nफाइलमा नभएका ${kept} व्यक्ति जस्ताको तस्तै रहन्छन्।` : ""}${dateWarn ? `\n⚠ ${dateWarn} मिति Excel ले मितिमा बदलेको देखियो; जाँच्नुहोस्।` : ""}\nजारी राख्ने?`)) return;
+  if (!await previewImport(out, kept)) return;
   const { data, error } = await db.rpc("import_people", { payload: out });
   if (error) throw error;
-  alert(`${data} व्यक्ति डाउनलोड भयो।`); await load(); render();
+  alert(`${data} व्यक्ति आयात भयो।`); await load(); render();
 }
 
 // ---------- अर्को पति/पत्नी ----------
