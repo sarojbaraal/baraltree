@@ -222,7 +222,12 @@ function render() {
 
 // ---------- वंशवृक्ष ----------
 const hasParents = p => p.father_id || p.mother_id;
-const kids = p => people.filter(c => c.father_id === p.id || c.mother_id === p.id);
+// एक-एक विवाह भए पति/पत्नी दुवैको सन्तान एउटै देखिन्छ; बहुविवाहमा आ-आफ्नै
+const kids = p => {
+  const sp = spousesOf(p), s = sp.length === 1 ? byId[sp[0]] : null, both = s && spousesOf(s).length === 1 && spousesOf(s)[0] === p.id;
+  return people.filter(c => c.father_id === p.id || c.mother_id === p.id || (both && (c.father_id === s.id || c.mother_id === s.id)));
+};
+const addrOf = p => p.address || (spousesOf(p).length === 1 ? byId[spousesOf(p)[0]]?.address : "") || "";
 const isMarriedIn = p => { const s = byId[p.spouse_id]; if (!s || p.more_spouse_ids?.length) return false; return !!(hasParents(s) || s.more_spouse_ids?.length || s.id < p.id); };
 const CW = 176, CH = 72, GAP = 16, HG = 26, VG = 64;
 const GEN = ["#E4572E", "#F3A712", "#29A19C", "#3A7CA5", "#7B5EA7", "#D1477A", "#5B8C5A", "#C17C3B"];
@@ -561,7 +566,7 @@ function detail(dlg) {
   const box = (c, ic, l, v, w) => `<div class="ib ${w ? "w" : ""}" style="--c:${c}"><span class="ii">${ic}</span><div><small>${l}</small><b>${v || "—"}</b></div></div>`;
   const sp = spousesOf(p).map(i => esc(nm(byId[i]))).join(", "), cs = kids(p).map(k => esc(nm(k))).join(", ");
   el.innerHTML = `<div class="dhead"><div class="dwho g${p.gender || "O"}"><div class="mav2 sm">${esc(Array.from(p.name)[0])}</div><div><h3>${esc(p.name)}</h3>${rl ? `<span class="hchip2">${esc(rl)}</span>` : ""}${p.is_living ? "" : '<span class="hchip2 dd">दिवंगत</span>'}</div></div><button class="ghost" id="dx" aria-label="बन्द">×</button></div>
-    <div class="dg">${box("#3B82F6", "👨", "बुबा", rel(p.father_id))}${box("#EC4899", "👩", "आमा", rel(p.mother_id))}${box("#EF4444", "💞", "पति/पत्नी", sp)}${box("#F59E0B", "🎂", "जन्म मिति (BS)", esc(p.birth_bs))}${p.is_living ? "" : box("#6B7280", "🕊", "मृत्यु मिति (BS)", esc(p.death_bs))}${box("#14B8A6", "📞", "फोन", esc(p.phone))}${box("#10B981", "👶", "सन्तान", cs, 1)}${box("#8B5CF6", "📍", "ठेगाना", esc(p.address), 1)}${p.notes ? box("#D97706", "📝", "टिप्पणी", esc(p.notes), 1) : ""}</div>
+    <div class="dg">${box("#3B82F6", "👨", "बुबा", rel(p.father_id))}${box("#EC4899", "👩", "आमा", rel(p.mother_id))}${box("#EF4444", "💞", "पति/पत्नी", sp)}${box("#F59E0B", "🎂", "जन्म मिति (BS)", esc(p.birth_bs))}${p.is_living ? "" : box("#6B7280", "🕊", "मृत्यु मिति (BS)", esc(p.death_bs))}${box("#14B8A6", "📞", "फोन", esc(p.phone))}${box("#10B981", "👶", "सन्तान", cs, 1)}${box("#8B5CF6", "📍", "ठेगाना", esc(addrOf(p)), 1)}${p.notes ? box("#D97706", "📝", "टिप्पणी", esc(p.notes), 1) : ""}</div>
     <div class="row"><button id="ed">${isAdm() ? "सच्याउने" : "सच्याउने अनुरोध"}</button><button class="ghost" id="ac">सन्तान थप्ने</button><button class="ghost" id="as">+ पति/पत्नी</button><button class="bad" id="dl">${isAdm() ? "हटाउने" : "हटाउने अनुरोध"}</button></div>`;
   if (dlg) (el.open || el.showModal()); else el.hidden = false;
   $("#ed").onclick = () => form("update", p); $("#ac").onclick = () => kidsForm(p);
@@ -676,11 +681,15 @@ async function send(action, person_id, payload, d) {
 }
 
 // ---------- एकै विन्डोमा धेरै सन्तान ----------
+function otherOpts(p) { // जोडी भए उनीहरू मात्र; धेरै जोडी भए जबरजस्ती छान्नुपर्ने
+  const sp = spousesOf(p); if (!sp.length) return opts("");
+  return `<option value="">— छैन —</option>` + sp.map(i => `<option value="${i}" ${sp.length === 1 && i === sp[0] ? "selected" : ""}>${esc(byId[i].name)}</option>`).join("");
+}
 function kidsForm(parent) {
   const d = $("#dlg");
   const row = () => `<div class="krow"><input class="k-name" placeholder="नाम" aria-label="नाम"><select class="k-g" aria-label="लिङ्ग"><option value="M">छोरा</option><option value="F">छोरी</option><option value="">—</option></select><input class="k-b" placeholder="जन्म BS" aria-label="जन्म मिति"><select class="k-l" aria-label="जीवित"><option value="true">जीवित</option><option value="false">दिवंगत</option></select><button type="button" class="bad k-x" aria-label="हटाउने">×</button></div>`;
   d.innerHTML = `<h3>"${esc(parent.name)}" का सन्तान थप्ने</h3>
-    <label>अर्को अभिभावक (${parent.gender === "F" ? "बुबा" : "आमा"}) — सूचीमा नभए पहिले उनको विवरण थप्नुहोस्<select id="k-other">${opts(parent.spouse_id)}</select></label>
+    <label>अर्को अभिभावक (${parent.gender === "F" ? "बुबा" : "आमा"}) — सूचीमा नभए पहिले उनको विवरण थप्नुहोस्<select id="k-other">${otherOpts(parent)}</select></label>
     <div id="krows">${row()}${row()}</div>
     <div class="row"><button type="button" class="ghost" id="k-add">+ अर्को सन्तान</button></div>
     ${NOTE()}
@@ -692,6 +701,7 @@ function kidsForm(parent) {
     const other = $("#k-other").value, batch = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
     const kids = [...document.querySelectorAll(".krow")].map(r => ({ name: r.querySelector(".k-name").value.trim(), gender: r.querySelector(".k-g").value, birth_bs: r.querySelector(".k-b").value.trim(), is_living: r.querySelector(".k-l").value === "true" })).filter(r => r.name);
     if (!kids.length) return $("#fm").textContent = "कम्तिमा एउटा नाम लेख्नुहोस्।";
+    if (spousesOf(parent).length > 1 && !other) return $("#fm").textContent = "कुन पति/पत्नीको सन्तान हो, अर्को अभिभावक छान्नुहोस्।";
     const par = parent.gender === "F" ? { mother_id: parent.id, father_id: other } : { father_id: parent.id, mother_id: other };
     const reqs = kids.map(k => ({ requested_by: me.id, action: "add", person_id: null, note: $("#nt")?.value || null, payload: { ...k, ...par, batch } }));
     await submit(reqs, d, `✅ ${reqs.length} सन्तानको अनुरोध पठाइयो`);
