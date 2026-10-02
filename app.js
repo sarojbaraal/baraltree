@@ -831,3 +831,33 @@ let ip; addEventListener("beforeinstallprompt", e => { e.preventDefault(); ip = 
   b.onclick = () => { const n = cur() === "dark" ? "light" : "dark"; root.dataset.theme = n; try { localStorage.setItem("vv_theme", n); } catch (e) {} paint(); };
   mq.addEventListener?.("change", paint); paint();
 })();
+// ---------- एप-जस्तो व्यवहार ----------
+// (क) एन्ड्रोइड/ब्राउजर ब्याक बटन: एप बन्द नहुने, popup/ट्याब एक कदम पछाडि
+history.replaceState({ t: tab }, "");
+document.addEventListener("click", e => {
+  const b = e.target.closest("#tabs button"); if (b && b.dataset.t !== history.state?.t) history.pushState({ t: b.dataset.t }, "");
+}, true);
+const _sm = HTMLDialogElement.prototype.showModal;
+HTMLDialogElement.prototype.showModal = function () { _sm.call(this); history.pushState({ dlg: 1 }, ""); };
+$("#dlg").addEventListener("close", () => { if (history.state?.dlg) history.back(); });
+addEventListener("popstate", e => {
+  const d = $("#dlg"); if (d.open) { d.close(); return; }
+  if (e.state?.t && e.state.t !== tab && me) { tab = e.state.t; render(); }
+});
+
+// (ख) Dialog तल तानेर बन्द गर्ने (मोबाइल)
+(() => {
+  const d = $("#dlg"), mob = matchMedia("(max-width:640px)"); let y0 = null, dy = 0;
+  d.addEventListener("touchstart", e => { y0 = mob.matches && d.scrollTop <= 0 ? e.touches[0].clientY : null; dy = 0; }, { passive: true });
+  d.addEventListener("touchmove", e => { if (y0 == null) return; dy = e.touches[0].clientY - y0; if (dy > 0) d.style.transform = `translateY(${dy}px)`; }, { passive: true });
+  d.addEventListener("touchend", () => { if (y0 == null) return; d.style.transform = ""; if (dy > 110) d.close(); y0 = null; });
+})();
+
+// (ग) हल्का कम्पन (haptic) र अफलाइन सूचना
+document.addEventListener("click", e => { if (e.target.closest("button,.mc,.cd,.mlc")) navigator.vibrate?.(8); }, true);
+addEventListener("offline", () => toast("📴 इन्टरनेट छैन"));
+addEventListener("online", () => toast("✅ फेरि अनलाइन"));
+
+// (घ) iPhone मा इन्स्टल सङ्केत (iOS मा beforeinstallprompt हुँदैन)
+if (/iphone|ipad/i.test(navigator.userAgent) && !navigator.standalone && !matchMedia("(display-mode:standalone)").matches && !localStorage.getItem("vv_ios"))
+  setTimeout(() => { toast("📲 Share → 'Add to Home Screen' थिच्नुहोस्"); localStorage.setItem("vv_ios", 1); }, 4000);
