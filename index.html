@@ -1853,6 +1853,28 @@ dialog{overscroll-behavior:contain}
   dialog{padding-bottom:calc(1.25rem + env(safe-area-inset-bottom))}
 }
 @media (display-mode:standalone){body{-webkit-user-select:none;user-select:none}input,textarea,select{-webkit-user-select:text;user-select:text}}
+/* ═════ v8 — एप-जस्तो अनुभव ═════ */
+/* touch मा अड्किने hover हटाउने */
+@media (hover:none){.cd:hover,.mc:hover,.mlc:hover,.card:hover,button:hover{transform:none}}
+
+@media (max-width:640px){
+  /* ब्याट्री/स्पिड: भारी एनिमेसन र blur हटाउने */
+  .bgfx i{filter:blur(40px);animation:none}
+  .bgfx::after,#chart::before,.hero2::before,.logo{animation:none}
+  .card,.tools,#det,dialog,.mc,.mlc,.cd{backdrop-filter:none;-webkit-backdrop-filter:none}
+
+  /* चार्टको टुलबार: लाइनमै स्वाइप गर्न मिल्ने */
+  .tools{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .tools>*{flex:0 0 auto}
+  .tools #q{flex:0 0 200px}
+  button.tg{min-width:38px;height:36px}          /* औँलाले थिच्न सजिलो */
+
+  /* bottom-sheet: तलबाट माथि चढ्ने + तान्ने हिँड्ले */
+  dialog{animation:sheetUp .35s var(--ease-out)}
+  dialog::before{content:"";display:block;width:44px;height:5px;border-radius:5px;background:var(--line-strong);margin:-.4rem auto .9rem}
+  #pane{animation:riseIn .3s var(--ease-out)}
+}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
 </style>
 </head>
 <body>
