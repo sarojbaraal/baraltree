@@ -329,12 +329,22 @@ function focusOn(id, k) {
   V.x = c.clientWidth / 2 - (q.x + CW / 2) * V.k; V.y = c.clientHeight / 2 - (q.y + CH / 2) * V.k;
   st.classList.add("anim"); applyV(); setTimeout(() => st.classList.remove("anim"), 400);
 }
-function unpick() { sel = null; HL = null; document.querySelectorAll(".cd.sel").forEach(c => c.classList.remove("sel")); applyHL(); $("#det").hidden = true; }
+// बिस्तारै glide + zoom गर्दै स्थानमा पुग्ने
+function flyTo(id, k = 1) {
+  const q = cardPos[id], c = $("#chart"), st = $("#stage"); if (!q) return;
+  const go = kk => { V.k = kk; V.x = c.clientWidth / 2 - (q.x + CW / 2) * kk; V.y = c.clientHeight / 2 - (q.y + CH / 2) * kk; applyV(); };
+  st.style.transition = "transform 1.2s cubic-bezier(.4,0,.2,1)";
+  const mid = Math.max(0.3, Math.min(0.5, k));
+  if (V.k > mid + 0.1 && V.k >= k) { go(mid); setTimeout(() => go(k), 1250); }  // पहिले सानो, अनि बिस्तारै ठूलो
+  else go(k);
+  setTimeout(() => st.style.transition = "", 2600);
+}
+function unpick() { sel = null; HL = null; document.querySelectorAll(".cd.sel").forEach(c => c.classList.remove("sel")); applyHL(); const d = $("#det"); if (d) d.hidden = true; }
 function pick(id) {
   if (!can(id)) return toast("🔒 यो शाखा तपाईंको पहुँचमा छैन");
   sel = id; HL = branchOf([id]);
   document.querySelectorAll(".cd").forEach(c => c.classList.toggle("sel", c.dataset.id === id));
-  applyHL(); detail(!$("#det"));
+  applyHL(); detail(true);
 }
 const openUp = (id, s = new Set()) => { const p = byId[id]; if (!p || s.has(id)) return; s.add(id); collapsed.delete(id); openUp(p.father_id, s); openUp(p.mother_id, s); openUp(p.spouse_id, s); };
 function search(q, next) {
@@ -342,7 +352,7 @@ function search(q, next) {
   if (next) { if (matches.length) { mi = (mi + 1) % matches.length; focusOn(matches[mi].id, 1); qc.textContent = `${mi + 1}/${matches.length}`; } return; }
   matches = q ? people.filter(p => can(p.id) && p.name.toLowerCase().includes(q)) : []; mi = 0;
   qc.textContent = q ? (matches.length ? `${matches.length} मिल्यो` : "भेटिएन") : "";
-  sel = null; $("#det").hidden = true;
+  sel = null;
   HL = matches.length ? branchOf(matches.map(m => m.id)) : null;
   if (matches.length) { matches.forEach(m => openUp(m.id)); draw(); focusOn(matches[0].id, 1); } else applyHL();
 }
@@ -517,7 +527,6 @@ function treeView() {
       <details class="menu"><summary>${isAdm() ? "⇩ डाउनलोड" : "⇩ बंशावली डाउनलोड"}</summary><div>${isAdm() ? `<button class="ghost" id="xe">📊 Excel (.xlsx)</button><button class="ghost" id="xc">📄 CSV</button><button class="ghost" id="xj">💾 JSON (ब्याकअप)</button>` : ""}<button class="ghost" id="xs">🖼 फोटो (HD) (SVG)</button><button class="ghost" id="xp">📷 फोटो (SD) (JPG)</button>${isAdm() ? `<button class="ghost" id="xi">📥 अपलोड गर्नुहोस्</button><input type="file" id="xf" accept=".xlsx,.xls,.csv,.json" hidden>` : ""}</div></details>
       <button class="ghost" id="fs" aria-label="पूरा स्क्रिन">⛶</button></div>
     <div id="chart"><div id="stage"></div><button id="gm" class="gmfab" title="मेरो स्थानमा जाने">📍 मेरो स्थान</button>${people.length ? "" : `<div class="empty"><p>अझै कोही थपिएको छैन।</p><button id="first">${isAdm() ? "पहिलो व्यक्ति थप्ने" : "पहिलो व्यक्ति थप्ने अनुरोध"}</button></div>`}</div>
-    <aside class="card" id="det" hidden></aside></div>`;
   if ($("#first")) $("#first").onclick = () => form("add");
   draw(); home();
   const ch = $("#chart"), ptrs = new Map(); let drag = null, moved = false, pd = 0;
@@ -542,7 +551,7 @@ function treeView() {
   ch.onwheel = e => { e.preventDefault(); const r = ch.getBoundingClientRect(); zoomAt(e.deltaY < 0 ? 1.12 : 0.89, e.clientX - r.left, e.clientY - r.top); };
   const mid = f => zoomAt(f, ch.clientWidth / 2, ch.clientHeight / 2);
   $("#zi").onclick = () => mid(1.2); $("#zo").onclick = () => mid(0.83); $("#fit").onclick = fit;
-  const goMe = quiet => { const id = myPos(); if (!id || !byId[id]) { if (!quiet) toast("तपाईंको स्थान तोकिएको छैन"); return; } openUp(id); draw(); focusOn(id, 1); };
+  const goMe = quiet => { const id = myPos(); if (!id || !byId[id]) { if (!quiet) toast("तपाईंको स्थान तोकिएको छैन"); return; } openUp(id); draw(); quiet ? focusOn(id, 1) : flyTo(id, 1); };
   $("#gm").onpointerdown = e => e.stopPropagation(); $("#gm").onclick = e => { e.stopPropagation(); goMe(); }; if (ACC) goMe(true);
   $("#zr").oninput = e => mid(e.target.value / 100 / V.k);
   $("#ea").onclick = () => { collapsed.clear(); draw(); fit(); };
@@ -609,7 +618,7 @@ function detail(dlg) {
   el.innerHTML = `<div class="dhead"><div class="dwho g${p.gender || "O"}"><div class="mav2 sm">${esc(Array.from(p.name)[0])}</div><div><h3>${esc(p.name)}</h3>${rl ? `<span class="hchip2">${esc(rl)}</span>` : ""}${p.is_living ? "" : '<span class="hchip2 dd">दिवंगत</span>'}</div></div><button class="ghost" id="dx" aria-label="बन्द">×</button></div>
     <div class="dg">${box("#3B82F6", "👨", "बुबा", rel(p.father_id))}${box("#EC4899", "👩", "आमा", rel(p.mother_id))}${box("#EF4444", "💞", "पति/पत्नी", sp)}${box("#F59E0B", "🎂", "जन्म मिति (BS)", esc(p.birth_bs))}${p.is_living ? "" : box("#6B7280", "🕊", "मृत्यु मिति (BS)", esc(p.death_bs))}${box("#14B8A6", "📞", "फोन", esc(p.phone))}${box("#10B981", "👶", "सन्तान", cs, 1)}${box("#8B5CF6", "📍", "ठेगाना", esc(addrOf(p)), 1)}${fbOk(p.facebook) ? box("#1877F2", "🔗", "Facebook", `<a href="${esc(p.facebook)}" target="_blank" rel="noopener noreferrer">प्रोफाइल खोल्नुहोस्</a>`, 1) : ""}${p.notes ? box("#D97706", "📝", "टिप्पणी", esc(p.notes), 1) : ""}</div>
     <div class="row"><button id="ed">${isAdm() ? "सच्याउने" : "सच्याउने अनुरोध"}</button><button class="ghost" id="ac">सन्तान थप्ने</button><button class="ghost" id="as">+ पति/पत्नी</button><button class="bad" id="dl">${isAdm() ? "हटाउने" : "हटाउने अनुरोध"}</button></div>`;
-  if (dlg) (el.open || el.showModal()); else el.hidden = false;
+  if (dlg) { el.onclose = () => { el.onclose = null; if (tab === "tree") unpick(); }; el.open || el.showModal(); } else el.hidden = false;
   $("#ed").onclick = () => form("update", p); $("#ac").onclick = () => kidsForm(p);
   $("#as").onclick = () => spouseForm(p); $("#dl").onclick = () => form("delete", p);
   $("#dx").onclick = dlg ? () => el.close() : unpick;
@@ -782,11 +791,12 @@ function desc(r) {
 }
 async function mineView() {
   const { data } = await db.from("change_requests").select("*").eq("requested_by", me.id).order("created_at", { ascending: false });
-  $("#pane").innerHTML = (data?.length ? data : []).map(r => `<div class="card">${desc(r)}<p class="mut">स्थिति: ${STATUS[r.status]}${r.reject_reason ? ` (${esc(r.reject_reason)})` : ""}</p></div>`).join("") || `<div class="card">अझै कुनै अनुरोध छैन।</div>`;
+  const g = {}; (data || []).forEach(r => (g[r.status] ||= []).push(r));
+  $("#pane").innerHTML = ["pending", "approved", "rejected"].filter(s => g[s]).map(s => `<details class="hcat" ${s === "pending" ? "open" : ""}><summary><span>${STATUS[s]}</span><span class="cnt">${np(g[s].length)}</span></summary><div class="reqgrid hscroll">${g[s].map(r => `<div class="card">${desc(r)}${r.reject_reason ? `<p class="mut">कारण: ${esc(r.reject_reason)}</p>` : ""}</div>`).join("")}</div></details>`).join("") || `<div class="card">अझै कुनै अनुरोध छैन।</div>`;
 }
 
 // ---------- एडमिन ----------
-let admSec = null, reqCat = "all";
+let admSec = null, reqCat = "all", histOpen = [];
 function acctForm() {
   const d = $("#dlg"), gen = () => Array.from(crypto.getRandomValues(new Uint8Array(10)), b => "abcdefghjkmnpqrstuvwxyz23456789"[b % 31]).join(""), site = location.href.split("#")[0].split("?")[0];
   d.innerHTML = `<h3>नयाँ खाता बनाउने</h3><label>पूरा नाम *<input id="a_n"></label><label>इमेल (खाता बनाउन चाहिन्छ)<input id="a_e" type="email"></label>
@@ -823,7 +833,14 @@ async function adminView() {
   const ps = u => `<select class="ps"><option value="">— स्थान तोकिएको छैन —</option>${people.map(p => `<option value="${p.id}" ${p.id === u.position_person_id ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select>`;
   const claim = u => { const c = byId[u.position_person_id], q = byId[u.position_parent_id]; return c ? `दाबी: ${esc(c.name)}` : q ? `दाबी: ${esc(q.name)} को सन्तान` : "स्थान दाबी गरेको छैन"; };
   if (!admSec) admSec = adm && pend.length ? "new" : "req";
-  const histH = (hist || []).map(r => `<div class="card">${desc(r)}<p class="mut">स्थिति: ${STATUS[r.status]}${r.reject_reason ? ` (${esc(r.reject_reason)})` : ""} · अनुरोधकर्ता: ${esc(r.profiles?.full_name || r.profiles?.email)}</p><div class="row"><button class="bad" data-d="${r.id}">मेट्ने</button></div></div>`).join("");
+  const HS = ["approved", "rejected"], HA = ["add", "update", "delete"], hg = {};
+(hist || []).forEach(r => (hg[r.status + ":" + r.action] ||= []).push(r));
+const histH = HS.flatMap(s => HA.map(a => [s + ":" + a, s, a])).filter(([k]) => hg[k]).map(([k, s, a]) => {
+  const L = hg[k], ids = L.map(r => r.id).join(",");
+  return `<details class="hcat" data-k="${k}" ${histOpen.includes(k) ? "open" : ""}><summary><span>${s === "approved" ? "✅" : "❌"} ${STATUS[s]} · ${ACT[a]}</span><span class="cnt">${np(L.length)}</span></summary>
+    <div class="row" style="margin:.2rem 0 .7rem"><button class="bad" data-d="${ids}">यो वर्गका सबै मेट्ने (${np(L.length)})</button></div>
+    <div class="reqgrid hscroll">${L.map(r => `<div class="card">${desc(r)}<p class="mut">${esc(r.profiles?.full_name || r.profiles?.email)}${r.reject_reason ? ` · कारण: ${esc(r.reject_reason)}` : ""}</p><div class="row" style="margin-top:.4rem"><button class="bad" data-d="${r.id}">मेट्ने</button></div></div>`).join("")}</div></details>`;
+}).join("");
   const CATS = [["all", "सबै"], ["add", "➕ थप्ने"], ["update", "✏ सच्याउने"], ["delete", "🗑 हटाउने"]], cn = c => c === "all" ? groups.length : groups.filter(g => g.items[0].action === c).length;
   const chips = `<div class="rchips">${CATS.map(([k, l]) => `<button class="ghost ${reqCat === k ? "on" : ""}" data-rc="${k}">${l} (${np(cn(k))})</button>`).join("")}</div>`;
   const SEC = {
@@ -832,7 +849,7 @@ async function adminView() {
     req: ["📨 परिवर्तन अनुरोध", groups.length, chips + '<div class="reqgrid">' + groups.filter(g => reqCat === "all" || g.items[0].action === reqCat).map(g => { const ids = g.items.map(r => r.id).join(","), r0 = g.items[0]; return `<div class="card req-card"><div class="req-content">${g.items.length > 1 ? `<b>${g.items.length} सन्तान एकैसाथ</b><hr>` : ""}${g.items.map(desc).join("<hr>")}
       <p class="mut">अनुरोधकर्ता: ${esc(r0.profiles?.full_name || r0.profiles?.email)}</p></div>
       <div class="row"><button data-a="${ids}">${g.items.length > 1 ? "सबै स्वीकृत" : "स्वीकृत"}</button><button class="bad" data-x="${ids}">${g.items.length > 1 ? "सबै अस्वीकार" : "अस्वीकार"}</button></div></div>`; }).join("") + "</div>"],
-    hist: ["🕘 अनुरोध इतिहास", hist?.length || 0, (okIds.length ? `<div class="row" style="margin-bottom:.8rem"><button class="bad" data-d="${okIds.join(",")}">सबै स्वीकृत इतिहास मेट्ने (${okIds.length})</button></div>` : "") + '<div class="reqgrid">' + histH + "</div>"]
+    hist: ["🕘 अनुरोध इतिहास", hist?.length || 0, (okIds.length ? `<div class="row" style="margin-bottom:.8rem"><button class="bad" data-d="${okIds.join(",")}">सबै स्वीकृत इतिहास मेट्ने (${okIds.length})</button></div>` : "") + histH]
   };
   const keys = adm ? ["new", "mem", "req", "hist"] : ["req"];
   if (!keys.includes(admSec)) admSec = keys[0];
@@ -845,6 +862,7 @@ async function adminView() {
     const b = e.target.closest("button"); if (!b) return;
     if (b.id === "mkacct") return acctForm();
     let err;
+    histOpen = [...document.querySelectorAll("details.hcat[open]")].map(d => d.dataset.k);
     if (b.dataset.d) {
       const ids = b.dataset.d.split(",");
       if (!confirm(`${ids.length} अनुरोध स्थायी रूपमा मेट्ने?`)) return;
