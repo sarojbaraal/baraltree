@@ -21,25 +21,35 @@ function daughterLocked() { // प्रिमियम: विवाहित �
   people.filter(p => p.gender === "F" && hasParents(p) && spousesOf(p).length).forEach(p => { spousesOf(p).forEach(add); kidsOf(p).forEach(c => add(c.id)); });
   return L;
 }
-const myPos = () => me?.position_person_id || me?.position_parent_id || null;
-function ownSet() { // आफ्नो शाखा + बाबुका दाजुभाइ-दिदीबहिनी र आमाका दाजुभाइ-दिदीबहिनीको पूरा परिवार
-  const own = new Set(), base = byId[me.position_person_id] || byId[me.position_parent_id]; if (!base) return own;
+const hasPos = u => !!(u?.position_person_id || u?.position_parent_id || u?.position_grand_id);
+const myPos = () => me?.position_person_id || me?.position_parent_id || me?.position_grand_id || null;
+const dispName = () => byId[me?.position_person_id]?.name || me?.full_name || me?.email || "";
+function ownSet() { // सामान्य: आफ्नो सीधा वंश (पुर्खा, जोडी), दाजुभाइ-दिदीबहिनी र तिनका शाखा, आफ्नो सन्तान
+  const own = new Set(), base = byId[me.position_person_id] || byId[me.position_parent_id] || byId[me.position_grand_id]; if (!base) return own;
   const sib = x => people.filter(y => y.id !== x.id && ((x.father_id && y.father_id === x.father_id) || (x.mother_id && y.mother_id === x.mother_id)));
   const all = ids => branchOf(ids).forEach(i => own.add(i));
-  all([base.id]); sib(base).forEach(y => own.add(y.id));
-  const ps = byId[me.position_person_id] ? [byId[base.father_id], byId[base.mother_id]] : [base, ...spousesOf(base).map(i => byId[i])];
-  ps.filter(Boolean).forEach(q => { all([q.id]); sib(q).forEach(s => all([s.id])); });
+  all([base.id]); if (byId[me.position_person_id]) sib(base).forEach(y => all([y.id]));
   return own;
+}
+function premiumRoot() { // हजुरबुबाका बुबा (नभए हजुरबुबा) — हजुरबुबाका दाजुभाइसम्म पुग्न
+  const m = byId[me.position_person_id], pa = byId[me.position_parent_id], gr = byId[me.position_grand_id];
+  const f = m ? byId[m.father_id] : pa ? (pa.gender === "F" ? byId[pa.spouse_id] : pa) : null;
+  const gf = gr || byId[f?.father_id] || f;
+  return byId[gf?.father_id] || gf || null;
+}
+function patri(id, S = new Set()) { // पुरुष वंश मात्र (बुबाको लहरो)
+  const p = byId[id]; if (!p || S.has(id)) return S; S.add(id);
+  people.filter(c => c.father_id === id && c.gender !== "F").forEach(c => patri(c.id, S)); return S;
 }
 function setAcc() {
   ACC = null; if (!me || act === "admin" || act === "moderator") return;
   const own = ownSet();
-  if (act === "premium") { const L = daughterLocked(); own.forEach(i => L.delete(i)); ACC = L.size ? new Set(people.filter(x => !L.has(x.id)).map(x => x.id)) : null; }
-  else ACC = own;
+  if (act === "premium") { const r = premiumRoot(); if (r) patri(r.id).forEach(i => own.add(i)); }
+  ACC = own;
 }
 function who() {
   const rs = myRoles();
-  $("#who").innerHTML = `<span class="wn">${esc(me?.full_name || me?.email)}</span>` + (rs.length > 1 ? `<select id="rs" aria-label="भूमिका छान्नुहोस्">${rs.map(r => `<option value="${r}" ${r === act ? "selected" : ""}>${ROLE_L[r]}</option>`).join("")}</select>` : `<span class="tag">${ROLE_L[act] || "पर्खाइमा"}</span>`) + `<button class="ghost" id="out">बाहिर</button>`;
+  $("#who").innerHTML = `<span class="wn">${esc(dispName())}</span>` + (rs.length > 1 ? `<select id="rs" aria-label="भूमिका छान्नुहोस्">${rs.map(r => `<option value="${r}" ${r === act ? "selected" : ""}>${ROLE_L[r]}</option>`).join("")}</select>` : `<span class="tag">${ROLE_L[act] || "पर्खाइमा"}</span>`) + `<button class="ghost" id="out">बाहिर</button>`;
   $("#out").onclick = () => db.auth.signOut();
   if ($("#rs")) $("#rs").onchange = e => { act = e.target.value; localStorage.setItem("vv_role", act); if (tab === "admin" && !isStaff()) tab = "fam"; render(); };
 }
@@ -50,12 +60,12 @@ async function boot() {
   let { data } = await db.from("profiles").select("*").eq("id", session.user.id).single();
   me = data;
   const md = session.user.user_metadata || {};
-  if (me && !me.position_person_id && !me.position_parent_id && (md.pos_person || md.pos_parent)) {
-    await db.rpc("set_my_position", { p_person: md.pos_person || null, p_parent: md.pos_parent || null });
+  if (me && !hasPos(me) && (md.pos_person || md.pos_parent || md.pos_grand)) {
+    await db.rpc("set_my_position", { p_person: md.pos_person || null, p_parent: md.pos_parent || null, p_grand: md.pos_grand || null });
     ({ data } = await db.from("profiles").select("*").eq("id", session.user.id).single()); me = data || me;
   }
   const rs = myRoles(); if (rs.length) { const s = localStorage.getItem("vv_role"); act = rs.includes(s) ? s : rs[0]; }
-  if (me && !rs.length && !me.position_person_id && !me.position_parent_id) { who(); return posView(); }
+  if (me && !rs.length && !hasPos(me)) { who(); return posView(); }
   who();
   if (!me || !rs.length) return $("#tabs").innerHTML = "", $("#app").innerHTML = `<div class="card"><h2>स्वीकृतिको पर्खाइमा</h2><p>तपाईंको खाता बनिसकेको छ। एडमिनले स्वीकृत गरेपछि वंशावली हेर्न पाउनुहुनेछ।</p></div>`;
   await load(); render();
@@ -129,7 +139,7 @@ function authView(mode = "login") {
           </div>
           <h2>${TITLE[mode]}</h2>
           <p class="auth-subtitle">${SUBTITLE[mode]}</p>
-          ${mode === "signup" ? `<label>पूरा नाम<input id="fn" autocomplete="name" placeholder="तपाईंको नाम"></label><label>वंशावलीमा तपाईं को हुनुहुन्छ?<select id="pos"><option value="">— सूचीबाट छान्नुहोस् —</option></select></label><label>सूचीमा हुनुहुन्न भने, तपाईंका बुबा/आमा<select id="pos2"><option value="">— छैन —</option></select></label>` : ""}
+          ${mode === "signup" ? `<label>पूरा नाम<input id="fn" autocomplete="name" placeholder="तपाईंको नाम"></label><label>वंशावलीमा तपाईं को हुनुहुन्छ?<select id="pos"><option value="">— सूचीबाट छान्नुहोस् —</option></select></label><label>सूचीमा हुनुहुन्न भने, तपाईंका बुबा/आमा<select id="pos2"><option value="">— छैन —</option></select></label><label>बुबा/आमा पनि सूचीमा छैनन् भने, तपाईंका हजुरबुबा<select id="pos3"><option value="">— छैन —</option></select></label>` : ""}
           <label>इमेल ठेगाना<input id="em" type="email" autocomplete="email" placeholder="name@example.com"></label>
           ${mode === "forgot" ? "" : pwField("pw", mode === "signup" ? "पासवर्ड (कम्तिमा ८ अक्षर)" : "पासवर्ड", mode === "signup" ? "new-password" : "current-password")}
           <div class="msg" id="am" role="status"></div>
@@ -159,8 +169,8 @@ function authView(mode = "login") {
       const name = $("#fn").value.trim();
       if (!name) return say("पूरा नाम लेख्नुहोस्।");
       if (password.length < 8) return say("पासवर्ड कम्तिमा ८ अक्षरको हुनुपर्छ ल!");
-      if ($("#pos").options.length > 1 && !$("#pos").value && !$("#pos2").value) return say("वंशावलीमा आफ्नो स्थान (वा बुबा/आमा) छान्नुहोस्।");
-      const { error } = await db.auth.signUp({ email, password, options: { data: { full_name: name, pos_person: $("#pos").value || null, pos_parent: $("#pos2").value || null } } });
+      if ($("#pos").options.length > 1 && !$("#pos").value && !$("#pos2").value && !$("#pos3").value) return say("वंशावलीमा आफ्नो स्थान (वा बुबा/आमा) छान्नुहोस्।");
+      const { error } = await db.auth.signUp({ email, password, options: { data: { full_name: name, pos_person: $("#pos").value || null, pos_parent: $("#pos2").value || null, pos_grand: $("#pos3").value || null } } });
       say(error ? error.message : "खाता बन्यो। इमेल खोलेर ईन्बक्स र स्पाम दुबै चेक गर्नुहोस त! ।", !error);
     } else {
       const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: location.href.split("#")[0].split("?")[0] });
@@ -180,20 +190,36 @@ async function posView() {
   $("#tabs").innerHTML = "";
   $("#app").innerHTML = `<div class="card"><h2>तपाईं को हुनुहुन्छ?</h2><p class="mut">वंशावलीमा आफ्नो स्थान छान्नुहोस्। त्यसपछि एडमिनले स्वीकृत गर्नेछन्।</p>
     <label>वंशावलीमा तपाईं को हुनुहुन्छ?<select id="pos"><option value="">— सूचीबाट छान्नुहोस् —</option></select></label>
-    <label>सूचीमा हुनुहुन्न भने, तपाईंका बुबा/आमा<select id="pos2"><option value="">— छैन —</option></select></label>
+    <label>सूचीमा हुनुहुन्न भने, तपाईंका बुबा/आमा<select id="pos2"><option value="">— छैन —</option></select></label><label>बुबा/आमा पनि सूचीमा छैनन् भने, तपाईंका हजुरबुबा<select id="pos3"><option value="">— छैन —</option></select></label>
     <div class="msg" id="am"></div><div class="row"><button id="go">सुरक्षित गर्ने</button></div></div>`;
   await loadPos();
   $("#go").onclick = async () => {
-    if (!$("#pos").value && !$("#pos2").value) return say("आफ्नो स्थान वा बुबा/आमा छान्नुहोस्।");
-    const { error } = await db.rpc("set_my_position", { p_person: $("#pos").value || null, p_parent: $("#pos2").value || null });
+    if (!$("#pos").value && !$("#pos2").value && !$("#pos3").value) return say("आफ्नो स्थान, बुबा/आमा वा हजुरबुबा छान्नुहोस्।");
+    const { error } = await db.rpc("set_my_position", { p_person: $("#pos").value || null, p_parent: $("#pos2").value || null, p_grand: $("#pos3").value || null });
     if (error) return say(error.message);
     boot();
   };
 }
+function searchable(sel) { // लामो select लाई नाम टाइप गरेर खोज्न मिल्ने बनाउँछ
+  if (!sel || sel.dataset.sx) return; sel.dataset.sx = 1;
+  const items = [...sel.options].filter(o => o.value).map(o => ({ v: o.value, t: o.textContent }));
+  const box = document.createElement("div"); box.className = "sx";
+  box.innerHTML = '<input type="search" placeholder="🔍 नाम (वा बुबाको नाम) लेखेर खोज्नुहोस्…" autocomplete="off"><div class="sxl" hidden></div>';
+  sel.before(box); sel.hidden = true;
+  const inp = box.firstChild, list = box.lastChild;
+  const show = () => {
+    const q = inp.value.trim().toLowerCase(); if (!q) return list.hidden = true;
+    const m = items.filter(i => i.t.toLowerCase().includes(q)).slice(0, 40);
+    list.innerHTML = m.length ? m.map(i => `<div data-v="${i.v}">${esc(i.t)}</div>`).join("") : '<div class="none">भेटिएन</div>';
+    list.hidden = false;
+  };
+  inp.oninput = () => { sel.value = ""; show(); }; inp.onfocus = show;
+  list.onclick = e => { const d = e.target.closest("[data-v]"); if (!d) return; sel.value = d.dataset.v; inp.value = d.textContent; list.hidden = true; };
+}
 async function loadPos() {
   const { data } = await db.rpc("signup_people");
   const o = (data || []).map(p => `<option value="${p.id}">${esc(p.name)}${p.father_name ? ` (बुबा: ${esc(p.father_name)})` : ""}${p.birth_bs ? ` · ${esc(String(p.birth_bs).slice(0, 4))}` : ""}</option>`).join("");
-  ["#pos", "#pos2"].forEach(s => $(s)?.insertAdjacentHTML("beforeend", o));
+  ["#pos", "#pos2", "#pos3"].forEach(s => { $(s)?.insertAdjacentHTML("beforeend", o); searchable($(s)); });
 }
 function resetView() {
   $("#app").classList.remove("wide");
@@ -234,7 +260,7 @@ function resetView() {
 
 // ---------- मुख्य दृश्य ----------
 function render() {
-  setAcc();
+  setAcc(); who();
   const tabs = [["fam", "🏡 परिवार"], ["tree", "🌳 चार्ट"], ["mem", "👥 सदस्य"], ["mine", "📋 अनुरोध"], ...(isStaff() ? [["admin", "⚙ एडमिन"]] : [])];
   $("#tabs").innerHTML = tabs.map(([k, l]) => `<button data-t="${k}" class="${tab === k ? "on" : ""}">${l}</button>`).join("");
   $("#app").innerHTML = `<div id="pane"></div>`;
@@ -362,12 +388,18 @@ function flyTo(id, k = 1) {
   else go(k);
   setTimeout(() => st.style.transition = "", 2600);
 }
+function glide(id, k) { // क्लिक गरेको ठाउँमा बिस्तारै जुम
+  const q = cardPos[id], c = $("#chart"), st = $("#stage"); if (!q) return;
+  k = Math.max(V.k, k || 1); st.style.transition = "transform .9s cubic-bezier(.4,0,.2,1)";
+  V.k = k; V.x = c.clientWidth / 2 - (q.x + CW / 2) * k; V.y = c.clientHeight / 2 - (q.y + CH / 2) * k; applyV();
+  setTimeout(() => st.style.transition = "", 950);
+}
 function unpick() { sel = null; HL = null; document.querySelectorAll(".cd.sel").forEach(c => c.classList.remove("sel")); applyHL(); const d = $("#det"); if (d) d.hidden = true; }
-function pick(id) {
+function pick(id, delay) {
   if (!can(id)) return toast("🔒 यो शाखा तपाईंको पहुँचमा छैन");
   sel = id; HL = branchOf([id]);
   document.querySelectorAll(".cd").forEach(c => c.classList.toggle("sel", c.dataset.id === id));
-  applyHL(); detail(true);
+  applyHL(); delay ? setTimeout(() => sel === id && detail(true), delay) : detail(true);
 }
 const openUp = (id, s = new Set()) => { const p = byId[id]; if (!p || s.has(id)) return; s.add(id); collapsed.delete(id); openUp(p.father_id, s); openUp(p.mother_id, s); openUp(p.spouse_id, s); };
 function search(q, next) {
@@ -539,16 +571,16 @@ function spouseForm(p) {
     send("update", p.id, pl, d);
   };
 }
-const XL = { add_spouse_id: "अर्को पति/पत्नी", add_spouse_name: "अर्को पति/पत्नी (नयाँ नाम)" };
+const XL = { facebook: "Facebook लिंक", add_spouse_id: "अर्को पति/पत्नी", add_spouse_name: "अर्को पति/पत्नी (नयाँ नाम)" };
 
 function treeView() {
   sel = null; HL = null; matches = [];
   $("#pane").innerHTML = `<div class="chartwrap" id="cw">
     <div class="tools"><input id="q" placeholder="🔍 नाम खोज्नुहोस् (Enter = अर्को)…" aria-label="खोज"><span id="qc" class="mut"></span>
       <button class="ghost" id="zo" aria-label="सानो">−</button><input id="zr" type="range" min="2" max="250" aria-label="जुम"><button class="ghost" id="zi" aria-label="ठूलो">+</button>
-      <button class="ghost" id="fit" title="पूरै रूख देखाउने">पूरै रुख हेर्ने</button><button class="ghost" id="ea" title="सबै शाखा खोल्ने">सबै शाखा खोल्ने</button><button class="ghost" id="ca" title="शाखा बन्द गर्ने">संक्षिप्त</button>
+      <button class="ghost" id="fs" aria-label="पूरा स्क्रिन">⛶</button><button class="ghost" id="ea" title="सबै शाखा खोल्ने">सबै शाखा खोल्ने</button><button class="ghost" id="ca" title="शाखा बन्द गर्ने">संक्षिप्त</button>
       <details class="menu"><summary>${isAdm() ? "⇩ डाउनलोड" : "⇩ बंशावली डाउनलोड"}</summary><div>${isAdm() ? `<button class="ghost" id="xe">📊 Excel (.xlsx)</button><button class="ghost" id="xc">📄 CSV</button><button class="ghost" id="xj">💾 JSON (ब्याकअप)</button>` : ""}<button class="ghost" id="xs">🖼 फोटो (HD) (SVG)</button><button class="ghost" id="xp">📷 फोटो (SD) (JPG)</button>${isAdm() ? `<button class="ghost" id="xi">📥 अपलोड गर्नुहोस्</button><input type="file" id="xf" accept=".xlsx,.xls,.csv,.json" hidden>` : ""}</div></details>
-      <button class="ghost" id="fs" aria-label="पूरा स्क्रिन">⛶</button></div>
+      </div>
     <div id="chart"><div id="stage"></div><button id="gm" class="gmfab" title="मेरो स्थानमा जाने">📍 मेरो स्थान</button>${people.length ? "" : `<div class="empty"><p>अझै कोही थपिएको छैन।</p><button id="first">${isAdm() ? "पहिलो व्यक्ति थप्ने" : "पहिलो व्यक्ति थप्ने अनुरोध"}</button></div>`}</div>
     </div>`;
   if ($("#first")) $("#first").onclick = () => form("add");
@@ -569,17 +601,22 @@ function treeView() {
     if (moved) return;
     const tg = e.target.closest(".tg");
     if (tg) { const k = tg.dataset.t; collapsed.has(k) ? collapsed.delete(k) : collapsed.add(k); draw(); return; }
-    const t = e.target.closest("[data-id]"); if (t) pick(t.dataset.id); else unpick();
+    const t = e.target.closest("[data-id]"); if (t) { const id = t.dataset.id; if (can(id)) { glide(id, 1); pick(id, 750); } else pick(id); } else unpick();
   };
   ch.onkeydown = e => { if (e.key === "Enter" && e.target.dataset.id) pick(e.target.dataset.id); };
   ch.onwheel = e => { e.preventDefault(); const r = ch.getBoundingClientRect(); zoomAt(e.deltaY < 0 ? 1.12 : 0.89, e.clientX - r.left, e.clientY - r.top); };
   const mid = f => zoomAt(f, ch.clientWidth / 2, ch.clientHeight / 2);
-  $("#zi").onclick = () => mid(1.2); $("#zo").onclick = () => mid(0.83); $("#fit").onclick = fit;
+  $("#zi").onclick = () => mid(1.2); $("#zo").onclick = () => mid(0.83);
   const goMe = quiet => { const id = myPos(); if (!id || !byId[id]) { if (!quiet) toast("तपाईंको स्थान तोकिएको छैन"); return; } openUp(id); draw(); quiet ? focusOn(id, 1) : flyTo(id, 1); };
   $("#gm").onpointerdown = e => e.stopPropagation(); $("#gm").onclick = e => { e.stopPropagation(); goMe(); }; if (ACC) goMe(true);
   $("#zr").oninput = e => mid(e.target.value / 100 / V.k);
   $("#ea").onclick = () => { collapsed.clear(); draw(); fit(); };
-  $("#ca").onclick = () => { const f = n => { if (n.d >= 1 && n.all.length) collapsed.add(n.p.id); n.all.forEach(f); }; lastTrees.forEach(f); draw(); home(); };
+  $("#ca").onclick = () => {
+    const id = myPos(), keep = id && byId[id] ? branchOf([id]) : null; collapsed.clear();
+    const f = n => { const mine = keep && (keep.has(n.p.id) || n.sps.some(s => keep.has(s.id))); if (!mine && (keep || n.d >= 1) && n.all.length) collapsed.add(n.p.id); n.all.forEach(f); };
+    lastTrees.forEach(f);
+    if (keep) { openUp(id); draw(); focusOn(id, .8); } else { draw(); home(); }
+  };
   $("#q").oninput = e => search(e.target.value);
   $("#q").onkeydown = e => { if (e.key === "Enter") search($("#q").value, true); };
   $("#fs").onclick = () => document.fullscreenElement ? document.exitFullscreen() : $("#cw").requestFullscreen?.();
@@ -613,7 +650,7 @@ function relMap() {
   sl.forEach(s => {
     const o = base ? older(s, base) : null;
     set(s, s.gender === "M" ? (o === true ? "दाजु" : o === false ? "भाइ" : "दाजुभाइ") : s.gender === "F" ? (o === true ? "दिदी" : o === false ? "बहिनी" : "दिदीबहिनी") : "दाजुभाइ/दिदीबहिनी", 1);
-    spousesOf(s).forEach(i => set(byId[i], s.gender === "M" ? (o === false ? "बुहारी" : "भाउजू") : (o === true ? "भिनाजू" : "ज्वाइँ"), 1));
+    if (s.gender !== "F") spousesOf(s).forEach(i => set(byId[i], o === false ? "बुहारी" : "भाउजू", 1));
     if (s.gender === "M") kidsOf(s).forEach(k => set(k, g(k, "भतिजा", "भतिजी", "भतिज/भतिजी"), 1));
   });
   [[fa, 1], [mo, 0]].forEach(([q, pat]) => {
@@ -621,6 +658,7 @@ function relMap() {
     sibs(q).forEach(u => {
       const o = older(u, q), M = u.gender === "M";
       set(u, M ? (pat ? (o ? "ठूलोबुबा" : "काका") : "मामा") : (pat ? "फुपू" : "सानिमा"), pat && M);
+      if (pat && M) kidsOf(u).forEach(k => set(k, (R[u.id] || "काका") + "को " + g(k, "छोरा", "छोरी", "सन्तान"), 1));
       spousesOf(u).forEach(i => set(byId[i], M ? (pat ? (o ? "ठूलीआमा" : "काकी") : "माइजू") : (pat ? "फुपाजु" : "सानाबा"), pat && M));
     });
     set(byId[q.father_id], "हजुरबुबा"); set(byId[q.mother_id], "हजुरआमा");
@@ -658,8 +696,8 @@ function famView() {
   const base = byId[me.position_person_id] || byId[me.position_parent_id];
   const core = [...C].map(i => byId[i]).filter(p => p && can(p.id)), rest = people.filter(p => can(p.id) && !C.has(p.id)).sort(byBirth);
   const ord = cfg().order || [], ix = id => { const i = ord.indexOf(id); return i < 0 ? 1e6 : i; }; core.sort((a, b) => ix(a.id) - ix(b.id));
-  const msg = !ACC ? "सबै वंशावली तपाईंको सामु खुला छ।" : base ? "तपाईंको, बुबाको र आमाको पक्षको परिवार खुला छ। बाँकी शाखा चार्टमा धमिला र बन्द छन्।" : "तपाईंको स्थान अझै तोकिएको छैन। एडमिनले तोकेपछि शाखा खुल्नेछ।";
-  $("#pane").innerHTML = `<section class="hero2"><div class="hello"><span class="hchip">${ROLE_L[act]}</span><h2>नमस्ते, ${esc(me.full_name || "")}</h2><p>${msg}</p></div>
+  const msg = !ACC ? "सबै वंशावली तपाईंको सामु खुला छ।" : base ? "तपाईंको भूमिकाअनुसार खुला भएको वंश मात्र देखिन्छ। बाँकी शाखा चार्टमा धमिला र लक छन्।" : "तपाईंको स्थान अझै तोकिएको छैन। एडमिनले तोकेपछि शाखा खुल्नेछ।";
+  $("#pane").innerHTML = `<section class="hero2"><div class="hello"><span class="hchip">${ROLE_L[act]}</span><h2>नमस्ते, ${esc(dispName())}</h2><p>${msg}</p></div>
     <div class="stats"><div><b>${np(core.length)}</b><span>मुख्य परिवार</span></div><div><b>${np(ACC ? ACC.size : people.length)}</b><span>खुला सदस्य</span></div><div><b>${np(people.length)}</b><span>कुल सदस्य</span></div></div>
     <div class="row"><button id="gome" ${base ? "" : "disabled"}>📍 मेरो स्थान</button><button class="ghost" id="addp">${isAdm() ? "+ सदस्य थप्ने" : "+ सदस्य थप्ने अनुरोध"}</button></div></section>
     <section class="fsec"><h2 class="fh">🏠 मुख्य परिवार <small>${np(core.length)}</small></h2><div class="row" style="margin:0 0 .8rem"><button class="ghost" id="cedit">${coreEdit ? "✔ सम्पन्न" : "✏ क्रम/नाता मिलाउने"}</button>${coreEdit ? '<button class="ghost" id="creset">↺ स्वतः</button>' : ""}</div>${core.length ? `<div class="cgrid">${core.map(p => mcard(p, 1)).join("")}</div>` : '<div class="card">बुबा, आमा, दाजुभाइ, दिदीबहिनी, काका/काकी र भतिजभतिजी यहाँ देखिन्छन्। तपाईंको स्थान तोकिएपछि यो खण्ड भरिन्छ।</div>'}</section>
@@ -715,7 +753,7 @@ function form(action, p = null, parent = null) {
     <label>जन्म मिति (BS) २०४५-०५-१२<input id="f_birth_bs" value="${esc(v.birth_bs)}"></label>
     <label id="f_death_w" ${v.is_living ? "hidden" : ""}>मृत्यु मिति (BS)<input id="f_death_bs" value="${esc(v.death_bs)}"></label>
     <label>फोन<span style="display:flex;gap:.4rem"><input id="f_phone" value="${esc(v.phone)}"><button type="button" class="ghost" id="pick-c" aria-label="सम्पर्कबाट छान्ने">📇</button></span></label>
-    <label>ठेगाना<input id="f_address" value="${esc(v.address)}"></label>${isAdm() && action === "update" ? `<label>Facebook लिंक<input id="f_fb" value="${esc(v.facebook)}" placeholder="https://facebook.com/..."></label>` : ""}</div>
+    <label>ठेगाना<input id="f_address" value="${esc(v.address)}"></label>${action === "update" ? `<label>Facebook लिंक<input id="f_fb" value="${esc(v.facebook)}" placeholder="https://facebook.com/..."></label>` : ""}</div>
     <label>टिप्पणी<textarea id="f_notes" rows="2">${esc(v.notes)}</textarea></label>
     ${NOTE("एडमिनलाई सन्देश (स्रोत/प्रमाण)")}
     <div class="msg" id="fm"></div>
@@ -745,8 +783,10 @@ function form(action, p = null, parent = null) {
     }
     if (fbChg) {
       if (fb && !fbOk(fb)) return $("#fm").textContent = "Facebook लिंक https://facebook.com/... जस्तो हुनुपर्छ।";
-      const { error } = await db.rpc("set_facebook", { pid: p.id, url: fb }); if (error) return $("#fm").textContent = error.message;
-      if (!Object.keys(payload).length) { d.close(); toast("✅ सुरक्षित भयो"); await load(); render(); return; }
+      if (isAdm()) {
+        const { error } = await db.rpc("set_facebook", { pid: p.id, url: fb }); if (error) return $("#fm").textContent = error.message;
+        if (!Object.keys(payload).length) { d.close(); toast("✅ सुरक्षित भयो"); await load(); render(); return; }
+      } else payload.facebook = fb;
     }
     send(action, p?.id ?? null, payload, d);
   };
@@ -855,8 +895,8 @@ async function adminView() {
   const okIds = (hist || []).filter(r => r.status === "approved").map(r => r.id);
   const rc = u => ORDER.slice().reverse().map(r => `<label class="rcb"><input type="checkbox" class="rc" value="${r}" ${(u.roles || (u.role === "admin" ? ORDER : u.role === "member" ? ["general"] : [])).includes(r) || (!u.roles?.length && u.role === "pending" && r === "general") ? "checked" : ""}> ${ROLE_L[r]}</label>`).join("");
   const ps = u => `<select class="ps"><option value="">— स्थान तोकिएको छैन —</option>${people.map(p => `<option value="${p.id}" ${p.id === u.position_person_id ? "selected" : ""}>${esc(p.name)}</option>`).join("")}</select>`;
-  const claim = u => { const c = byId[u.position_person_id], q = byId[u.position_parent_id]; return c ? `दाबी: ${esc(c.name)}` : q ? `दाबी: ${esc(q.name)} को सन्तान` : "स्थान दाबी गरेको छैन"; };
-  if (!admSec) admSec = adm && pend.length ? "new" : "req";
+  const claim = u => { const c = byId[u.position_person_id], q = byId[u.position_parent_id], g = byId[u.position_grand_id]; return c ? `दाबी: ${esc(c.name)}` : q ? `दाबी: ${esc(q.name)} को सन्तान` : g ? `दाबी: ${esc(g.name)} को वंश (नाति/नातिनी)` : "स्थान दाबी गरेको छैन"; };
+  if (!admSec) admSec = "req";
   const HS = ["approved", "rejected"], HA = ["add", "update", "delete"], hg = {};
   (hist || []).forEach(r => (hg[r.status + ":" + r.action] ||= []).push(r));
   const histH = HS.flatMap(s => HA.map(x => [s + ":" + x, s, x])).filter(([k]) => hg[k]).map(([k, s, x]) => {
@@ -875,7 +915,7 @@ async function adminView() {
       <div class="row"><button data-a="${ids}">${g.items.length > 1 ? "सबै स्वीकृत" : "स्वीकृत"}</button><button class="bad" data-x="${ids}">${g.items.length > 1 ? "सबै अस्वीकार" : "अस्वीकार"}</button></div></div>`; }).join("") + "</div>"],
     hist: ["🕘 अनुरोध इतिहास", hist?.length || 0, (okIds.length ? `<div class="row" style="margin-bottom:.8rem"><button class="bad" data-d="${okIds.join(",")}">सबै स्वीकृत इतिहास मेट्ने (${okIds.length})</button></div>` : "") + histH]
   };
-  const keys = adm ? ["new", "mem", "req", "hist"] : ["req"];
+  const keys = adm ? ["req", "new", "mem", "hist"] : ["req"];
   if (!keys.includes(admSec)) admSec = keys[0];
   const [ttl, cnt, bodyH] = SEC[admSec];
   $("#pane").innerHTML = `<div class="adm"><div class="adm-main"><h2>${ttl} (${np(cnt)})</h2>${adm ? '<div class="row" style="margin:0 0 1rem"><button id="mkacct">➕ खाता बनाउने</button></div>' : ""}${bodyH || '<div class="card">यहाँ अहिले केही छैन।</div>'}</div>
@@ -900,7 +940,12 @@ async function adminView() {
       ({ error: err } = await db.rpc("set_roles", { target: row.dataset.id, new_roles: roles }));
       if (!err) ({ error: err } = await db.rpc("set_position", { target: row.dataset.id, p_person: row.querySelector(".ps").value || null }));
     }
-    if (b.dataset.a) for (const id of b.dataset.a.split(",")) { ({ error: err } = await db.rpc("review_request", { req: id, approve: true })); if (err) break; }
+    if (b.dataset.a) for (const id of b.dataset.a.split(",")) {
+      const rq = (reqs || []).find(x => x.id === id);
+      ({ error: err } = await db.rpc("review_request", { req: id, approve: true }));
+      if (!err && rq?.person_id && rq.payload?.facebook !== undefined) ({ error: err } = await db.rpc("set_facebook", { pid: rq.person_id, url: rq.payload.facebook }));
+      if (err) break;
+    }
     if (b.dataset.x) { const reason = prompt("अस्वीकार गर्ने कारण?"); if (reason === null) return; for (const id of b.dataset.x.split(",")) { ({ error: err } = await db.rpc("review_request", { req: id, approve: false, reason })); if (err) break; } }
     if (err) return alert(err.message);
     toast("✅ सुरक्षित भयो"); await load(); render();
