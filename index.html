@@ -1480,6 +1480,18 @@ details.menu > div button:hover {
   box-shadow: none;
   filter: none;
 }
+  /*Enhance styles for details and oauth sections*/
+details.hcat{margin-bottom:.7rem;border-radius:18px;border:1px solid rgba(212,160,23,.28);background:var(--glass-strong);padding:.2rem .9rem .8rem}
+details.hcat>summary{display:flex;justify-content:space-between;align-items:center;padding:.7rem 0;font-weight:700;cursor:pointer;list-style:none}
+details.hcat>summary::-webkit-details-marker{display:none}
+details.hcat>summary::after{content:"▾";margin-left:.6rem;transition:transform .3s}
+details.hcat[open]>summary::after{transform:rotate(180deg)}
+details.hcat .cnt{margin-left:auto;min-width:26px;padding:0 .5rem;border-radius:50px;font-size:.76rem;line-height:22px;text-align:center;background:rgba(212,160,23,.25)}
+.hscroll{max-height:55vh;overflow:auto;padding-right:.2rem}
+.oauth{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:1rem}
+.oauth button{display:flex;align-items:center;justify-content:center;gap:.55rem;color:var(--ink);background:var(--card);border:1.5px solid var(--line-strong);box-shadow:none}
+.oauth button:hover{border-color:var(--gold);background:var(--card);color:var(--ink)}
+.oauth svg{width:18px;height:18px;flex:none}
 
 /* ═══════════════════════════════════════════════
    KIDS ROW
