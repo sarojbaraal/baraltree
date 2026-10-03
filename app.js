@@ -54,7 +54,8 @@ async function boot() {
     await db.rpc("set_my_position", { p_person: md.pos_person || null, p_parent: md.pos_parent || null });
     ({ data } = await db.from("profiles").select("*").eq("id", session.user.id).single()); me = data || me;
   }
-  const rs = myRoles();if (me && !rs.length && !me.position_person_id && !me.position_parent_id) { who(); return posView(); } if (rs.length) { const s = localStorage.getItem("vv_role"); act = rs.includes(s) ? s : rs[0]; }
+  const rs = myRoles(); if (rs.length) { const s = localStorage.getItem("vv_role"); act = rs.includes(s) ? s : rs[0]; }
+  if (me && !rs.length && !me.position_person_id && !me.position_parent_id) { who(); return posView(); }
   who();
   if (!me || !rs.length) return $("#tabs").innerHTML = "", $("#app").innerHTML = `<div class="card"><h2>स्वीकृतिको पर्खाइमा</h2><p>तपाईंको खाता बनिसकेको छ। एडमिनले स्वीकृत गरेपछि वंशावली हेर्न पाउनुहुनेछ।</p></div>`;
   await load(); render();
@@ -64,20 +65,7 @@ async function load() {
   if (error) return alert(error.message);
   people = data; byId = Object.fromEntries(people.map(p => [p.id, p]));
 }
-async function posView() {
-  $("#tabs").innerHTML = "";
-  $("#app").innerHTML = `<div class="card"><h2>तपाईं को हुनुहुन्छ?</h2><p class="mut">वंशावलीमा आफ्नो स्थान छान्नुहोस्। त्यसपछि एडमिनले स्वीकृत गर्नेछन्।</p>
-    <label>वंशावलीमा तपाईं को हुनुहुन्छ?<select id="pos"><option value="">— सूचीबाट छान्नुहोस् —</option></select></label>
-    <label>सूचीमा हुनुहुन्न भने, तपाईंका बुबा/आमा<select id="pos2"><option value="">— छैन —</option></select></label>
-    <div class="msg" id="am"></div><div class="row"><button id="go">सुरक्षित गर्ने</button></div></div>`;
-  await loadPos();
-  $("#go").onclick = async () => {
-    if (!$("#pos").value && !$("#pos2").value) return say("आफ्नो स्थान वा बुबा/आमा छान्नुहोस्।");
-    const { error } = await db.rpc("set_my_position", { p_person: $("#pos").value || null, p_parent: $("#pos2").value || null });
-    if (error) return say(error.message);
-    boot();
-  };
-}
+
 // ---------- लगइन / दर्ता / पासवर्ड रिसेट — PREMIUM UI ----------
 const EYE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
 const EYE_OFF = EYE.replace("</svg>", '<path d="M3 3l18 18"/></svg>');
@@ -147,8 +135,8 @@ function authView(mode = "login") {
           <div class="msg" id="am" role="status"></div>
           <div class="row" style="margin-top:1.5rem"><button id="go" style="width:100%;padding:0.8rem;font-size:0.95rem">${BTN[mode]}</button></div>
           ${mode === "forgot" ? "" : `<div class="auth-divider">वा</div><div class="oauth">
-  <button type="button" data-p="google"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7a14.500 14.500 0 0 1 0-9.400l-7.900-6.100a24 24 0 0 0 0 21.600l7.900-6.100z"/><path fill="#34A853" d="M24 48c6.500 0 11.900-2.100 15.900-5.800l-7.500-5.800c-2.100 1.400-4.800 2.300-8.400 2.300-6.300 0-11.600-4.100-13.500-9.800l-7.900 6.100C6.500 42.600 14.600 48 24 48z"/></svg>Google</button>
-  <button type="button" data-p="facebook"><svg viewBox="0 0 24 24"><path fill="#1877F2" d="M24 12a12 12 0 1 0-13.900 11.900v-8.400H7.100V12h3V9.400c0-3 1.800-4.700 4.500-4.700 1.300 0 2.700.2 2.700.2v3h-1.500c-1.500 0-2 .9-2 1.900V12h3.400l-.5 3.500h-2.900v8.400A12 12 0 0 0 24 12z"/></svg>Facebook</button></div>`}
+            <button type="button" data-p="google"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>Google</button>
+            <button type="button" data-p="facebook"><svg viewBox="0 0 24 24"><path fill="#1877F2" d="M24 12a12 12 0 1 0-13.9 11.9v-8.4H7.1V12h3V9.4c0-3 1.8-4.7 4.5-4.7 1.3 0 2.7.2 2.7.2v3h-1.5c-1.5 0-2 .9-2 1.9V12h3.4l-.5 3.5h-2.9v8.4A12 12 0 0 0 24 12z"/></svg>Facebook</button></div>`}
           <div class="auth-footer-links">
             ${mode === "login"
               ? `<p class="mut"><button class="lnk" data-m="forgot">पासवर्ड बिर्सनुभयो?</button></p>
@@ -180,13 +168,28 @@ function authView(mode = "login") {
     }
   };
   document.querySelectorAll(".oauth button").forEach(b => b.onclick = async () => {
-  const { error } = await db.auth.signInWithOAuth({ provider: b.dataset.p, options: { redirectTo: location.href.split("#")[0].split("?")[0] } });
-  if (error) say(error.message);
-});
+    const { error } = await db.auth.signInWithOAuth({ provider: b.dataset.p, options: { redirectTo: location.href.split("#")[0].split("?")[0] } });
+    if (error) say(error.message);
+  });
   $("#go").onclick = go;
   document.querySelectorAll("#app input").forEach(i => i.onkeydown = e => { if (e.key === "Enter") go(); });
 }
 
+// सामाजिक लगइन (Google/Facebook) गर्ने नयाँ प्रयोगकर्ताले वंशावलीमा स्थान छान्ने पाना
+async function posView() {
+  $("#tabs").innerHTML = "";
+  $("#app").innerHTML = `<div class="card"><h2>तपाईं को हुनुहुन्छ?</h2><p class="mut">वंशावलीमा आफ्नो स्थान छान्नुहोस्। त्यसपछि एडमिनले स्वीकृत गर्नेछन्।</p>
+    <label>वंशावलीमा तपाईं को हुनुहुन्छ?<select id="pos"><option value="">— सूचीबाट छान्नुहोस् —</option></select></label>
+    <label>सूचीमा हुनुहुन्न भने, तपाईंका बुबा/आमा<select id="pos2"><option value="">— छैन —</option></select></label>
+    <div class="msg" id="am"></div><div class="row"><button id="go">सुरक्षित गर्ने</button></div></div>`;
+  await loadPos();
+  $("#go").onclick = async () => {
+    if (!$("#pos").value && !$("#pos2").value) return say("आफ्नो स्थान वा बुबा/आमा छान्नुहोस्।");
+    const { error } = await db.rpc("set_my_position", { p_person: $("#pos").value || null, p_parent: $("#pos2").value || null });
+    if (error) return say(error.message);
+    boot();
+  };
+}
 async function loadPos() {
   const { data } = await db.rpc("signup_people");
   const o = (data || []).map(p => `<option value="${p.id}">${esc(p.name)}${p.father_name ? ` (बुबा: ${esc(p.father_name)})` : ""}${p.birth_bs ? ` · ${esc(String(p.birth_bs).slice(0, 4))}` : ""}</option>`).join("");
@@ -355,7 +358,7 @@ function flyTo(id, k = 1) {
   const go = kk => { V.k = kk; V.x = c.clientWidth / 2 - (q.x + CW / 2) * kk; V.y = c.clientHeight / 2 - (q.y + CH / 2) * kk; applyV(); };
   st.style.transition = "transform 1.2s cubic-bezier(.4,0,.2,1)";
   const mid = Math.max(0.3, Math.min(0.5, k));
-  if (V.k > mid + 0.1 && V.k >= k) { go(mid); setTimeout(() => go(k), 1250); }  // पहिले सानो, अनि बिस्तारै ठूलो
+  if (V.k > mid + 0.1 && V.k >= k) { go(mid); setTimeout(() => go(k), 1250); } // पहिले सानो, अनि बिस्तारै ठूलो
   else go(k);
   setTimeout(() => st.style.transition = "", 2600);
 }
@@ -547,6 +550,7 @@ function treeView() {
       <details class="menu"><summary>${isAdm() ? "⇩ डाउनलोड" : "⇩ बंशावली डाउनलोड"}</summary><div>${isAdm() ? `<button class="ghost" id="xe">📊 Excel (.xlsx)</button><button class="ghost" id="xc">📄 CSV</button><button class="ghost" id="xj">💾 JSON (ब्याकअप)</button>` : ""}<button class="ghost" id="xs">🖼 फोटो (HD) (SVG)</button><button class="ghost" id="xp">📷 फोटो (SD) (JPG)</button>${isAdm() ? `<button class="ghost" id="xi">📥 अपलोड गर्नुहोस्</button><input type="file" id="xf" accept=".xlsx,.xls,.csv,.json" hidden>` : ""}</div></details>
       <button class="ghost" id="fs" aria-label="पूरा स्क्रिन">⛶</button></div>
     <div id="chart"><div id="stage"></div><button id="gm" class="gmfab" title="मेरो स्थानमा जाने">📍 मेरो स्थान</button>${people.length ? "" : `<div class="empty"><p>अझै कोही थपिएको छैन।</p><button id="first">${isAdm() ? "पहिलो व्यक्ति थप्ने" : "पहिलो व्यक्ति थप्ने अनुरोध"}</button></div>`}</div>
+    </div>`;
   if ($("#first")) $("#first").onclick = () => form("add");
   draw(); home();
   const ch = $("#chart"), ptrs = new Map(); let drag = null, moved = false, pd = 0;
@@ -854,13 +858,13 @@ async function adminView() {
   const claim = u => { const c = byId[u.position_person_id], q = byId[u.position_parent_id]; return c ? `दाबी: ${esc(c.name)}` : q ? `दाबी: ${esc(q.name)} को सन्तान` : "स्थान दाबी गरेको छैन"; };
   if (!admSec) admSec = adm && pend.length ? "new" : "req";
   const HS = ["approved", "rejected"], HA = ["add", "update", "delete"], hg = {};
-(hist || []).forEach(r => (hg[r.status + ":" + r.action] ||= []).push(r));
-const histH = HS.flatMap(s => HA.map(a => [s + ":" + a, s, a])).filter(([k]) => hg[k]).map(([k, s, a]) => {
-  const L = hg[k], ids = L.map(r => r.id).join(",");
-  return `<details class="hcat" data-k="${k}" ${histOpen.includes(k) ? "open" : ""}><summary><span>${s === "approved" ? "✅" : "❌"} ${STATUS[s]} · ${ACT[a]}</span><span class="cnt">${np(L.length)}</span></summary>
+  (hist || []).forEach(r => (hg[r.status + ":" + r.action] ||= []).push(r));
+  const histH = HS.flatMap(s => HA.map(x => [s + ":" + x, s, x])).filter(([k]) => hg[k]).map(([k, s, x]) => {
+    const L = hg[k], ids = L.map(r => r.id).join(",");
+    return `<details class="hcat" data-k="${k}" ${histOpen.includes(k) ? "open" : ""}><summary><span>${s === "approved" ? "✅" : "❌"} ${STATUS[s]} · ${ACT[x]}</span><span class="cnt">${np(L.length)}</span></summary>
     <div class="row" style="margin:.2rem 0 .7rem"><button class="bad" data-d="${ids}">यो वर्गका सबै मेट्ने (${np(L.length)})</button></div>
     <div class="reqgrid hscroll">${L.map(r => `<div class="card">${desc(r)}<p class="mut">${esc(r.profiles?.full_name || r.profiles?.email)}${r.reject_reason ? ` · कारण: ${esc(r.reject_reason)}` : ""}</p><div class="row" style="margin-top:.4rem"><button class="bad" data-d="${r.id}">मेट्ने</button></div></div>`).join("")}</div></details>`;
-}).join("");
+  }).join("");
   const CATS = [["all", "सबै"], ["add", "➕ थप्ने"], ["update", "✏ सच्याउने"], ["delete", "🗑 हटाउने"]], cn = c => c === "all" ? groups.length : groups.filter(g => g.items[0].action === c).length;
   const chips = `<div class="rchips">${CATS.map(([k, l]) => `<button class="ghost ${reqCat === k ? "on" : ""}" data-rc="${k}">${l} (${np(cn(k))})</button>`).join("")}</div>`;
   const SEC = {
