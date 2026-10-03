@@ -54,7 +54,7 @@ async function boot() {
     await db.rpc("set_my_position", { p_person: md.pos_person || null, p_parent: md.pos_parent || null });
     ({ data } = await db.from("profiles").select("*").eq("id", session.user.id).single()); me = data || me;
   }
-  const rs = myRoles(); if (rs.length) { const s = localStorage.getItem("vv_role"); act = rs.includes(s) ? s : rs[0]; }
+  const rs = myRoles();if (me && !rs.length && !me.position_person_id && !me.position_parent_id) { who(); return posView(); } if (rs.length) { const s = localStorage.getItem("vv_role"); act = rs.includes(s) ? s : rs[0]; }
   who();
   if (!me || !rs.length) return $("#tabs").innerHTML = "", $("#app").innerHTML = `<div class="card"><h2>स्वीकृतिको पर्खाइमा</h2><p>तपाईंको खाता बनिसकेको छ। एडमिनले स्वीकृत गरेपछि वंशावली हेर्न पाउनुहुनेछ।</p></div>`;
   await load(); render();
@@ -64,7 +64,20 @@ async function load() {
   if (error) return alert(error.message);
   people = data; byId = Object.fromEntries(people.map(p => [p.id, p]));
 }
-
+async function posView() {
+  $("#tabs").innerHTML = "";
+  $("#app").innerHTML = `<div class="card"><h2>तपाईं को हुनुहुन्छ?</h2><p class="mut">वंशावलीमा आफ्नो स्थान छान्नुहोस्। त्यसपछि एडमिनले स्वीकृत गर्नेछन्।</p>
+    <label>वंशावलीमा तपाईं को हुनुहुन्छ?<select id="pos"><option value="">— सूचीबाट छान्नुहोस् —</option></select></label>
+    <label>सूचीमा हुनुहुन्न भने, तपाईंका बुबा/आमा<select id="pos2"><option value="">— छैन —</option></select></label>
+    <div class="msg" id="am"></div><div class="row"><button id="go">सुरक्षित गर्ने</button></div></div>`;
+  await loadPos();
+  $("#go").onclick = async () => {
+    if (!$("#pos").value && !$("#pos2").value) return say("आफ्नो स्थान वा बुबा/आमा छान्नुहोस्।");
+    const { error } = await db.rpc("set_my_position", { p_person: $("#pos").value || null, p_parent: $("#pos2").value || null });
+    if (error) return say(error.message);
+    boot();
+  };
+}
 // ---------- लगइन / दर्ता / पासवर्ड रिसेट — PREMIUM UI ----------
 const EYE = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
 const EYE_OFF = EYE.replace("</svg>", '<path d="M3 3l18 18"/></svg>');
@@ -133,6 +146,9 @@ function authView(mode = "login") {
           ${mode === "forgot" ? "" : pwField("pw", mode === "signup" ? "पासवर्ड (कम्तिमा ८ अक्षर)" : "पासवर्ड", mode === "signup" ? "new-password" : "current-password")}
           <div class="msg" id="am" role="status"></div>
           <div class="row" style="margin-top:1.5rem"><button id="go" style="width:100%;padding:0.8rem;font-size:0.95rem">${BTN[mode]}</button></div>
+          ${mode === "forgot" ? "" : `<div class="auth-divider">वा</div><div class="oauth">
+  <button type="button" data-p="google"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7a14.500 14.500 0 0 1 0-9.400l-7.900-6.100a24 24 0 0 0 0 21.600l7.900-6.100z"/><path fill="#34A853" d="M24 48c6.500 0 11.900-2.100 15.900-5.800l-7.500-5.800c-2.100 1.400-4.800 2.300-8.400 2.300-6.300 0-11.600-4.100-13.500-9.800l-7.900 6.100C6.500 42.600 14.600 48 24 48z"/></svg>Google</button>
+  <button type="button" data-p="facebook"><svg viewBox="0 0 24 24"><path fill="#1877F2" d="M24 12a12 12 0 1 0-13.900 11.900v-8.400H7.100V12h3V9.400c0-3 1.800-4.700 4.500-4.700 1.300 0 2.700.2 2.700.2v3h-1.500c-1.500 0-2 .9-2 1.900V12h3.400l-.5 3.500h-2.900v8.400A12 12 0 0 0 24 12z"/></svg>Facebook</button></div>`}
           <div class="auth-footer-links">
             ${mode === "login"
               ? `<p class="mut"><button class="lnk" data-m="forgot">पासवर्ड बिर्सनुभयो?</button></p>
@@ -163,6 +179,10 @@ function authView(mode = "login") {
       say(error ? error.message : "यो इमेलको खातामा रिसेट लिंक पठाएको छ। इनबक्स र स्प्याम जाँच्नुहोस् त!", !error);
     }
   };
+  document.querySelectorAll(".oauth button").forEach(b => b.onclick = async () => {
+  const { error } = await db.auth.signInWithOAuth({ provider: b.dataset.p, options: { redirectTo: location.href.split("#")[0].split("?")[0] } });
+  if (error) say(error.message);
+});
   $("#go").onclick = go;
   document.querySelectorAll("#app input").forEach(i => i.onkeydown = e => { if (e.key === "Enter") go(); });
 }
