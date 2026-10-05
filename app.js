@@ -43,17 +43,15 @@ function patri(id, S = new Set()) { // पुरुष वंश मात्र
   const p = byId[id]; if (!p || S.has(id)) return S; S.add(id);
   people.filter(c => c.father_id === id && c.gender !== "F").forEach(c => patri(c.id, S)); return S;
 }
-function setAcc() {
-  ACC = null; if (!me || act === "admin" || act === "moderator") return;
-  const own = ownSet();
-  if (act === "premium") { const r = premiumRoot(); if (r) patri(r.id).forEach(i => own.add(i)); }
-  ACC = own;
+function setAcc() { // लक/खुला सर्भरले तोक्छ (is_locked)
+  ACC = null; if (!me) return;
+  if (people.some(p => p.is_locked)) ACC = new Set(people.filter(p => !p.is_locked).map(p => p.id));
 }
 function who() {
   const rs = myRoles();
   $("#who").innerHTML = `<span class="wn">${esc(dispName())}</span>` + (rs.length > 1 ? `<select id="rs" aria-label="भूमिका छान्नुहोस्">${rs.map(r => `<option value="${r}" ${r === act ? "selected" : ""}>${ROLE_L[r]}</option>`).join("")}</select>` : `<span class="tag">${ROLE_L[act] || "पर्खाइमा"}</span>`) + `<button class="ghost" id="out">बाहिर</button>`;
   $("#out").onclick = () => db.auth.signOut();
-  if ($("#rs")) $("#rs").onchange = e => { act = e.target.value; localStorage.setItem("vv_role", act); if (tab === "admin" && !isStaff()) tab = "fam"; render(); };
+  if ($("#rs")) $("#rs").onchange = async e => { act = e.target.value; localStorage.setItem("vv_role", act); if (tab === "admin" && !isStaff()) tab = "fam"; await load(); render(); };
 }
 async function boot() {
   const { data: { session } } = await db.auth.getSession();
@@ -80,9 +78,9 @@ async function boot() {
   await load(); render();
 }
 async function load() {
-  const { data, error } = await db.from("people").select("*").order("created_at");
+  const { data, error } = await db.rpc("get_people", { p_role: act }); // सर्भरले भूमिकाअनुसार फिल्टर गर्छ
   if (error) return alert(error.message);
-  people = data; byId = Object.fromEntries(people.map(p => [p.id, p]));
+  people = data || []; byId = Object.fromEntries(people.map(p => [p.id, p]));
 }
 
 // ---------- लगइन / दर्ता / पासवर्ड रिसेट — PREMIUM UI ----------
