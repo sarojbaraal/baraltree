@@ -270,7 +270,7 @@ function resetView() {
 
 // ---------- मुख्य दृश्य ----------
 function render() {
-  setAcc(); who(); { const dp = $("#det"); if (dp) dp.hidden = true; document.body.classList.remove("det-open"); }
+  setAcc(); who(); { const dp = $("#det"); if (dp) dp.hidden = true; pushPage(false); }
   if (tab === "mine" && act === "general") tab = "fam";
   const tabs = [["fam", "🏡 परिवार"], ["tree", "🌳 चार्ट"], ["mem", "👥 सदस्य"], ...(act !== "general" ? [["mine", "📋 अनुरोध"]] : []), ...(isStaff() ? [["admin", "⚙ एडमिन"]] : [])];
   $("#tabs").innerHTML = tabs.map(([k, l]) => `<button data-t="${k}" class="${(tab === k || (k === "fam" && tab === "ov")) ? "on" : ""}">${l}</button>`).join("");
@@ -405,7 +405,13 @@ function glide(id, k) { // क्लिक गरेको ठाउँमा �
   V.k = k; V.x = c.clientWidth / 2 - (q.x + CW / 2) * k; V.y = (innerWidth > 640 ? c.clientHeight / 2 : c.clientHeight / 4) - (q.y + CH / 2) * k; applyV();
   setTimeout(() => st.style.transition = "", 950);
 }
-function unpick() { sel = null; HL = null; document.querySelectorAll(".cd.sel").forEach(c => c.classList.remove("sel")); applyHL(); const d = $("#det"); if (d) d.hidden = true; document.body.classList.remove("det-open"); }
+function pushPage(on) { // प्रोफाइल खुल्दा मुख्य पेज दायाँ सार्ने (फोनमा होइन)
+  const m = $("main"), d = $("#det"), px = on && innerWidth > 640;
+  document.body.classList.toggle("det-open", !!px);
+  if (m) { m.style.marginLeft = px ? "390px" : ""; m.style.marginRight = px ? "0" : ""; }
+  if (d && px) d.style.top = (document.querySelector("header")?.offsetHeight || 72) + "px";
+}
+function unpick() { sel = null; HL = null; document.querySelectorAll(".cd.sel").forEach(c => c.classList.remove("sel")); applyHL(); const d = $("#det"); if (d) d.hidden = true; pushPage(false); }
 function pick(id, delay) {
   if (!can(id)) return toast("🔒 यो शाखा तपाईंको पहुँचमा छैन");
   sel = id; HL = branchOf([id]);
@@ -712,7 +718,7 @@ function detail() {
     <div class="pp-h">तत्काल परिवार</div>${rows || '<p class="mut">कुनै नाता जोडिएको छैन।</p>'}
     <div class="pp-h" id="pi">व्यक्तिगत विवरण</div>${box("#F59E0B", "🎂", "जन्म मिति (BS)", esc(p.birth_bs))}${p.is_living ? "" : box("#6B7280", "🕊", "मृत्यु मिति (BS)", esc(p.death_bs))}${p.gender === "F" ? box("#EC4899", "👰", "विवाहअघिको थर", esc(p.maiden_name)) + box("#EF4444", "💍", "विवाहपछिको थर", esc(p.married_name)) : ""}${box("#F59E0B", "📌", "जन्म स्थान", esc(p.birth_place))}${box("#14B8A6", "📞", "फोन", esc(p.phone))}${isStaff() || p.id === me?.position_person_id ? box("#3B82F6", "✉️", "इमेल (लगइन)", esc(p.email)) : ""}${box("#8B5CF6", "📍", "ठेगाना", esc(addrOf(p)))}${fbOk(p.facebook) ? box("#1877F2", "🔗", "Facebook", `<a href="${esc(p.facebook)}" target="_blank" rel="noopener noreferrer">प्रोफाइल खोल्नुहोस्</a>`) : ""}${box("#D97706", "📝", "टिप्पणी", esc(p.notes))}`;
   if (lim) { el.querySelectorAll(".pp-l,.pp-h,.fr,.ib,.pp-act").forEach(x => x.remove()); el.insertAdjacentHTML("beforeend", '<p class="mut" style="margin-top:1rem">यो शाखाको नाम मात्र हेर्न मिल्छ।</p>'); }
-  el.hidden = false; document.body.classList.add("det-open");
+  el.hidden = false; pushPage(true);
   if (tab === "tree" && innerWidth > 640) setTimeout(() => sel === p.id && focusOn(p.id, V.k), 400); // पेज सरेपछि कार्ड बीचमा
   el.onclick = e => { const x = e.target.closest("[data-go]"); if (!x) return; const id = x.dataset.go; if (tab === "tree") { openUp(id); draw(); glide(id, 1); } pick(id); };
   $("#dx").onclick = unpick;
@@ -1041,6 +1047,27 @@ async function adminView() {
     toast("✅ सुरक्षित भयो"); await load(); render();
   };
 }
+
+// ---------- थप CSS (index.html जस्ताको तस्तै राखिएको; यहाँबाट मात्र थपिन्छ) ----------
+(() => {
+  const st = document.createElement("style");
+  st.textContent = `
+main{transition:margin .35s var(--ease)}
+/* प्रोफाइल सच्याउने विन्डो: grid को पङ्क्तिलाई उचाइमा बाँधेर बीचको भाग scroll हुने, तलका बटन सधैं देखिने */
+.edw{grid-template-rows:minmax(0,1fr);height:min(88vh,820px);height:min(88dvh,820px)}
+.edm{min-height:0}
+.edb{min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.edf{flex:none}
+@media (max-width:640px){.edw{height:100%}}
+/* Family Overview */
+.ovgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1rem}
+.ovc h3{font-size:1.05rem}.ovd{display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
+.ovl{list-style:none;display:grid;gap:.35rem;font-size:.88rem}.ovl i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:.4rem}
+.ovb{display:grid;grid-template-columns:minmax(110px,40%) 1fr 34px;gap:.5rem;align-items:center;margin:.35rem 0;font-size:.82rem}
+.ovb div{background:var(--bg-2);border-radius:50px;height:12px;overflow:hidden}.ovb div i{display:block;height:100%;border-radius:50px}`;
+  document.head.appendChild(st);
+})();
+
 // ---------- Family Overview ----------
 const PAL = ["#3B82F6", "#EC4899", "#F59E0B", "#14B8A6", "#8B5CF6", "#EF4444", "#6B7280"];
 const bsYear = () => { const t = new Date(); return t.getFullYear() + ((t.getMonth() > 3 || (t.getMonth() === 3 && t.getDate() >= 14)) ? 57 : 56); };
