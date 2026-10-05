@@ -700,7 +700,7 @@ let RM = {};
 const fbOk = u => /^https:\/\/((www|m|web)\.)?(facebook|fb)\.com\//i.test(u || "");
 const bsNow = () => { const t = new Date(), y0 = t.getFullYear(), s0 = new Date(y0, 3, 14), ok = t >= s0, st = ok ? s0 : new Date(y0 - 1, 3, 14), df = Math.floor((t - st) / 864e5); return [ok ? y0 + 57 : y0 + 56, Math.min(12, Math.floor(df / 30.4) + 1), Math.floor(df % 30.4) + 1]; };
 const AGE = (b, d) => { const P = x => String(x || "").split("-").map(v => parseInt(v) || 0), [y, m, g] = P(b); if (!y) return ""; const [ey, em, eg] = d ? P(d) : bsNow(); if (!ey || ey < y) return ""; let a = ey - y; if (m && em && (em < m || (em === m && g && eg && eg < g))) a--; return ` (उमेर ${np(Math.max(0, a))})`; };
-function relsOf(p) { // तत्काल परिवार: नाम + यो व्यक्तिसँगको साइनो
+function relsOf(p) { // परिवार: नाम + यो व्यक्तिसँगको साइनो
   const R = [], add = (q, l) => q && R.push({ q, l }), g = (q, m, f, o) => q.gender === "M" ? m : q.gender === "F" ? f : o;
   add(byId[p.father_id], "बुबा"); add(byId[p.mother_id], "आमा");
   spousesOf(p).forEach(i => add(byId[i], g(byId[i], "पति", "पत्नी", "श्रीमान/श्रीमती")));
@@ -723,7 +723,7 @@ function detail() {
       ${p.is_living ? "" : `<div class="pp-l">🕊 दिवंगत${p.death_bs ? " · " + esc(p.death_bs) : ""}</div>`}</div></div>
     <div class="pp-act"><button id="pa-p"><i>🪪</i>Profile</button>${ce ? `<button id="ed"><i>✏️</i>${isAdm() ? "Edit" : "Edit (अनुरोध)"}</button><button id="ac"><i>➕</i>Add</button><button id="mo"><i>⋯</i>More</button>` : ""}</div>
     ${ce ? `<div id="pmore" hidden>${isAdm() ? '<button id="inv">🔗 निम्तो लिंक</button>' : ""}<button class="bad" id="dl">${isAdm() ? "🗑 हटाउने" : "🗑 हटाउने अनुरोध"}</button></div>` : ""}
-    <div class="pp-h">तत्काल परिवार</div>${rows || '<p class="mut">कुनै नाता जोडिएको छैन।</p>'}
+    <div class="pp-h">परिवार</div>${rows || '<p class="mut">कुनै नाता जोडिएको छैन।</p>'}
     <div class="pp-h" id="pi">व्यक्तिगत विवरण</div>${box("#F59E0B", "🎂", "जन्म मिति (BS)", esc(p.birth_bs))}${p.is_living ? "" : box("#6B7280", "🕊", "मृत्यु मिति (BS)", esc(p.death_bs))}${p.gender === "F" ? box("#EC4899", "👰", "विवाहअघिको थर", esc(p.maiden_name)) + box("#EF4444", "💍", "विवाहपछिको थर", esc(p.married_name)) : ""}${box("#F59E0B", "📌", "जन्म स्थान", esc(p.birth_place))}${box("#14B8A6", "📞", "फोन", esc(p.phone))}${isStaff() || p.id === me?.position_person_id ? box("#3B82F6", "✉️", "इमेल (लगइन)", esc(p.email)) : ""}${box("#8B5CF6", "📍", "ठेगाना", esc(addrOf(p)))}${fbOk(p.facebook) ? box("#1877F2", "🔗", "Facebook", `<a href="${esc(p.facebook)}" target="_blank" rel="noopener noreferrer">प्रोफाइल खोल्नुहोस्</a>`) : ""}${box("#D97706", "📝", "टिप्पणी", esc(p.notes))}`;
   if (lim) { el.querySelectorAll(".pp-l,.pp-h,.fr,.ib,.pp-act").forEach(x => x.remove()); el.insertAdjacentHTML("beforeend", '<p class="mut" style="margin-top:1rem">यो शाखाको नाम मात्र हेर्न मिल्छ।</p>'); }
   el.hidden = false; pushPage(true);
@@ -775,14 +775,14 @@ const mcard = (p, core) => {
   const mine = p.id === me.position_person_id, kc = kidsOf(p).length;
   return `<div class="mc g${p.gender || "O"} ${core ? "core" : ""} ${mine ? "mine" : ""} ${p.is_living ? "" : "dead"}" tabindex="0" data-id="${p.id}"><div class="mav2">${esc(Array.from(p.name)[0])}</div><div class="mn">${esc(p.name)}</div><div class="my">${esc(RM[p.id] || "नातेदार")}</div>${kc ? `<span class="mb">${np(kc)}</span>` : ""}${mine ? '<span class="me">तपाईं</span>' : ""}${coreEdit ? `<div class="cedit"><button class="ghost" data-rl="${p.id}">✎ नाता</button></div>` : ""}</div>`;
 };
-function famGroups() { // तत्काल परिवार → विवाहित छोरीचेली → दाजुभाइ-दिदीबहिनी → बाँकी
+function famGroups() { // परिवार → विवाहित छोरीचेली → दाजुभाइ-दिदीबहिनी → बाँकी
   const a = byId[me.position_person_id] || byId[me.position_parent_id] || byId[me.position_grand_id], used = new Set();
   const take = arr => arr.filter(p => p && can(p.id) && !used.has(p.id) && used.add(p.id)), sp = p => spousesOf(p).map(i => byId[i]), G = [];
   if (a) {
     const f = byId[a.father_id], m = byId[a.mother_id], ks = kidsOf(a).sort(byBirth);
     const sons = ks.filter(k => k.gender !== "F"), ds = ks.filter(k => k.gender === "F"), md = ds.filter(k => spousesOf(k).length), ud = ds.filter(k => !spousesOf(k).length);
     const gk = sons.flatMap(x => kidsOf(x).sort(byBirth));
-    G.push(["🏠 तत्काल परिवार", take([byId[f?.father_id], byId[f?.mother_id], f, m, a, ...sp(a), ...sons, ...sons.flatMap(sp), ...ud, ...gk.filter(k => k.gender !== "F"), ...gk.filter(k => k.gender === "F" && !spousesOf(k).length)])]);
+    G.push(["🏠 परिवार", take([byId[f?.father_id], byId[f?.mother_id], f, m, a, ...sp(a), ...sons, ...sons.flatMap(sp), ...ud, ...gk.filter(k => k.gender !== "F"), ...gk.filter(k => k.gender === "F" && !spousesOf(k).length)])]);
     G.push(["💞 विवाहित छोरीचेली र उनको परिवार", take(md.flatMap(x => [x, ...sp(x), ...kidsOf(x).sort(byBirth)]))]);
     const sb = people.filter(y => y.id !== a.id && ((a.father_id && y.father_id === a.father_id) || (a.mother_id && y.mother_id === a.mother_id))).sort(byBirth);
     G.push(["👫 दाजुभाइ-दिदीबहिनी (उही पुस्ता)", take(sb.flatMap(x => [x, ...sp(x)]))]);
@@ -798,7 +798,7 @@ function famView() {
   const base = byId[me.position_person_id] || byId[me.position_parent_id], has = !!(base || byId[me.position_grand_id]), G = famGroups(), ic = has ? G[0][1].length : 0;
   const msg = !ACC ? "सबै वंशावली तपाईंको सामु खुला छ।" : base ? "तपाईंको भूमिकाअनुसार खुला भएको वंश मात्र देखिन्छ। बाँकी शाखा चार्टमा धमिला र लक छन्।" : "तपाईंको स्थान अझै तोकिएको छैन। एडमिनले तोकेपछि शाखा खुल्नेछ।";
   $("#pane").innerHTML = `<section class="hero2"><div class="hello"><span class="hchip">${ROLE_L[act]}</span><h2>नमस्ते, ${esc(dispName())}</h2><p>${msg}</p></div>
-    <div class="stats"><div><b>${np(ic)}</b><span>तत्काल परिवार</span></div><div><b>${np(ACC ? ACC.size : people.length)}</b><span>खुला सदस्य</span></div><div><b>${np(people.length)}</b><span>कुल सदस्य</span></div></div>
+    <div class="stats"><div><b>${np(ic)}</b><span>परिवार</span></div><div><b>${np(ACC ? ACC.size : people.length)}</b><span>खुला सदस्य</span></div><div><b>${np(people.length)}</b><span>कुल सदस्य</span></div></div>
     <div class="row"><button id="gome" ${base ? "" : "disabled"}>📍 मेरो स्थान</button>${act !== "general" ? `<button class="ghost" id="addp">${isAdm() ? "+ सदस्य थप्ने" : "+ सदस्य थप्ने अनुरोध"}</button>` : ""}${isStaff() ? '<button class="ghost" id="ovb">📊 Family Overview</button>' : ""}</div></section>
     <input id="fq" class="msearch" placeholder="🔍 नाम वा साइनो खोज्नुहोस्…">
     <div class="rchips"><button class="ghost ${famMode === "grid" ? "on" : ""}" id="vg">▦ थम्बनेल</button><button class="ghost ${famMode === "list" ? "on" : ""}" id="vl">☰ सूची</button><button class="ghost ${coreEdit ? "on" : ""}" id="cedit">${coreEdit ? "✔ सम्पन्न" : "✏ नाता सच्याउने"}</button>${coreEdit ? '<button class="ghost" id="creset">↺ स्वतः</button>' : ""}</div>
@@ -1102,7 +1102,7 @@ const bsYear = () => { const t = new Date(); return t.getFullYear() + ((t.getMon
 function ancUp(id) { const M = { [id]: 0 }, q = [id]; while (q.length) { const x = q.shift(), p = byId[x]; [p?.father_id, p?.mother_id].forEach(a => { if (a && byId[a] && M[a] === undefined) { M[a] = M[x] + 1; q.push(a); } }); } return M; }
 function ovGroups(pool, base) { // साझा पुर्खाको तह अनुसार
   const A = ancUp(base.id), G = {}, add = k => (G[k] ||= []).push(add.c), sps = new Set(spousesOf(base));
-  const LV = ["", "👫 दाजुभाइ-दिदीबहिनी र तिनका सन्तान (साझा बुबा/आमा)", "🏠 काका/फुपू/ठूलोबुबा परिवार (साझा हजुरबुबा)", "🌳 साझा हजुरबुबाका बुबा"];
+  const LV = ["", "👫 साझा बुबा/आमा", "🏠 साझा हजुरबुबा", "🌳 साझा हजुरबुबाका बुबा"];
   pool.forEach(x => { add.c = x.id;
     if (x.id === base.id) return add("🙋 तपाईं");
     if (A[x.id] !== undefined) return add("⬆ सीधा पुर्खा");
@@ -1127,11 +1127,11 @@ function ovView() {
   bk.forEach(k => B[k] = []);
   pool.forEach(p => { const b = parseInt(yr(p.birth_bs)), e = p.is_living ? now : parseInt(yr(p.death_bs)); if (!b || !e || e < b) return unk.push(p.id); B[bk[Math.min(8, Math.floor((e - b) / 10))]].push(p.id); });
   const ag = Object.entries(B); if (unk.length) ag.push(["वर्ष नभएका", unk]);
-  $("#pane").innerHTML = `<div class="row" style="margin:0 0 1rem"><button class="ghost" id="ovback">← परिवार</button></div><h2>📊 Family Overview <small class="mut">${np(pool.length)} सदस्य · कुनै भागमा क्लिक गर्नुहोस्</small></h2><div class="card hscroll" id="ovlist" hidden></div><div class="ovgrid">`
+  $("#pane").innerHTML = `<div class="row" style="margin:0 0 1rem"><button class="ghost" id="ovback">← परिवार</button></div><h2>📊 पारिवारिक सारांश <small class="mut">${np(pool.length)} सदस्य · कुनै भागमा क्लिक गर्नुहोस्</small></h2><div class="card hscroll" id="ovlist" hidden></div><div class="ovgrid">`
     + donut("१. लिङ्ग", [["पुरुष", f(p => p.gender === "M")], ["महिला", f(p => p.gender === "F")], ["अन्य/नतोकिएको", f(p => p.gender !== "M" && p.gender !== "F")]].filter(d => d[1].length))
-    + donut("२. जीवित बनाम दिवंगत", [["जीवित", f(p => p.is_living)], ["दिवंगत", f(p => !p.is_living)]].filter(d => d[1].length))
+    + donut("२. जीवित तथा दिवंगत", [["जीवित", f(p => p.is_living)], ["दिवंगत", f(p => !p.is_living)]].filter(d => d[1].length))
     + donut("३. वैवाहिक स्थिति", [["विवाहित", f(p => spousesOf(p).length)], ["अविवाहित/अज्ञात", f(p => !spousesOf(p).length)]].filter(d => d[1].length))
-    + (base ? bars("४. मसँग साझा पुर्खा भएका (नाता अनुसार)", ovGroups(pool, base)) : `<div class="card ovc"><h3>४. साझा पुर्खा</h3><p class="mut">तपाईंको स्थान तोकिएपछि यो चार्ट देखिन्छ।</p></div>`)
+    + (base ? bars("४. म सँग साझा पुर्खा भएका (नाता अनुसार)", ovGroups(pool, base)) : `<div class="card ovc"><h3>४. साझा पुर्खा</h3><p class="mut">तपाईंको स्थान तोकिएपछि यो चार्ट देखिन्छ।</p></div>`)
     + bars("५. उमेर वितरण (वर्ष)", ag, "उमेर = BS वर्षको अन्तर (अनुमानित)।") + `</div>`;
   $("#pane").onclick = e => {
     if (e.target.closest("#ovback")) { tab = "fam"; return render(); }
