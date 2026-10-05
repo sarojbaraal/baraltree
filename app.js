@@ -57,7 +57,7 @@ function who() {
   const rs = myRoles();
   $("#who").innerHTML = `<span class="wn">${esc(dispName())}</span>` + (rs.length > 1 ? `<select id="rs" aria-label="भूमिका छान्नुहोस्">${rs.map(r => `<option value="${r}" ${r === act ? "selected" : ""}>${ROLE_L[r]}</option>`).join("")}</select>` : `<span class="tag">${ROLE_L[act] || "पर्खाइमा"}</span>`) + `<button class="ghost" id="out">बाहिर</button>`;
   $("#out").onclick = () => db.auth.signOut();
-  if ($("#rs")) $("#rs").onchange = e => { act = e.target.value; localStorage.setItem("vv_role", act); if (tab === "admin" && !isStaff()) tab = "fam"; render(); };
+  if ($("#rs")) $("#rs").onchange = async e => { act = e.target.value; localStorage.setItem("vv_role", act); if (tab === "admin" && !isStaff()) tab = "fam"; await load(); render(); };
 }
 async function boot() {
   const { data: { session } } = await db.auth.getSession();
@@ -77,9 +77,9 @@ async function boot() {
   await load(); render();
 }
 async function load() {
-  const { data, error } = await db.from("people").select("*").order("created_at");
+  const { data, error } = await db.rpc("get_people", { p_role: act }); // people तालिका सिधै बन्द छ; भूमिकाअनुसार फिल्टर भएको डाटा मात्र आउँछ
   if (error) return alert(error.message);
-  people = data; byId = Object.fromEntries(people.map(p => [p.id, p]));
+  people = data || []; byId = Object.fromEntries(people.map(p => [p.id, p]));
 }
 
 // ---------- लगइन / दर्ता / पासवर्ड रिसेट — PREMIUM UI ----------
