@@ -3,10 +3,12 @@ const CFG = { url: "https://onhznyefbseptuwurqxx.supabase.co", key: "eyJhbGciOiJ
 const db = supabase.createClient(CFG.url, CFG.key);
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const LABEL = {name:"नाम",gender:"लिङ्ग",father_id:"बुबा",mother_id:"आमा",spouse_id:"पति/पत्नी",father_name:"बुबा (नयाँ नाम)",mother_name:"आमा (नयाँ नाम)",spouse_name:"पति/पत्नी (नयाँ नाम)",is_living:"जीवित",birth_bs:"जन्म मिति (BS)",death_bs:"मृत्यु मिति (BS)",phone:"फोन",address:"ठेगाना",notes:"टिप्पणी"};
+const LABEL = {name:"नाम",gender:"लिङ्ग",father_id:"बुबा",mother_id:"आमा",spouse_id:"पति/पत्नी",father_name:"बुबा (नयाँ नाम)",mother_name:"आमा (नयाँ नाम)",spouse_name:"पति/पत्नी (नयाँ नाम)",is_living:"जीवित",birth_bs:"जन्म मिति (BS)",death_bs:"मृत्यु मिति (BS)",phone:"फोन",address:"ठेगाना",notes:"टिप्पणी",maiden_name:"विवाहअघिको थर (Maiden)",married_name:"विवाहपछिको थर (Married)",birth_place:"जन्म स्थान"};
 const FIELDS = Object.keys(LABEL);
 let me = null, people = [], byId = {}, sel = null, tab = "fam";
 
+const invTok = () => { try { return localStorage.getItem("vv_invite"); } catch (e) { return null; } };
+{ const t = new URLSearchParams(location.search).get("invite"); if (t) { try { localStorage.setItem("vv_invite", t); } catch (e) {} history.replaceState(null, "", location.pathname); } }
 let recovering = false;
 db.auth.onAuthStateChange(ev => { if (ev === "PASSWORD_RECOVERY") recovering = true; setTimeout(boot, 0); });
 const ROLE_L = { general: "सामान्य सदस्य", premium: "प्रिमियम सदस्य", moderator: "मोडरेटर", admin: "एडमिन" }, ORDER = ["admin", "moderator", "premium", "general"];
@@ -60,6 +62,13 @@ async function boot() {
   let { data } = await db.from("profiles").select("*").eq("id", session.user.id).single();
   me = data;
   const md = session.user.user_metadata || {};
+  const inv = invTok() || md.invite;
+  if (me && inv) {
+    const { data: who_, error: ie } = await db.rpc("claim_invite", { p_token: inv });
+    try { localStorage.removeItem("vv_invite"); } catch (e) {}
+    if (md.invite) db.auth.updateUser({ data: { invite: null } });
+    if (ie) toast("निम्तो: " + ie.message); else { ({ data } = await db.from("profiles").select("*").eq("id", session.user.id).single()); me = data || me; toast("✅ तपाईंको खाता " + who_ + " को प्रोफाइलसँग जोडियो"); }
+  }
   if (me && !hasPos(me) && (md.pos_person || md.pos_parent || md.pos_grand)) {
     await db.rpc("set_my_position", { p_person: md.pos_person || null, p_parent: md.pos_parent || null, p_grand: md.pos_grand || null });
     ({ data } = await db.from("profiles").select("*").eq("id", session.user.id).single()); me = data || me;
@@ -89,6 +98,11 @@ function wireEyes() {
 }
 const say = (t, ok) => { const m = $("#am"); m.textContent = t; m.style.color = ok ? "var(--success)" : "var(--bad)"; };
 
+async function showInvite() {
+  const t = invTok(), b = document.querySelector(".auth-subtitle"); if (!t || !b) return;
+  const { data } = await db.rpc("invite_info", { p_token: t }), r = data?.[0];
+  b.insertAdjacentHTML("afterend", r ? `<p class="msg" style="color:var(--success);text-align:center">🎟 तपाईंलाई <b>${esc(r.person_name)}</b> को प्रोफाइलका लागि निम्तो आएको छ। लगइन वा खाता बनाउनुहोस्।</p>` : `<p class="msg" style="text-align:center">यो निम्तो लिंक अमान्य छ वा म्याद सकिएको छ।</p>`);
+}
 function authView(mode = "login") {
   const TITLE = { login: "स्वागत छ", signup: "खाता बनाउनुहोस्", forgot: "पासवर्ड रिसेट" };
   const SUBTITLE = {
@@ -158,7 +172,7 @@ function authView(mode = "login") {
         </div>
       </div>
     </div>`;
-  wireEyes(); if (mode === "signup") loadPos();
+  wireEyes(); showInvite(); if (mode === "signup") loadPos();
   document.querySelectorAll(".lnk").forEach(b => b.onclick = () => authView(b.dataset.m));
   const go = async () => {
     const email = $("#em").value.trim(), password = $("#pw")?.value || "";
@@ -169,8 +183,8 @@ function authView(mode = "login") {
       const name = $("#fn").value.trim();
       if (!name) return say("पूरा नाम लेख्नुहोस्।");
       if (password.length < 8) return say("पासवर्ड कम्तिमा ८ अक्षरको हुनुपर्छ ल!");
-      if ($("#pos").options.length > 1 && !$("#pos").value && !$("#pos2").value && !$("#pos3").value) return say("वंशावलीमा आफ्नो स्थान (वा बुबा/आमा) छान्नुहोस्।");
-      const { error } = await db.auth.signUp({ email, password, options: { data: { full_name: name, pos_person: $("#pos").value || null, pos_parent: $("#pos2").value || null, pos_grand: $("#pos3").value || null } } });
+      if (!invTok() && $("#pos").options.length > 1 && !$("#pos").value && !$("#pos2").value && !$("#pos3").value) return say("वंशावलीमा आफ्नो स्थान (वा बुबा/आमा) छान्नुहोस्।");
+      const { error } = await db.auth.signUp({ email, password, options: { data: { full_name: name, pos_person: $("#pos").value || null, pos_parent: $("#pos2").value || null, pos_grand: $("#pos3").value || null, invite: invTok() || null } } });
       say(error ? error.message : "खाता बन्यो। इमेल खोलेर ईन्बक्स र स्पाम दुबै चेक गर्नुहोस त! ।", !error);
     } else {
       const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: location.href.split("#")[0].split("?")[0] });
@@ -414,7 +428,7 @@ function choose(id) {
   openUp(id); draw(); glide(id, 1); pick(id, 750);
 }
 // ---- निर्यात / आयात ----
-const PF = ["id", "name", "gender", "father_id", "mother_id", "spouse_id", "more_spouse_ids", "is_living", "birth_bs", "death_bs", "phone", "address", "notes"];
+const PF = ["id", "name", "gender", "father_id", "mother_id", "spouse_id", "more_spouse_ids", "is_living", "birth_bs", "death_bs", "phone", "address", "notes", "maiden_name", "married_name", "birth_place", "email", "facebook"];
 const stamp = () => new Date().toISOString().slice(0, 10);
 const dl = (name, text, type) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1500); };
 const csvq = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
@@ -697,15 +711,28 @@ function detail() {
       <div class="pp-l">✱ ${p.birth_bs ? esc(p.birth_bs) + AGE(p.birth_bs, p.is_living ? "" : p.death_bs) : "जन्म मिति छैन"}</div>
       ${p.is_living ? "" : `<div class="pp-l">🕊 दिवंगत${p.death_bs ? " · " + esc(p.death_bs) : ""}</div>`}</div></div>
     <div class="pp-act"><button id="pa-p"><i>🪪</i>Profile</button><button id="ed"><i>✏️</i>${isAdm() ? "Edit" : "Edit (अनुरोध)"}</button><button id="ac"><i>➕</i>Add</button><button id="mo"><i>⋯</i>More</button></div>
-    <div id="pmore" hidden><button class="bad" id="dl">${isAdm() ? "🗑 हटाउने" : "🗑 हटाउने अनुरोध"}</button></div>
+    <div id="pmore" hidden>${isAdm() ? '<button id="inv">🔗 निम्तो लिंक</button>' : ""}<button class="bad" id="dl">${isAdm() ? "🗑 हटाउने" : "🗑 हटाउने अनुरोध"}</button></div>
     <div class="pp-h">तत्काल परिवार</div>${rows || '<p class="mut">कुनै नाता जोडिएको छैन।</p>'}
-    <div class="pp-h" id="pi">व्यक्तिगत विवरण</div>${box("#F59E0B", "🎂", "जन्म मिति (BS)", esc(p.birth_bs))}${p.is_living ? "" : box("#6B7280", "🕊", "मृत्यु मिति (BS)", esc(p.death_bs))}${box("#14B8A6", "📞", "फोन", esc(p.phone))}${box("#8B5CF6", "📍", "ठेगाना", esc(addrOf(p)))}${fbOk(p.facebook) ? box("#1877F2", "🔗", "Facebook", `<a href="${esc(p.facebook)}" target="_blank" rel="noopener noreferrer">प्रोफाइल खोल्नुहोस्</a>`) : ""}${box("#D97706", "📝", "टिप्पणी", esc(p.notes))}`;
+    <div class="pp-h" id="pi">व्यक्तिगत विवरण</div>${box("#F59E0B", "🎂", "जन्म मिति (BS)", esc(p.birth_bs))}${p.is_living ? "" : box("#6B7280", "🕊", "मृत्यु मिति (BS)", esc(p.death_bs))}${box("#EC4899", "👰", "विवाहअघिको थर", esc(p.maiden_name))}${box("#EF4444", "💍", "विवाहपछिको थर", esc(p.married_name))}${box("#F59E0B", "📌", "जन्म स्थान", esc(p.birth_place))}${box("#14B8A6", "📞", "फोन", esc(p.phone))}${isStaff() || p.id === me?.position_person_id ? box("#3B82F6", "✉️", "इमेल (लगइन)", esc(p.email)) : ""}${box("#8B5CF6", "📍", "ठेगाना", esc(addrOf(p)))}${fbOk(p.facebook) ? box("#1877F2", "🔗", "Facebook", `<a href="${esc(p.facebook)}" target="_blank" rel="noopener noreferrer">प्रोफाइल खोल्नुहोस्</a>`) : ""}${box("#D97706", "📝", "टिप्पणी", esc(p.notes))}`;
   el.hidden = false;
   el.onclick = e => { const x = e.target.closest("[data-go]"); if (!x) return; const id = x.dataset.go; if (tab === "tree") { openUp(id); draw(); glide(id, 1); } pick(id); };
   $("#dx").onclick = unpick;
   $("#pa-p").onclick = () => $("#pi").scrollIntoView({ behavior: "smooth", block: "start" });
   $("#ed").onclick = () => form("update", p); $("#ac").onclick = () => addMenu(p);
-  $("#mo").onclick = () => { $("#pmore").hidden = !$("#pmore").hidden; }; $("#dl").onclick = () => form("delete", p);
+  $("#mo").onclick = () => { $("#pmore").hidden = !$("#pmore").hidden; }; $("#dl").onclick = () => form("delete", p); if ($("#inv")) $("#inv").onclick = () => inviteForm(p);
+}
+function inviteForm(p) { // व्यक्ति-विशेष, एकपटके निम्तो लिंक
+  const d = $("#dlg"), site = location.href.split("#")[0].split("?")[0];
+  d.innerHTML = `<h3>"${esc(p.name)}" का लागि निम्तो लिंक</h3><p class="mut">यो लिंक यिनै व्यक्तिको प्रोफाइलका लागि मात्र हो, एकपटक मात्र चल्छ र १४ दिनमा सकिन्छ। लिंक हात पर्ने जोसुकैले लगइन गरे यो प्रोफाइल पाउँछ, त्यसैले सही व्यक्तिलाई मात्र पठाउनुहोस्।</p>
+    <div class="roles">${ORDER.slice().reverse().filter(r => r !== "admin").map(r => `<label class="rcb"><input type="checkbox" class="rc" value="${r}" ${r === "general" ? "checked" : ""}> ${ROLE_L[r]}</label>`).join("")}</div>
+    <div class="msg" id="fm"></div><div id="ivo"></div><div class="row"><button id="go">लिंक बनाउने</button><button class="ghost" id="cx">बन्द</button></div>`;
+  d.open || d.showModal(); $("#cx").onclick = () => d.close();
+  $("#go").onclick = async () => {
+    const roles = [...d.querySelectorAll(".rc:checked")].map(x => x.value); if (!roles.length) return $("#fm").textContent = "कम्तिमा एक भूमिका छान्नुहोस्।";
+    const { data, error } = await db.rpc("create_invite", { p_person: p.id, p_roles: roles }); if (error) return $("#fm").textContent = error.message;
+    const link = `${site}?invite=${data}`; navigator.clipboard?.writeText(`नमस्ते ${p.name}! हाम्रो वंशावलीमा तपाईंको प्रोफाइलमा जोडिन यो लिंक खोल्नुहोस्: ${link}`).catch(() => {});
+    $("#ivo").innerHTML = `<label>लिंक<input readonly value="${esc(link)}" onclick="this.select()"></label><p class="mut">सन्देशसहित कपी भयो। पुरानो लिंक भएको भए रद्द भयो।</p>`;
+  };
 }
 function addMenu(p) { // कुन नाता थप्ने भनेर सोध्ने
   const d = $("#dlg"), hp = !!p.father_id, hm = !!p.mother_id;
@@ -795,8 +822,10 @@ function form(action, p = null, parent = null, pre = null) {
   d.innerHTML = `<div class="edw"><aside class="eds"><div class="pp-av g${v.gender || "O"}" id="eds-a">${esc(Array.from(v.name || "?")[0])}</div><b id="eds-n">${esc(v.name || "नयाँ व्यक्ति")}</b><span id="eds-y">${esc(yr(v.birth_bs))}</span></aside>
     <div class="edm"><button type="button" class="ghost pp-x" id="cx2" aria-label="बन्द">×</button><div class="edb"><h2>${ttl}</h2>
     <div class="rad">${radio("gx", "M", "पुरुष", v.gender || "")}${radio("gx", "F", "महिला", v.gender || "")}${radio("gx", "O", "अन्य / अज्ञात", v.gender || "")}</div><input type="hidden" id="f_gender" value="${esc(v.gender || "")}">
-    <label>नाम *<input id="f_name" value="${esc(v.name)}"></label>
-    <hr><div class="edg"><div><label>जन्म मिति (BS)</label>${dt("f_birth_bs", v.birth_bs)}</div><label>ठेगाना / जन्म स्थान<input id="f_address" value="${esc(v.address)}"></label></div>
+    <label>नाम * (पूरा)<input id="f_name" value="${esc(v.name)}"></label>
+    <div class="edg"><label>विवाहअघिको थर (Maiden)<input id="f_maiden_name" value="${esc(v.maiden_name)}"></label><label>विवाहपछिको थर (Married)<input id="f_married_name" value="${esc(v.married_name)}"></label></div>
+    <hr><div class="edg"><div><label>जन्म मिति (BS)</label>${dt("f_birth_bs", v.birth_bs)}</div><label>जन्म स्थान<input id="f_birth_place" value="${esc(v.birth_place)}"></label></div>
+    <label>हालको ठेगाना<input id="f_address" value="${esc(v.address)}"></label>
     <hr><div class="rad">${radio("lv", "true", "जीवित", !!v.is_living)}${radio("lv", "false", "दिवंगत", !!v.is_living)}</div><input type="hidden" id="f_is_living" value="${v.is_living ? "true" : "false"}">
     <div id="f_death_w" ${v.is_living ? "hidden" : ""}><label>मृत्यु मिति (BS)</label>${dt("f_death_bs", v.death_bs)}</div>
     <label>फोन<span style="display:flex;gap:.4rem"><input id="f_phone" value="${esc(v.phone)}"><button type="button" class="ghost" id="pick-c" aria-label="सम्पर्कबाट छान्ने">📇</button></span></label>
@@ -813,6 +842,8 @@ function form(action, p = null, parent = null, pre = null) {
   d.querySelectorAll("[name=gx]").forEach(r => r.onchange = () => { $("#f_gender").value = r.value; $("#eds-a").className = "pp-av g" + r.value; });
   d.querySelectorAll("[name=lv]").forEach(r => r.onchange = () => { $("#f_is_living").value = r.value; $("#f_death_w").hidden = r.value === "true"; });
   $("#f_name").oninput = e => { $("#eds-n").textContent = e.target.value || "नयाँ व्यक्ति"; $("#eds-a").textContent = Array.from(e.target.value || "?")[0]; };
+  let lm = (v.married_name || "").trim(); // विवाहपछिको थर बदल्दा पूरा नाम स्वतः मिलाउने
+  $("#f_married_name").oninput = e => { const nv = e.target.value.trim(), nf = $("#f_name"); let n = nf.value.trim(); if (lm && n.endsWith(" " + lm)) n = n.slice(0, -(lm.length + 1)); nf.value = nv ? (n ? n + " " + nv : nv) : n; lm = nv; nf.dispatchEvent(new Event("input")); };
   $("#pick-c").onclick = async () => {
     if (!navigator.contacts?.select) return toast("सम्पर्क छान्न Android Chrome (HTTPS) चाहिन्छ");
     try { const [c] = await navigator.contacts.select(["name", "tel"], { multiple: false });
