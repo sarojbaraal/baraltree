@@ -786,24 +786,33 @@ function form(action, p = null, parent = null, pre = null) {
     const sp = parent.spouse_id;
     if (parent.gender === "F") { v.mother_id = parent.id; v.father_id = sp || ""; } else { v.father_id = parent.id; v.mother_id = sp || ""; }
   }
-  d.innerHTML = `<h3>${action === "add" ? (isAdm() ? "नयाँ व्यक्ति थप्ने" : "नयाँ व्यक्ति थप्ने अनुरोध") : `"${esc(p.name)}" ${isAdm() ? "सच्याउने" : "सच्याउने अनुरोध"}`}</h3>
-    <div class="grid">
+  d.classList.add("ed");
+  const MN = ["बैशाख", "जेठ", "असार", "श्रावण", "भदौ", "आश्विन", "कार्तिक", "मंसिर", "पौष", "माघ", "फागुन", "चैत"];
+  const dt = (id, val) => { const q = String(val || "").split("-"); return `<div class="dtr" data-for="${id}"><select class="dm" aria-label="महिना"><option value="">महिना</option>${MN.map((n, i) => `<option value="${i + 1}" ${+q[1] === i + 1 ? "selected" : ""}>${n}</option>`).join("")}</select><select class="dd" aria-label="गते"><option value="">गते</option>${Array.from({ length: 32 }, (_, i) => `<option value="${i + 1}" ${+q[2] === i + 1 ? "selected" : ""}>${np(i + 1)}</option>`).join("")}</select><input class="dy" inputmode="numeric" maxlength="4" placeholder="साल" aria-label="साल" value="${esc(q[0])}"></div><input type="hidden" id="${id}" value="${esc(val)}">`; };
+  const radio = (nm, val, lab, cur) => `<label><input type="radio" name="${nm}" value="${val}" ${String(cur) === val ? "checked" : ""}>${lab}</label>`;
+  const spn = v.spouse_id && byId[v.spouse_id] ? byId[v.spouse_id].name : "";
+  const ttl = action === "add" ? (isAdm() ? "नयाँ व्यक्ति थप्ने" : "नयाँ व्यक्ति थप्ने अनुरोध") : `${esc(p.name)} को प्रोफाइल ${isAdm() ? "सच्याउने" : "सच्याउने अनुरोध"}`;
+  d.innerHTML = `<div class="edw"><aside class="eds"><div class="pp-av g${v.gender || "O"}" id="eds-a">${esc(Array.from(v.name || "?")[0])}</div><b id="eds-n">${esc(v.name || "नयाँ व्यक्ति")}</b><span id="eds-y">${esc(yr(v.birth_bs))}</span></aside>
+    <div class="edm"><button type="button" class="ghost pp-x" id="cx2" aria-label="बन्द">×</button><div class="edb"><h2>${ttl}</h2>
+    <div class="rad">${radio("gx", "M", "पुरुष", v.gender || "")}${radio("gx", "F", "महिला", v.gender || "")}${radio("gx", "O", "अन्य / अज्ञात", v.gender || "")}</div><input type="hidden" id="f_gender" value="${esc(v.gender || "")}">
     <label>नाम *<input id="f_name" value="${esc(v.name)}"></label>
-    <label>लिङ्ग<select id="f_gender"><option value="">—</option>${["M:पुरुष","F:महिला","O:अन्य"].map(x => { const [k,l]=x.split(":"); return `<option value="${k}" ${v.gender===k?"selected":""}>${l}</option>`; }).join("")}</select></label>
-    ${pSel("father", "बुबा", v)}
-    ${pSel("mother", "आमा", v)}
-    ${pSel("spouse", "पति/पत्नी", v)}
-    <label>जीवित?<select id="f_is_living"><option value="true" ${v.is_living?"selected":""}>हो</option><option value="false" ${v.is_living?"":"selected"}>होइन</option></select></label>
-    <label>जन्म मिति (BS) २०४५-०५-१२<input id="f_birth_bs" value="${esc(v.birth_bs)}"></label>
-    <label id="f_death_w" ${v.is_living ? "hidden" : ""}>मृत्यु मिति (BS)<input id="f_death_bs" value="${esc(v.death_bs)}"></label>
+    <hr><div class="edg"><div><label>जन्म मिति (BS)</label>${dt("f_birth_bs", v.birth_bs)}</div><label>ठेगाना / जन्म स्थान<input id="f_address" value="${esc(v.address)}"></label></div>
+    <hr><div class="rad">${radio("lv", "true", "जीवित", !!v.is_living)}${radio("lv", "false", "दिवंगत", !!v.is_living)}</div><input type="hidden" id="f_is_living" value="${v.is_living ? "true" : "false"}">
+    <div id="f_death_w" ${v.is_living ? "hidden" : ""}><label>मृत्यु मिति (BS)</label>${dt("f_death_bs", v.death_bs)}</div>
     <label>फोन<span style="display:flex;gap:.4rem"><input id="f_phone" value="${esc(v.phone)}"><button type="button" class="ghost" id="pick-c" aria-label="सम्पर्कबाट छान्ने">📇</button></span></label>
-    <label>ठेगाना<input id="f_address" value="${esc(v.address)}"></label>${action === "update" ? `<label>Facebook लिंक<input id="f_fb" value="${esc(v.facebook)}" placeholder="https://facebook.com/..."></label>` : ""}</div>
-    <label>टिप्पणी<textarea id="f_notes" rows="2">${esc(v.notes)}</textarea></label>
-    ${NOTE("एडमिनलाई सन्देश (स्रोत/प्रमाण)")}
-    <div class="msg" id="fm"></div>
-    <div class="row"><button id="go">${GOT()}</button><button class="ghost" id="cx">रद्द</button></div>`;
-  (d.open || d.showModal()); $("#cx").onclick = () => d.close();
-  $("#f_is_living").onchange = e => $("#f_death_w").hidden = e.target.value === "true";
+    ${action === "update" ? `<label>Facebook लिंक<input id="f_fb" value="${esc(v.facebook)}" placeholder="https://facebook.com/..."></label>` : ""}
+    <hr><div class="sech">परिवार</div><div class="edg">${pSel("father", "बुबा", v)}${pSel("mother", "आमा", v)}</div>
+    <hr><div class="sech">पति/पत्नी${spn ? ": " + esc(spn) : ""}</div>${pSel("spouse", "पति/पत्नी", v)}
+    <hr><label>टिप्पणी<textarea id="f_notes" rows="2">${esc(v.notes)}</textarea></label>${NOTE("एडमिनलाई सन्देश (स्रोत/प्रमाण)")}
+    <div class="msg" id="fm"></div></div>
+    <div class="edf"><button id="go">${GOT()}</button><button class="ghost" id="cx">रद्द</button></div></div></div>`;
+  (d.open || d.showModal()); $("#cx").onclick = $("#cx2").onclick = () => d.close();
+  const comp = id => { const w = d.querySelector(`[data-for="${id}"]`), y = w.querySelector(".dy").value.trim(), m = w.querySelector(".dm").value, g = w.querySelector(".dd").value, z = n => String(n).padStart(2, "0");
+    $("#" + id).value = y ? y + (m ? "-" + z(m) + (g ? "-" + z(g) : "") : "") : ""; if (id === "f_birth_bs") $("#eds-y").textContent = y; };
+  d.querySelectorAll(".dtr").forEach(w => w.oninput = w.onchange = () => comp(w.dataset.for));
+  d.querySelectorAll("[name=gx]").forEach(r => r.onchange = () => { $("#f_gender").value = r.value; $("#eds-a").className = "pp-av g" + r.value; });
+  d.querySelectorAll("[name=lv]").forEach(r => r.onchange = () => { $("#f_is_living").value = r.value; $("#f_death_w").hidden = r.value === "true"; });
+  $("#f_name").oninput = e => { $("#eds-n").textContent = e.target.value || "नयाँ व्यक्ति"; $("#eds-a").textContent = Array.from(e.target.value || "?")[0]; };
   $("#pick-c").onclick = async () => {
     if (!navigator.contacts?.select) return toast("सम्पर्क छान्न Android Chrome (HTTPS) चाहिन्छ");
     try { const [c] = await navigator.contacts.select(["name", "tel"], { multiple: false });
@@ -999,6 +1008,7 @@ document.addEventListener("pointerdown", e => { const m = document.querySelector
 document.addEventListener("keydown", e => { if (e.key === "Escape") { const m = document.querySelector("details.menu[open]"); if (m) m.open = false; } });
 boot();
 
+$("#dlg").addEventListener("close", () => $("#dlg").classList.remove("ed"));
 // ---------- PWA ----------
 if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
 let ip; addEventListener("beforeinstallprompt", e => { e.preventDefault(); ip = e; if ($("#inst")) return; const b = document.createElement("button"); b.id = "inst"; b.textContent = "📲 एप इन्स्टल गर्नुहोस्"; b.onclick = () => { b.remove(); ip.prompt(); }; document.body.appendChild(b); });
