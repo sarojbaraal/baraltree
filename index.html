@@ -1877,6 +1877,30 @@ details.hcat .cnt{margin-left:auto;min-width:26px;padding:0 .5rem;border-radius:
 /* v9 — खोज्न मिल्ने सूची */
 .sx{margin-top:.3rem}.sxl{margin-top:.3rem;max-height:240px;overflow:auto;background:var(--card);border:1px solid var(--line-strong);border-radius:14px}
 .sxl div{padding:.65rem .9rem;cursor:pointer;font-weight:500;font-size:.9rem;border-bottom:1px solid var(--line)}.sxl div:hover{background:var(--acc-glow)}.sxl .none{color:var(--mut);cursor:default}
+
+/* v10 — बायाँ प्रोफाइल प्यानल, खोज सूची, नाता चयन */
+#det{position:fixed;left:0;right:auto;top:72px;bottom:0;width:min(390px,100%);max-height:none;border-radius:0 24px 0 0;z-index:90;padding:1.2rem 1.2rem 2rem;animation:slideL .35s var(--ease-out)}
+@keyframes slideL{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+.pp-x{position:absolute;right:.7rem;top:.7rem;width:36px;min-height:36px;padding:0;border-radius:50%}
+.pp-top{display:flex;gap:1rem;align-items:center;padding-right:2rem}
+.pp-av{width:86px;height:86px;flex:none;border-radius:50%;display:grid;place-items:center;font:700 2.2rem "Noto Serif Devanagari",serif;color:#fff;border:3px solid var(--gold);background:linear-gradient(135deg,#6B7280,#9CA3AF)}
+.pp-av.gM{background:linear-gradient(135deg,#3B82F6,#60A5FA)}.pp-av.gF{background:linear-gradient(135deg,#EC4899,#F472B6)}
+.pp-info h3{margin:0 0 .3rem;font-size:1.35rem;border:0;padding:0;background:none;-webkit-text-fill-color:var(--ink)}.pp-l{font-size:.88rem;color:var(--mut)}
+.pp-act{display:grid;grid-template-columns:repeat(4,1fr);gap:.3rem;margin:1.1rem 0 .8rem;padding-bottom:1rem;border-bottom:1px solid var(--line)}
+.pp-act button{display:flex;flex-direction:column;align-items:center;gap:.4rem;background:none;border:0;box-shadow:none;color:var(--ink-soft);padding:.2rem;min-height:0;font-size:.76rem;font-weight:600}
+.pp-act button::before{display:none}.pp-act button:hover{transform:none;box-shadow:none;filter:none}
+.pp-act button i{font-style:normal;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-size:1.25rem;background:var(--bg-2);border:1px solid var(--line)}
+.pp-act button:hover i{background:var(--acc-glow)}
+#pmore{margin:0 0 .6rem}.pp-h{font-size:.8rem;font-weight:800;color:var(--mut);margin:1rem 0 .4rem}
+.fr{display:flex;gap:.7rem;align-items:center;padding:.5rem .4rem;border-radius:14px;cursor:pointer}.fr:hover{background:var(--acc-glow)}
+.fr b{display:block;font-size:.95rem}.fr small{color:var(--acc);font-weight:700;font-size:.76rem}.fr.locked{cursor:not-allowed}.fr.locked b{filter:blur(5px)}
+#det .ib{margin-bottom:.5rem}
+.relg{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin:.8rem 0}.relg button{padding:.9rem;white-space:normal}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+.qw{position:relative;flex:1 1 220px;min-width:160px;display:flex;align-items:center;gap:.4rem}.tools .qw #q{flex:1 1 auto;min-width:0}
+.qr{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:40;max-height:300px;overflow:auto;background:var(--card);border:1px solid var(--line-strong);border-radius:16px;box-shadow:var(--shadow-xl)}
+.qr div{padding:.6rem .9rem;cursor:pointer;border-bottom:1px solid var(--line)}.qr div:hover{background:var(--acc-glow)}.qr b{display:block;font-size:.92rem}.qr small{color:var(--mut)}.qr .none{color:var(--mut);cursor:default}
+@media (max-width:640px){#det{top:auto;left:0;right:0;width:100%;bottom:calc(66px + env(safe-area-inset-bottom));max-height:62dvh;border-radius:22px 22px 0 0}}
 </style>
 </head>
 <body>
