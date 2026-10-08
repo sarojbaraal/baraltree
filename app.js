@@ -17,34 +17,13 @@ const myRoles = () => { const r = new Set(me?.roles || []); if (me?.role === "ad
 const isAdm = () => act === "admin", isStaff = () => act === "admin" || act === "moderator", seesAll = () => act !== "general";
 const can = id => !ACC || ACC.has(id), nm = p => can(p.id) ? p.name : "••••••";
 const np = n => String(n).replace(/\d/g, d => "०१२३४५६७८९"[d]);
-// ---- मिति (BS) YYYY-MM-DD मास्क ----
-const D2 = s => String(s ?? "").replace(/[०-९]/g, c => "०१२३४५६७८९".indexOf(c));
-const bsMask = raw => { const d = D2(raw).replace(/\D/g, "").slice(0, 8); return d.length > 6 ? d.slice(0, 4) + "-" + d.slice(4, 6) + "-" + d.slice(6) : d.length > 4 ? d.slice(0, 4) + "-" + d.slice(4) : d; };
-const bsFill = v => { const s = D2(v).trim(); if (!s) return ""; let y, m, g;
-  if (s.includes("-")) [y, m, g] = s.split("-").map(x => x.replace(/\D/g, "")); else { const d = s.replace(/\D/g, ""); y = d.slice(0, 4); m = d.slice(4, 6); g = d.slice(6, 8); }
-  if (!y || y.length < 4) return null; const z = x => !x ? "00" : x.padStart(2, "0"); return `${y}-${z(m)}-${z(g)}`; };
-const bsOk = v => { const [, m, g] = v.split("-"); return +m <= 12 && +g <= 32; };
-document.addEventListener("input", e => { if (e.target.classList?.contains("bsd")) e.target.value = bsMask(e.target.value); });
-document.addEventListener("focusout", e => { const t = e.target; if (t.classList?.contains("bsd") && t.value) { const f = bsFill(t.value); if (f) t.value = f; } });
-// ---- सम्पादनपछि चार्ट जहाँ थियो त्यहीँ रहने ----
-let KEEP = null, SQ = "";
-const reload = async () => { if (tab === "tree") KEEP = { V: { ...V }, sel }; await load(); render(); };
-// ---- पुस्ता (Gen) ----
-function genOf(p, s = new Set()) { if (s.has(p.id)) return 1; s.add(p.id); const pa = byId[p.father_id] || byId[p.mother_id]; if (pa) return genOf(pa, s) + 1;
-  const sp = spousesOf(p).map(i => byId[i]).find(x => x && (x.father_id || x.mother_id)); return sp ? genOf(sp, s) : 1; }
-// ---- प्रयोगकर्ताको आफ्नै समूह (सर्भरमा सेभ) ----
-let LAYOUT = { cats: [], map: {} }, lay = false;
-async function loadLayout() { try { const { data } = await db.from("user_layout").select("layout").eq("user_id", me.id).maybeSingle(); const l = data?.layout || {}; LAYOUT = { cats: l.cats || [], map: l.map || {} }; } catch (e) {} }
-async function saveLayout() { const { error } = await db.from("user_layout").upsert({ user_id: me.id, layout: LAYOUT, updated_at: new Date().toISOString() }); if (error) toast("सेभ भएन: " + error.message); }
-const newCat = () => { const n = prompt("समूहको नाम?"); if (!n || !n.trim()) return null; const id = "c" + Date.now().toString(36); LAYOUT.cats.push({ id, name: n.trim().slice(0, 40) }); return id; };
-const setCat = (id, c) => { c ? LAYOUT.map[id] = c : delete LAYOUT.map[id]; saveLayout(); famView(); };
-function applyLayout(G) { const L = LAYOUT, mv = new Set(Object.keys(L.map).filter(i => L.cats.some(c => c.id === L.map[i])));
-  const out = G.map(([t, a]) => [t, a.filter(p => !mv.has(p.id))]);
-  L.cats.forEach(c => out.splice(out.length - 1, 0, ["📁 " + c.name, people.filter(p => can(p.id) && L.map[p.id] === c.id).sort(byBirth), c.id])); return out; }
-function moveDlg(id) { const d = $("#dlg");
-  d.innerHTML = `<h3>"${esc(byId[id].name)}" कुन समूहमा राख्ने?</h3><div class="relg"><button data-c="">↺ स्वतः (मूल)</button>${LAYOUT.cats.map(c => `<button data-c="${c.id}">📁 ${esc(c.name)}</button>`).join("")}<button data-c="+">＋ नयाँ समूह</button></div><div class="row"><button class="ghost" id="cx">रद्द</button></div>`;
-  d.open || d.showModal(); $("#cx").onclick = () => d.close();
-  d.querySelector(".relg").onclick = e => { const b = e.target.closest("[data-c]"); if (!b) return; let c = b.dataset.c; if (c === "+") { c = newCat(); if (!c) return; } d.close(); setCat(id, c); }; }
+const na = s => String(s ?? "").replace(/[०-९]/g, d => "०१२३४५६७८९".indexOf(d));
+const SVGM = '<svg viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8z"/></svg>', SVGF = '<svg viewBox="0 0 24 24"><circle cx="12" cy="6.5" r="3.8"/><path d="M12 11c-2.2 0-3.5 1.2-4.2 3L5 21h14l-2.8-7c-.7-1.8-2-3-4.2-3z"/></svg>';
+const ico = g => g === "F" ? SVGF : SVGM;
+const DM = {"क":"k","ख":"k","ग":"g","घ":"g","ङ":"n","च":"c","छ":"c","ज":"j","झ":"j","ञ":"n","ट":"t","ठ":"t","ड":"d","ढ":"d","ण":"n","त":"t","थ":"t","द":"d","ध":"d","न":"n","प":"p","फ":"p","ब":"b","भ":"b","म":"m","य":"y","र":"r","ल":"l","व":"b","श":"s","ष":"s","स":"s","ह":"h","ऋ":"r","ृ":"r","ळ":"l"};
+const skel = s => { s = String(s || "").toLowerCase().replace(/ज्ञ/g, "gy"); let o = ""; for (const ch of s) o += DM[ch] ?? (/[a-z]/.test(ch) ? ch : "");
+  return o.replace(/chh|ch/g, "c").replace(/([kgjtdpb])h/g, "$1").replace(/sh/g, "s").replace(/x/g, "ks").replace(/f/g, "p").replace(/[vw]/g, "b").replace(/z/g, "j").replace(/q/g, "k").replace(/[aeiou]/g, ""); };
+const match = (t, q) => { t = String(t || "").toLowerCase(); if (t.includes(q)) return true; if (!/[a-z]/.test(q)) return false; const k = skel(q); return !!k && skel(t).includes(k); }; // "Saroj" टाइप गर्दा "सरोज" भेटिन्छ
 function toast(m) { let t = $("#toast"); if (!t) { t = document.createElement("div"); t.id = "toast"; document.body.appendChild(t); } t.textContent = m; t.className = "show"; clearTimeout(t._h); t._h = setTimeout(() => t.className = "", 2800); }
 function daughterLocked() { // प्रिमियम: विवाहित छोरीको पति/पत्नी र सन्तानको शाखा लक
   const L = new Set(), add = id => { if (!id || L.has(id) || !byId[id]) return; L.add(id); spousesOf(byId[id]).forEach(add); kidsOf(byId[id]).forEach(c => add(c.id)); };
@@ -105,7 +84,7 @@ async function boot() {
   if (me && !rs.length && !hasPos(me) && !hasClaim(me)) { who(); return posView(); }
   who();
   if (!me || !rs.length) return $("#tabs").innerHTML = "", $("#app").innerHTML = `<div class="card"><h2>स्वीकृतिको पर्खाइमा</h2><p>तपाईंको एकाउन्ट बनेको छ। एडमिनले स्वीकृत गरेपछि २४ घण्टा भित्रमा तपाईंले साइटमा पहुँच पाउनुहुनेछ।</p><p class="mut">तपाईंले दिएको: बुबा — ${esc(me?.claim_father || "—")} · हजुरबुबा — ${esc(me?.claim_grand || "—")}</p></div>`;
-  await loadLayout(); await load(); render();
+  await load(); render();
 }
 async function load() {
   const { data, error } = await db.rpc("get_people", { p_role: act }); // सर्भरले भूमिकाअनुसार फिल्टर गर्छ
@@ -252,16 +231,12 @@ function searchable(sel, nmIn) { // select लाई टाइप गरेर �
   const inp = box.firstChild, list = box.lastChild;
   if (sel.value && sel.selectedOptions[0]) inp.value = sel.selectedOptions[0].textContent; else if (nmIn && nmIn.value) inp.value = nmIn.value + " (नयाँ)";
   const show = () => {
-    const raw = inp.value.trim(), q = raw.toLowerCase(), m = items.filter(i => !q || i.t.toLowerCase().includes(q)).slice(0, 40);
+    const raw = inp.value.trim(), q = raw.toLowerCase(), m = items.filter(i => !q || match(i.t, q)).slice(0, 40);
     list.innerHTML = m.map(i => `<div data-v="${i.v}">${esc(i.t)}</div>`).join("") + (nmIn && raw ? `<div class="addn" data-new="1">➕ "${esc(raw)}" नयाँ थप्नुहोस्</div>` : "") || '<div class="none">भेटिएन</div>';
     list.hidden = false;
   };
-  inp.oninput = () => { sel.value = ""; if (nmIn) { nmIn.value = inp.value.replace(/ \(नयाँ\)$/, "").trim(); nmIn.disabled = false; } show(); }; inp.onfocus = show;
-  inp.onblur = () => setTimeout(() => {
-    list.hidden = true; const raw = inp.value.replace(/ \(नयाँ\)$/, "").trim(), ex = items.filter(i => i.t.trim() === raw);
-    if (ex.length === 1 && !sel.value) { sel.value = ex[0].v; inp.value = ex[0].t; if (nmIn) { nmIn.value = ""; nmIn.disabled = true; } }
-    else if (nmIn && raw && !sel.value) inp.value = raw + " (नयाँ)";
-  }, 200);
+  inp.oninput = () => { sel.value = ""; if (nmIn) { nmIn.value = ""; } show(); }; inp.onfocus = show;
+  inp.onblur = () => setTimeout(() => list.hidden = true, 200);
   list.onclick = e => {
     e.preventDefault();
     const n = e.target.closest("[data-new]");
@@ -380,7 +355,7 @@ function place(n, x, y, cards, lines, units) {
     cur += c.tw + HG;
   });
 }
-const cardHtml = ({ p, x, y, d }) => `<div class="cd g${p.gender || "O"} ${p.is_living ? "" : "dead"} ${sel === p.id ? "sel" : ""} ${can(p.id) ? "" : "locked"} ${p.id === me?.position_person_id ? "mine" : ""}" tabindex="0" data-id="${p.id}" style="left:${x}px;top:${y}px;width:${CW}px;height:${CH}px;--gc:${GEN[d % GEN.length]}"><div class="av">${can(p.id) ? esc(Array.from(p.name)[0]) : "🔒"}</div><div class="tx"><small class="gn">Gen ${d + 1}</small><b>${esc(nm(p))}</b><span>${can(p.id) ? (yr(p.birth_bs) || "?") + (p.is_living ? "" : " – " + (yr(p.death_bs) || "?")) : "लक"}</span></div></div>`;
+const cardHtml = ({ p, x, y, d }) => `<div class="cd g${p.gender || "O"} ${p.is_living ? "" : "dead"} ${sel === p.id ? "sel" : ""} ${can(p.id) ? "" : "locked"} ${p.id === me?.position_person_id ? "mine" : ""}" tabindex="0" data-id="${p.id}" style="left:${x}px;top:${y}px;width:${CW}px;height:${CH}px;--gc:${GEN[d % GEN.length]}"><div class="av">${can(p.id) ? ico(p.gender) : "🔒"}</div><div class="tx"><small class="gn">Gen ${d + 1}</small><b>${esc(nm(p))}</b><span>${can(p.id) ? (yr(p.birth_bs) || "?") + (p.is_living ? "" : " – " + (yr(p.death_bs) || "?")) : "लक"}</span></div></div>`;
 function draw() {
   const seen = new Set(), cards = [], lines = [], units = [];
   const trees = people.filter(p => !hasParents(p) && !isMarriedIn(p)).sort(byBirth).map(p => build(p, seen, 0));
@@ -460,13 +435,13 @@ function pick(id, delay) {
 const openUp = (id, s = new Set()) => { const p = byId[id]; if (!p || s.has(id)) return; s.add(id); collapsed.delete(id); openUp(p.father_id, s); openUp(p.mother_id, s); openUp(p.spouse_id, s); };
 function search(q) { // नामको सूची देखाउने; क्लिक गरेपछि मात्र जुम
   q = q.trim().toLowerCase(); const qc = $("#qc"), qr = $("#qr");
-  matches = q ? people.filter(p => can(p.id) && p.name.toLowerCase().includes(q)) : [];
+  matches = q ? people.filter(p => can(p.id) && match(p.name, q)) : [];
   qc.textContent = q ? (matches.length ? `${np(matches.length)} मिल्यो` : "भेटिएन") : "";
   qr.hidden = !q;
   qr.innerHTML = matches.slice(0, 50).map(p => `<div data-q="${p.id}"><b>${esc(p.name)}</b><small>${[byId[p.father_id] && "बुबा: " + esc(byId[p.father_id].name), yr(p.birth_bs)].filter(Boolean).join(" · ")}</small></div>`).join("") || '<div class="none">कोही भेटिएन</div>';
 }
 function choose(id) {
-  const q = $("#q"), qr = $("#qr"); if (q) q.value = byId[id]?.name || ""; if (qr) qr.hidden = true; SQ = byId[id]?.name || ""; if ($("#qx")) $("#qx").hidden = false;
+  const q = $("#q"), qr = $("#qr"); if (q) q.value = byId[id]?.name || ""; if (qr) qr.hidden = true;
   openUp(id); draw(); glide(id, 1); pick(id, 750);
 }
 // ---- निर्यात / आयात ----
@@ -634,7 +609,7 @@ const XL = { facebook: "Facebook लिंक", add_spouse_id: "अर्को 
 function treeView() {
   sel = null; HL = null; matches = [];
   $("#pane").innerHTML = `<div class="chartwrap" id="cw">
-    <div class="tools"><div class="qw"><input id="q" placeholder="🔍 नाम खोज्नुहोस्…" aria-label="खोज" autocomplete="off"><button type="button" class="ghost" id="qx" hidden aria-label="खोज हटाउने">✕</button><span id="qc" class="mut"></span><div id="qr" class="qr" hidden></div></div>
+    <div class="tools"><div class="qw"><input id="q" placeholder="🔍 नाम खोज्नुहोस्…" aria-label="खोज" autocomplete="off"><span id="qc" class="mut"></span><div id="qr" class="qr" hidden></div></div>
       <button class="ghost" id="zo" aria-label="सानो">−</button><input type="number" id="zr" min="2" max="250" step="5" inputmode="numeric" aria-label="जुम प्रतिशत" title="जुम % लेखेर Enter थिच्नुहोस्"><span class="mut">%</span><button class="ghost" id="zi" aria-label="ठूलो">+</button>
       <button class="ghost" id="fs" aria-label="पूरा स्क्रिन">⛶</button><button class="ghost" id="ea" title="सबै शाखा खोल्ने">सबै शाखा खोल्ने</button><button class="ghost" id="ca" title="शाखा बन्द गर्ने">संक्षिप्त</button>
       <details class="menu"><summary>${isAdm() ? "⇩ डाउनलोड" : "⇩ बंशावली डाउनलोड"}</summary><div>${isAdm() ? `<button class="ghost" id="xe">📊 Excel (.xlsx)</button><button class="ghost" id="xc">📄 CSV</button><button class="ghost" id="xj">💾 JSON (ब्याकअप)</button>` : ""}<button class="ghost" id="xs">🖼 फोटो (HD) (SVG)</button><button class="ghost" id="xp">📷 फोटो (SD) (JPG)</button>${isAdm() ? `<button class="ghost" id="xi">📥 अपलोड गर्नुहोस्</button><input type="file" id="xf" accept=".xlsx,.xls,.csv,.json" hidden>` : ""}</div></details>
@@ -642,7 +617,7 @@ function treeView() {
     <div id="chart"><div id="stage"></div><button id="gm" class="gmfab" title="मेरो स्थानमा जाने">📍 मेरो स्थान</button>${people.length ? "" : `<div class="empty"><p>अझै कोही थपिएको छैन।</p>${act !== "general" ? `<button id="first">${isAdm() ? "पहिलो व्यक्ति थप्ने" : "पहिलो व्यक्ति थप्ने अनुरोध"}</button>` : ""}</div>`}</div>
     </div>`;
   if ($("#first")) $("#first").onclick = () => form("add");
-  const K = KEEP; KEEP = null; draw(); if (K) { V = { ...K.V }; applyV(); } else home();
+  draw(); home();
   const ch = $("#chart"), ptrs = new Map(); let drag = null, moved = false, pd = 0;
   const dist = () => { const [a, b] = [...ptrs.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
   ch.onpointerdown = e => { ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY }); moved = false; drag = ptrs.size === 1 ? { x: e.clientX, y: e.clientY, vx: V.x, vy: V.y } : null; if (ptrs.size === 2) pd = dist(); };
@@ -667,7 +642,7 @@ function treeView() {
   $("#zi").onclick = () => mid(1.1); $("#zo").onclick = () => mid(0.9);
   const zr = $("#zr"); zr.onchange = () => { const v = parseFloat(zr.value); if (v > 0) mid(Math.min(250, Math.max(2, v)) / 100 / V.k); else applyV(); };
   const goMe = quiet => { const id = myPos(); if (!id || !byId[id]) { if (!quiet) toast("तपाईंको स्थान तोकिएको छैन"); return; } openUp(id); draw(); quiet ? focusOn(id, .7) : flyTo(id, .7); };
-  $("#gm").onpointerdown = e => e.stopPropagation(); $("#gm").onclick = e => { e.stopPropagation(); goMe(); }; if (!K) goMe(true); else if (K.sel && byId[K.sel] && can(K.sel)) pick(K.sel);
+  $("#gm").onpointerdown = e => e.stopPropagation(); $("#gm").onclick = e => { e.stopPropagation(); goMe(); }; goMe(true);
     $("#ea").onclick = () => { collapsed.clear(); draw(); fit(); };
   $("#ca").onclick = () => {
     const id = myPos(), keep = id && byId[id] ? branchOf([id]) : null; collapsed.clear();
@@ -675,9 +650,7 @@ function treeView() {
     lastTrees.forEach(f);
     if (keep) { openUp(id); draw(); focusOn(id, .8); } else { draw(); home(); }
   };
-  $("#q").value = SQ; $("#qx").hidden = !SQ;
-  $("#q").oninput = e => { SQ = e.target.value; $("#qx").hidden = !SQ; search(SQ); };
-  $("#qx").onclick = () => { SQ = ""; $("#q").value = ""; $("#qx").hidden = true; $("#qr").hidden = true; $("#qc").textContent = ""; };
+  $("#q").oninput = e => search(e.target.value);
   $("#q").onkeydown = e => { if (e.key === "Enter" && matches[0]) choose(matches[0].id); };
   $("#qr").onclick = e => { const x = e.target.closest("[data-q]"); if (x) choose(x.dataset.q); };
   $("#fs").onclick = () => document.fullscreenElement ? document.exitFullscreen() : $("#cw").requestFullscreen?.();
@@ -690,6 +663,9 @@ function treeView() {
   if ($("#xi")) { $("#xi").onclick = () => $("#xf").click(); $("#xf").onchange = e => { const f = e.target.files[0]; if (f) importFile(f); e.target.value = ""; }; }
 }
 
+const cfg = () => { try { return JSON.parse(localStorage.getItem("vv_core_" + me.id)) || {}; } catch (e) { return {}; } };
+const saveCfg = c => { try { localStorage.setItem("vv_core_" + me.id, JSON.stringify(c)); } catch (e) {} };
+let coreEdit = false;
 function relMap() {
   const base = byId[me?.position_person_id], par = byId[me?.position_parent_id], R = {}, C = new Set();
   const set = (p, l, core) => { if (p && !R[p.id]) { R[p.id] = l; if (core) C.add(p.id); } };
@@ -719,17 +695,31 @@ function relMap() {
     sibs(q).forEach(u => {
       const o = older(u, q), M = u.gender === "M";
       set(u, M ? (pat ? (o ? "ठूलोबुबा" : "काका") : "मामा") : (pat ? "फुपू" : "सानिमा"), pat && M);
-      if (pat && M) kidsOf(u).forEach(k => set(k, (R[u.id] || "काका") + "को " + g(k, "छोरा", "छोरी", "सन्तान"), 1));
+            if (pat && M) kidsOf(u).forEach(k => { const o2 = base ? older(k, base) : null, Fm = k.gender === "F";
+        set(k, Fm ? (o2 === true ? "दिदी" : o2 === false ? "बहिनी" : "दिदीबहिनी") : (o2 === true ? "दाजु" : o2 === false ? "भाइ" : "दाजुभाइ"), 1);
+        spousesOf(k).forEach(i => set(byId[i], Fm ? (R[u.id] || "काका") + "को ज्वाइँ" : o2 === false ? "बुहारी" : o2 === true ? "भाउजू" : "भाउजू/बुहारी", 1));
+        kidsOf(k).forEach(c => set(c, Fm ? g(c, "भान्जा", "भान्जी", "भान्जा/भान्जी") : g(c, "भतिजा", "भतिजी", "भतिजा/भतिजी"), 1)); });
       spousesOf(u).forEach(i => set(byId[i], M ? (pat ? (o ? "ठूलीआमा" : "काकी") : "माइजू") : (pat ? "फुपाजु" : "सानाबा"), pat && M));
     });
     set(byId[q.father_id], "हजुरबुबा"); set(byId[q.mother_id], "हजुरआमा");
   });
-  for (let n = 0; n < 8; n++) people.forEach(p => {
+  const gen = {}; if (base) { gen[base.id] = 0; const q = [base.id]; while (q.length) { const x = q.shift(), px = byId[x], d0 = gen[x], go = (i, v) => { if (i && byId[i] && gen[i] === undefined) { gen[i] = v; q.push(i); } };
+    go(px.father_id, d0 - 1); go(px.mother_id, d0 - 1); spousesOf(px).forEach(i => go(i, d0)); people.forEach(c => { if (c.father_id === x || c.mother_id === x) go(c.id, d0 + 1); }); } }
+  const fill = () => { for (let n = 0; n < 5; n++) people.forEach(p => {
     if (R[p.id]) return;
     const pr = [byId[p.father_id], byId[p.mother_id]].find(x => x && R[x.id]), sp = byId[spousesOf(p).find(i => R[i])];
-    if (pr) R[p.id] = R[pr.id] + "को " + g(p, "छोरा", "छोरी", "सन्तान"); else if (sp) R[p.id] = R[sp.id] + "को " + g(p, "पति", "पत्नी", "श्रीमती");
-  });
-  return { R, C };
+    if (pr) { const L = R[pr.id];
+      R[p.id] = /^(फुपू|फुपाजु)को (छोरा|छोरी)$/.test(L) ? "फुपूको " + g(p, "नाति", "नातिनी", "नाति/नातिनी")
+        : L === "छोरा" || L === "छोरी" ? g(p, "नाति", "नातिनी", "नाति/नातिनी")
+        : L === "ठुलोबा/काका" ? g(p, "दाजु/भाइ", "दिदी/बहिनी", "दाजुभाइ/दिदीबहिनी")
+        : L === "दाजु/भाइ" ? g(p, "भतिजा", "भतिजी", "भतिजा/भतिजी")
+        : L + "को " + g(p, "छोरा", "छोरी", "सन्तान");
+    } else if (sp) { const L = R[sp.id]; R[p.id] = /^(फुपू|फुपाजु)को छोरा$/.test(L) ? "फुपूको बुहारी" : L + "को " + g(p, "पति", "पत्नी", "श्रीमती"); }
+  }); };
+  fill(); // स्पष्ट साइनो नभएका पुरुष: बुबाको पुस्ता = ठुलोबा/काका, आफ्नै पुस्ता = दाजु/भाइ
+  people.forEach(p => { if (R[p.id] || p.gender !== "M") return; if (gen[p.id] === -1) R[p.id] = "ठुलोबा/काका"; else if (gen[p.id] === 0) R[p.id] = "दाजु/भाइ"; });
+  fill();
+  return { R: { ...R, ...(cfg().rel || {}) }, C };
 }
 let RM = {};
 const fbOk = u => /^https:\/\/((www|m|web)\.)?(facebook|fb)\.com\//i.test(u || "");
@@ -751,13 +741,12 @@ function detail() {
   let el = $("#det"); if (!el) { el = document.createElement("aside"); el.id = "det"; document.body.appendChild(el); }
   const ce = canEdit(p.id), lim = !!p.name_only, rl = relMap().R[p.id], box = (c, ic, l, v) => v ? `<div class="ib w" style="--c:${c}"><span class="ii">${ic}</span><div><small>${l}</small><b>${v}</b></div></div>` : "";
   const RL = relsOf(p); RL.splice(RL.filter(x => x.l === "बुबा" || x.l === "आमा").length, 0, { q: p, l: "यही प्रोफाइल", self: 1 });
-  const rows = RL.map(({ q, l, self }) => { const ok = can(q.id); return `<div class="fr ${ok ? "" : "locked"} ${self ? "hl" : ""}" ${ok && !self ? `data-go="${q.id}"` : ""}><div class="mav2 sm g${q.gender || "O"}">${ok ? esc(Array.from(q.name)[0]) : "🔒"}</div><div><b>${esc(nm(q))}</b><small>${l}${ok && yr(q.birth_bs) ? " · " + yr(q.birth_bs) : ""}</small></div></div>`; }).join("");
+  const rows = RL.map(({ q, l, self }) => { const ok = can(q.id); return `<div class="fr ${ok ? "" : "locked"} ${self ? "hl" : ""}" ${ok && !self ? `data-go="${q.id}"` : ""}><div class="mav2 sm g${q.gender || "O"}">${ok ? ico(q.gender) : "🔒"}</div><div><b>${esc(nm(q))}</b><small>${l}${ok && yr(q.birth_bs) ? " · " + yr(q.birth_bs) : ""}</small></div></div>`; }).join("");
   el.innerHTML = `<button class="ghost pp-x" id="dx" aria-label="बन्द">×</button>
-    <div class="pp-top"><div class="pp-av g${p.gender || "O"}">${esc(Array.from(p.name)[0])}</div><div class="pp-info"><h3>${esc(p.name)}</h3>
+    <div class="pp-top"><div class="pp-av g${p.gender || "O"}">${ico(p.gender)}</div><div class="pp-info"><h3>${esc(p.name)}</h3>
       ${rl ? `<div class="pp-l">💠 ${rl === "तपाईं" ? "तपाईं" : "तपाईंको " + esc(rl)}</div>` : ""}
-      <div class="pp-l">📍 ${addrOf(p) ? esc(addrOf(p)) : "ठेगाना छैन"}</div>
-      <div class="pp-l">🧬 Gen ${np(genOf(p))}</div>
-      ${p.is_living ? "" : `<div class="pp-l">🕊 दिवंगत</div>`}</div></div>
+      <div class="pp-l">✱ ${p.birth_bs ? esc(p.birth_bs) + AGE(p.birth_bs, p.is_living ? "" : p.death_bs) : "जन्म मिति छैन"}</div>
+      ${p.is_living ? "" : `<div class="pp-l">🕊 दिवंगत${p.death_bs ? " · " + esc(p.death_bs) : ""}</div>`}</div></div>
     <div class="pp-act"><button id="pa-p"><i>🪪</i>Profile</button>${ce ? `<button id="ed"><i>✏️</i>${isAdm() ? "Edit" : "Edit (अनुरोध)"}</button><button id="ac"><i>➕</i>Add</button><button id="mo"><i>⋯</i>More</button>` : ""}</div>
     ${ce ? `<div id="pmore" hidden>${isAdm() ? '<button id="inv">🔗 निम्तो लिंक</button>' : ""}<button class="bad" id="dl">${isAdm() ? "🗑 हटाउने" : "🗑 हटाउने अनुरोध"}</button></div>` : ""}
     <div class="pp-h">तत्काल परिवार</div>${rows || '<p class="mut">कुनै नाता जोडिएको छैन।</p>'}
@@ -810,53 +799,55 @@ function parentForm(p, k) {
 // ---------- परिवार दृश्य: मुख्य परिवार + सबै सदस्य ----------
 const mcard = (p, core) => {
   const mine = p.id === me.position_person_id, kc = kidsOf(p).length;
-  return `<div class="mc g${p.gender || "O"} ${core ? "core" : ""} ${mine ? "mine" : ""} ${p.is_living ? "" : "dead"}" tabindex="0" data-id="${p.id}" ${lay ? 'draggable="true"' : ""}><div class="mav2">${esc(Array.from(p.name)[0])}</div><div class="mn">${esc(p.name)}</div><div class="my">${esc(RM[p.id] || "Gen " + np(genOf(p)))}</div>${kc ? `<span class="mb">${np(kc)}</span>` : ""}${mine ? '<span class="me">तपाईं</span>' : ""}</div>`;
+  return `<div class="mc g${p.gender || "O"} ${core ? "core" : ""} ${mine ? "mine" : ""} ${p.is_living ? "" : "dead"}" tabindex="0" data-id="${p.id}"><div class="mav2">${ico(p.gender)}</div><div class="mn">${esc(p.name)}</div><div class="my">${esc(RM[p.id] || "नातेदार")}</div>${kc ? `<span class="mb">${np(kc)}</span>` : ""}${mine ? '<span class="me">तपाईं</span>' : ""}${coreEdit ? `<div class="cedit"><button class="ghost" data-rl="${p.id}">✎ नाता</button></div>` : ""}</div>`;
 };
-function famGroups() { // तत्काल परिवार → विवाहित छोरीचेली → दाजुभाइ-दिदीबहिनी → बाँकी
+function famGroups() { // १ तत्काल परिवार → २ विवाहित छोरीचेली → ३ दाजुभाइ/काका → ४ अन्य आफन्त (बाबुपट्टि, आमापट्टि, साइनो भएका, नभएका, दिवंगत)
   const a = byId[me.position_person_id] || byId[me.position_parent_id] || byId[me.position_grand_id], used = new Set();
   const take = arr => arr.filter(p => p && can(p.id) && !used.has(p.id) && used.add(p.id)), sp = p => spousesOf(p).map(i => byId[i]), G = [];
+  const sibsOf = x => people.filter(y => y.id !== x.id && ((x.father_id && y.father_id === x.father_id) || (x.mother_id && y.mother_id === x.mother_id))).sort(byBirth);
+  const fam = x => [x, ...sp(x), ...kidsOf(x).sort(byBirth)], marF = x => x.gender === "F" && spousesOf(x).length > 0;
   if (a) {
-    const sibs = x => people.filter(y => y.id !== x.id && ((x.father_id && y.father_id === x.father_id) || (x.mother_id && y.mother_id === x.mother_id))).sort(byBirth);
-    const sb = sibs(a), bro = sb.filter(y => y.gender !== "F"), sis = sb.filter(y => y.gender === "F"), usis = sis.filter(y => !spousesOf(y).length), msis = sis.filter(y => spousesOf(y).length);
     const f = byId[a.father_id], m = byId[a.mother_id], ks = kidsOf(a).sort(byBirth);
-    const sons = ks.filter(k => k.gender !== "F"), ds = ks.filter(k => k.gender === "F"), md = ds.filter(k => spousesOf(k).length), ud = ds.filter(k => !spousesOf(k).length);
+    const sons = ks.filter(k => k.gender !== "F"), ds = ks.filter(k => k.gender === "F"), ud = ds.filter(k => !spousesOf(k).length);
     const gk = sons.flatMap(x => kidsOf(x).sort(byBirth));
-    G.push(["🏠 तत्काल परिवार", take([byId[f?.father_id], byId[f?.mother_id], f, m, a, ...sp(a), ...sons, ...sons.flatMap(sp), ...ud, ...bro, ...bro.flatMap(sp), ...usis, ...gk.filter(k => k.gender !== "F"), ...gk.filter(k => k.gender === "F" && !spousesOf(k).length)])]);
-    G.push(["💞 विवाहित छोरीचेली र उनको परिवार", take(md.flatMap(x => [x, ...sp(x), ...kidsOf(x).sort(byBirth)]))]);
-    const fam = k => [k, ...sp(k), ...kidsOf(k).sort(byBirth).flatMap(c => [c, ...sp(c), ...kidsOf(c).sort(byBirth)])];
-    const inl = a.gender === "F" ? sp(a).flatMap(h => sibs(h).flatMap(x => [x, ...sp(x)])) : [];
-    G.push(["👫 दाजुभाइ-दिदीबहिनी, भान्जा-भान्जी र ससुराली", take([...msis.flatMap(x => [x, ...sp(x), ...kidsOf(x).sort(byBirth).flatMap(fam)]), ...inl])]);
-  }
-  G.push([a ? "👥 बाँकी सदस्य" : "👥 सबै सदस्य", people.filter(p => can(p.id) && !used.has(p.id)).sort(byBirth)]);
+    G.push(["🏠 तत्काल परिवार", take([byId[f?.father_id], byId[f?.mother_id], f, m, a, ...sp(a), ...sons, ...sons.flatMap(sp), ...ud, ...gk.filter(k => k.gender !== "F"), ...gk.filter(k => k.gender === "F" && !spousesOf(k).length)])]);
+    const unc = f ? sibsOf(f).filter(y => y.gender !== "F") : [], bro = sibsOf(a).filter(y => !marF(y));
+    G.push(["💞 विवाहित छोरीचेली र उनको परिवार (ज्वाइँ, भान्जा-भान्जी)", take([...ds.filter(marF), ...gk.filter(marF), ...sibsOf(a).filter(marF), ...unc.flatMap(u => kidsOf(u).filter(marF))].flatMap(fam))]);
+    const inl = a.gender === "F" ? sp(a).flatMap(h => h ? sibsOf(h).flatMap(fam) : []) : [];
+    G.push(["👬 दाजुभाइ, काका-काकी र भतिजा-भतिजी", take([...bro.flatMap(fam), ...unc.flatMap(u => [u, ...sp(u), ...kidsOf(u).sort(byBirth).flatMap(k => marF(k) ? [] : fam(k))]), ...inl])]);
+    const rest = people.filter(p => can(p.id) && !used.has(p.id)).sort(byBirth);
+    const side = r => { const s = new Set(); if (!r) return s; branchOf([r.id]).forEach(i => s.add(i)); const g = byId[r.father_id] || byId[r.mother_id]; if (g) downSet(g.id).forEach(i => s.add(i)); return s; };
+    const P = side(f), M = side(m), bk = p => P.has(p.id) ? 0 : M.has(p.id) ? 1 : RM[p.id] ? 2 : p.is_living ? 3 : 4;
+    ["🌿 बाबुपट्टिका आफन्त", "🌸 आमापट्टिका आफन्त (मामाली)", "🔗 स्पष्ट साइनो भएका अन्य सदस्य", "❔ साइनो स्पष्ट नभएका सदस्य", "🕊 साइनो स्पष्ट नभएका दिवंगत सदस्य"].forEach((t, k) => G.push([t, rest.filter(p => bk(p) === k)]));
+  } else G.push(["👥 सबै सदस्य", people.filter(p => can(p.id)).sort(byBirth)]);
   return G;
 }
 let famMode = "grid";
-const lrow = p => `<div class="mlc ${p.is_living ? "" : "dead"}" data-id="${p.id}" ${lay ? 'draggable="true"' : ""}><div class="mav2 sm g${p.gender || "O"}">${esc(Array.from(p.name)[0])}</div><div style="flex:1;min-width:0"><b>${esc(p.name)}</b><br><span class="mut">${esc(RM[p.id] || "Gen " + np(genOf(p)))}${yr(p.birth_bs) ? " · " + yr(p.birth_bs) : ""}</span></div></div>`;
+const lrow = p => `<div class="mlc ${p.is_living ? "" : "dead"}" data-id="${p.id}"><div class="mav2 sm g${p.gender || "O"}">${ico(p.gender)}</div><div style="flex:1;min-width:0"><b>${esc(p.name)}</b><br><span class="mut">${esc(RM[p.id] || "नातेदार")}${yr(p.birth_bs) ? " · " + yr(p.birth_bs) : ""}</span></div>${coreEdit ? `<button class="ghost" data-rl="${p.id}">✎ नाता</button>` : ""}</div>`;
 function famView() {
   sel = null; HL = null;
   const { R } = relMap(); RM = R;
-  const base = byId[me.position_person_id] || byId[me.position_parent_id], has = !!(base || byId[me.position_grand_id]), G = applyLayout(famGroups()), ic = has ? G[0][1].length : 0;
+  const base = byId[me.position_person_id] || byId[me.position_parent_id], has = !!(base || byId[me.position_grand_id]), G = famGroups(), ic = has ? G[0][1].length : 0;
   const msg = !ACC ? "सबै वंशावली तपाईंको सामु खुला छ।" : base ? "तपाईंको भूमिकाअनुसार खुला भएको वंश मात्र देखिन्छ। बाँकी शाखा चार्टमा धमिला र लक छन्।" : "तपाईंको स्थान अझै तोकिएको छैन। एडमिनले तोकेपछि शाखा खुल्नेछ।";
   $("#pane").innerHTML = `<section class="hero2"><div class="hello"><span class="hchip">${ROLE_L[act]}</span><h2>नमस्ते, ${esc(dispName())}</h2><p>${msg}</p></div>
     <div class="stats"><div><b>${np(ic)}</b><span>तत्काल परिवार</span></div><div><b>${np(ACC ? ACC.size : people.length)}</b><span>खुला सदस्य</span></div><div><b>${np(people.length)}</b><span>कुल सदस्य</span></div></div>
     <div class="row"><button id="gome" ${base ? "" : "disabled"}>📍 मेरो स्थान</button>${act !== "general" ? `<button class="ghost" id="addp">${isAdm() ? "+ सदस्य थप्ने" : "+ सदस्य थप्ने अनुरोध"}</button>` : ""}${isStaff() ? '<button class="ghost" id="ovb">📊 Family Overview</button>' : ""}</div></section>
-    <input id="fq" class="msearch" placeholder="🔍 नाम वा साइनो खोज्नुहोस्…">
-    <div class="rchips"><button class="ghost ${famMode === "grid" ? "on" : ""}" id="vg">▦ थम्बनेल</button><button class="ghost ${famMode === "list" ? "on" : ""}" id="vl">☰ सूची</button><button class="ghost ${lay ? "on" : ""}" id="cedit">${lay ? "✔ सम्पन्न" : "🗂 समूह मिलाउने"}</button>${lay ? '<button class="ghost" id="cnew">＋ नयाँ समूह</button>' : ""}</div>
+    <div class="qw msw"><input id="fq" class="msearch" placeholder="🔍 नाम वा साइनो खोज्नुहोस्…" autocomplete="off"><button class="ghost qx" id="fqx" hidden aria-label="खोज मेट्ने">✕</button><div id="fqr" class="qr" hidden></div></div>
+    <div class="rchips"><button class="ghost ${famMode === "grid" ? "on" : ""}" id="vg">▦ थम्बनेल</button><button class="ghost ${famMode === "list" ? "on" : ""}" id="vl">☰ सूची</button><button class="ghost ${coreEdit ? "on" : ""}" id="cedit">${coreEdit ? "✔ सम्पन्न" : "✏ नाता सच्याउने"}</button>${coreEdit ? '<button class="ghost" id="creset">↺ स्वतः</button>' : ""}</div>
     <div id="fgroups"></div>`;
-  const dr = q => { $("#fgroups").innerHTML = G.map(([t, arr, cid], gi) => { const l = arr.filter(p => !q || p.name.toLowerCase().includes(q) || (R[p.id] || "").includes(q));
-    if (!l.length && !(cid && !q) && !(lay && !q)) return "";
-    return `<section class="fsec" data-cat="${cid || ""}"><h2 class="fh">${t} <small>${np(l.length)}</small>${lay && cid ? ` <button class="ghost" data-rn="${cid}">✎</button><button class="ghost" data-dc="${cid}">🗑</button>` : ""}</h2><div class="${famMode === "list" ? "mgrid" : "cgrid"}">${l.map(p => famMode === "list" ? lrow(p) : mcard(p, has && gi === 0)).join("")}</div></section>`; }).join("") || '<div class="card">कोही भेटिएन।</div>'; };
-  dr(""); $("#fq").oninput = e => dr(e.target.value.trim().toLowerCase());
+  const dr = q => { $("#fgroups").innerHTML = G.map(([t, arr], gi) => { const l = arr.filter(p => !q || p.name.toLowerCase().includes(q) || (R[p.id] || "").includes(q)); return l.length ? `<section class="fsec"><h2 class="fh">${t} <small>${np(l.length)}</small></h2><div class="${famMode === "list" ? "mgrid" : "cgrid"}">${l.map(p => famMode === "list" ? lrow(p) : mcard(p, has && gi === 0)).join("")}</div></section>` : ""; }).join("") || '<div class="card">कोही भेटिएन।</div>'; };
+  dr("");
+  const fl = v => { const q = v.trim().toLowerCase(), m = q ? people.filter(p => can(p.id) && (match(p.name, q) || (R[p.id] || "").includes(q))).slice(0, 50) : [];
+    $("#fqx").hidden = !v; $("#fqr").hidden = !q;
+    $("#fqr").innerHTML = m.map(p => `<div data-q="${p.id}"><b>${esc(p.name)}</b><small>${esc(R[p.id] || "साइनो छैन")}${yr(p.birth_bs) ? " · " + yr(p.birth_bs) : ""}</small></div>`).join("") || '<div class="none">कोही भेटिएन</div>'; };
+  $("#fq").oninput = e => fl(e.target.value); $("#fqx").onclick = () => { $("#fq").value = ""; fl(""); };
+  $("#fqr").onclick = e => { const x = e.target.closest("[data-q]"); if (!x) return; const id = x.dataset.q; $("#fq").value = byId[id].name; $("#fqr").hidden = true; $("#fqx").hidden = false; pick(id); document.querySelector(`#fgroups [data-id="${id}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" }); };
   $("#vg").onclick = () => { famMode = "grid"; famView(); }; $("#vl").onclick = () => { famMode = "list"; famView(); };
-  $("#cedit").onclick = () => { lay = !lay; famView(); };
-  if ($("#cnew")) $("#cnew").onclick = () => { if (newCat()) { saveLayout(); famView(); } };
-  $("#pane").ondragstart = e => { const c = e.target.closest("[data-id]"); if (c) e.dataTransfer.setData("text/plain", c.dataset.id); };
-  $("#pane").ondragover = e => { if (lay && e.target.closest("[data-cat]")) e.preventDefault(); };
-  $("#pane").ondrop = e => { const sc = e.target.closest("[data-cat]"); if (!lay || !sc) return; e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); if (id) setCat(id, sc.dataset.cat); };
+  $("#cedit").onclick = () => { coreEdit = !coreEdit; famView(); }; if ($("#creset")) $("#creset").onclick = () => { saveCfg({}); famView(); };
   $("#pane").onclick = e => {
-    const rn = e.target.closest("[data-rn]"); if (rn) { const c = LAYOUT.cats.find(x => x.id === rn.dataset.rn), n = prompt("नयाँ नाम:", c.name); if (n?.trim()) { c.name = n.trim().slice(0, 40); saveLayout(); famView(); } return; }
-    const dc = e.target.closest("[data-dc]"); if (dc) { if (!confirm("समूह मेट्ने? सदस्यहरू मूल स्थानमा फर्कन्छन्।")) return; const k = dc.dataset.dc; LAYOUT.cats = LAYOUT.cats.filter(x => x.id !== k); Object.keys(LAYOUT.map).forEach(i => LAYOUT.map[i] === k && delete LAYOUT.map[i]); saveLayout(); famView(); return; }
-    const c = e.target.closest("[data-id]"); if (c) lay ? moveDlg(c.dataset.id) : pick(c.dataset.id);
+    const rl = e.target.closest("[data-rl]");
+    if (rl) { const id = rl.dataset.rl, c = cfg(), v = prompt("नाता आफूले चाहेको लेख्नुहोस् (जस्तै: दाजु / भाइ / काका)। खाली = स्वतः:", RM[id] || ""); if (v === null) return; c.rel = c.rel || {}; v.trim() ? c.rel[id] = v.trim() : delete c.rel[id]; saveCfg(c); famView(); return; }
+    const c = e.target.closest("[data-id]"); if (c) pick(c.dataset.id);
   };
   $("#gome").onclick = () => document.querySelector(`[data-id="${base.id}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
   if ($("#addp")) $("#addp").onclick = () => form("add");
@@ -864,7 +855,7 @@ function famView() {
 }
 function memView() {
   $("#pane").innerHTML = `<input id="mq" class="msearch" placeholder="🔍 सदस्य खोज्नुहोस्…"><div class="mgrid" id="mg"></div>`;
-  const dr = q => $("#mg").innerHTML = people.filter(p => can(p.id) && (!q || p.name.toLowerCase().includes(q))).sort(byBirth).map(p => { const lk = !can(p.id); return `<div class="mlc ${lk ? "locked" : ""}" data-id="${p.id}"><div class="mav2 sm g${p.gender || "O"}">${lk ? "🔒" : esc(Array.from(p.name)[0])}</div><div><b>${esc(nm(p))}</b><br><span class="mut">${lk ? "लक गरिएको" : (p.gender === "M" ? "पुरुष" : p.gender === "F" ? "महिला" : "") + " · " + (yr(p.birth_bs) || "?")}</span></div></div>`; }).join("") || '<div class="card">कोही भेटिएन।</div>';
+  const dr = q => $("#mg").innerHTML = people.filter(p => can(p.id) && (!q || match(p.name, q))).sort(byBirth).map(p => { const lk = !can(p.id); return `<div class="mlc ${lk ? "locked" : ""}" data-id="${p.id}"><div class="mav2 sm g${p.gender || "O"}">${lk ? "🔒" : ico(p.gender)}</div><div><b>${esc(nm(p))}</b><br><span class="mut">${lk ? "लक गरिएको" : (p.gender === "M" ? "पुरुष" : p.gender === "F" ? "महिला" : "") + " · " + (yr(p.birth_bs) || "?")}</span></div></div>`; }).join("") || '<div class="card">कोही भेटिएन।</div>';
   $("#mq").oninput = e => dr(e.target.value.trim().toLowerCase()); dr("");
   $("#pane").onclick = e => { const c = e.target.closest("[data-id]"); if (c) pick(c.dataset.id); };
 }
@@ -891,33 +882,35 @@ function form(action, p = null, parent = null, pre = null) {
   }
   d.classList.add("ed");
   const MN = ["बैशाख", "जेठ", "असार", "श्रावण", "भदौ", "आश्विन", "कार्तिक", "मंसिर", "पौष", "माघ", "फागुन", "चैत"];
-  const dt = (id, val) => `<input id="${id}" class="bsd" inputmode="numeric" maxlength="10" placeholder="YYYY-MM-DD" autocomplete="off" value="${esc(bsFill(val) || val || "")}">`;
+  const dt = (id, val) => { const q = String(val || "").split("-"); return `<div class="dtr" data-for="${id}"><select class="dm" aria-label="महिना"><option value="">महिना</option>${MN.map((n, i) => `<option value="${i + 1}" ${+q[1] === i + 1 ? "selected" : ""}>${n}</option>`).join("")}</select><select class="dd" aria-label="गते"><option value="">गते</option>${Array.from({ length: 32 }, (_, i) => `<option value="${i + 1}" ${+q[2] === i + 1 ? "selected" : ""}>${np(i + 1)}</option>`).join("")}</select><input class="dy" inputmode="numeric" maxlength="4" placeholder="साल" aria-label="साल" value="${esc(np(q[0] || ""))}"></div><input type="hidden" id="${id}" value="${esc(val)}">`; };
   const radio = (nm, val, lab, cur) => `<label><input type="radio" name="${nm}" value="${val}" ${String(cur) === val ? "checked" : ""}>${lab}</label>`;
   const married = !!(v.spouse_id || v.married_name || v.maiden_name || v.more_spouse_ids?.length), spn = v.spouse_id && byId[v.spouse_id] ? byId[v.spouse_id].name : "";
   const ttl = action === "add" ? (isAdm() ? "नयाँ व्यक्ति थप्ने" : "नयाँ व्यक्ति थप्ने अनुरोध") : `${esc(p.name)} को प्रोफाइल ${isAdm() ? "सच्याउने" : "सच्याउने अनुरोध"}`;
-  d.innerHTML = `<div class="edw"><aside class="eds"><div class="pp-av g${v.gender || "O"}" id="eds-a">${esc(Array.from(v.name || "?")[0])}</div><b id="eds-n">${esc(v.name || "नयाँ व्यक्ति")}</b><span id="eds-y">${esc(yr(v.birth_bs))}</span></aside>
+  d.innerHTML = `<div class="edw"><aside class="eds"><div class="pp-av g${v.gender || "O"}" id="eds-a">${ico(v.gender)}</div><b id="eds-n">${esc(v.name || "नयाँ व्यक्ति")}</b><span id="eds-y">${esc(yr(v.birth_bs))}</span></aside>
     <div class="edm"><button type="button" class="ghost pp-x" id="cx2" aria-label="बन्द">×</button><div class="edb"><h2>${ttl}</h2>
     <div class="rad">${radio("gx", "M", "पुरुष", v.gender || "")}${radio("gx", "F", "महिला", v.gender || "")}${radio("gx", "O", "अन्य / अज्ञात", v.gender || "")}</div><input type="hidden" id="f_gender" value="${esc(v.gender || "")}"><label class="rcb" style="margin-top:.9rem"><input type="checkbox" id="f_married" ${married ? "checked" : ""}> विवाहित हो</label>
     <label>नाम * (नाम + विवाहअघिको थर [+ विवाहपछिको थर])<input id="f_name" value="${esc(v.name)}"></label>
     <div class="edg mnl" ${v.gender === "F" && married ? "" : "hidden"}><input type="hidden" id="f_maiden_name" value="${esc(v.maiden_name)}"><label>विवाहपछिको थर (नामको अन्त्यमा स्वतः जोडिन्छ)<input id="f_married_name" value="${esc(v.married_name)}"></label></div>
     <hr><div class="edg"><div><label>जन्म मिति (BS)</label>${dt("f_birth_bs", v.birth_bs)}</div><label>जन्म स्थान<input id="f_birth_place" value="${esc(v.birth_place)}"></label></div>
+    <label>हालको ठेगाना<input id="f_address" value="${esc(v.address)}"></label>
     <hr><div class="rad">${radio("lv", "true", "जीवित", !!v.is_living)}${radio("lv", "false", "दिवंगत", !!v.is_living)}</div><input type="hidden" id="f_is_living" value="${v.is_living ? "true" : "false"}">
     <div id="f_death_w" ${v.is_living ? "hidden" : ""}><label>मृत्यु मिति (BS)</label>${dt("f_death_bs", v.death_bs)}</div>
+    <div class="edg"><label>फोन<span style="display:flex;gap:.4rem"><input id="f_phone" value="${esc(v.phone)}"><button type="button" class="ghost" id="pick-c" aria-label="सम्पर्कबाट छान्ने">📇</button></span></label>
+    ${action === "update" ? `<label>Facebook लिंक<input id="f_fb" value="${esc(v.facebook)}" placeholder="https://facebook.com/..."></label>` : ""}</div>
     <hr><div class="sech">परिवार</div><div class="edg">${pSel("father", "बुबा", v)}${pSel("mother", "आमा", v)}</div>
     <div id="spw" ${married ? "" : "hidden"}><hr><div class="sech">पति/पत्नी${spn ? ": " + esc(spn) : ""}</div>${pSel("spouse", "पति/पत्नी", v)}</div>
-    <hr><label>हालको ठेगाना<input id="f_address" value="${esc(v.address)}"></label>
-    <label>हालको फोन नम्बर<span style="display:flex;gap:.4rem"><input id="f_phone" value="${esc(v.phone)}"><button type="button" class="ghost" id="pick-c" aria-label="सम्पर्कबाट छान्ने">📇</button></span></label>
-    ${action === "update" ? `<label>Facebook लिंक<input id="f_fb" value="${esc(v.facebook)}" placeholder="https://facebook.com/..."></label>` : ""}
     <hr><label>टिप्पणी<textarea id="f_notes" rows="2">${esc(v.notes)}</textarea></label>${NOTE("एडमिनलाई सन्देश (स्रोत/प्रमाण)")}
     <div class="msg" id="fm"></div></div>
     <div class="edf"><button id="go">${GOT()}</button><button class="ghost" id="cx">रद्द</button></div></div></div>`;
   (d.open || d.showModal()); $("#cx").onclick = $("#cx2").onclick = () => d.close();
-  $("#f_birth_bs").addEventListener("input", e => $("#eds-y").textContent = e.target.value.slice(0, 4));
+  const comp = id => { const w = d.querySelector(`[data-for="${id}"]`), y = na(w.querySelector(".dy").value.trim()), m = w.querySelector(".dm").value, g = w.querySelector(".dd").value, z = n => String(n).padStart(2, "0");
+    $("#" + id).value = y ? y + (m ? "-" + z(m) + (g ? "-" + z(g) : "") : "") : ""; if (id === "f_birth_bs") $("#eds-y").textContent = np(y); };
+  d.querySelectorAll(".dtr").forEach(w => w.oninput = w.onchange = () => { const yi = w.querySelector(".dy"); yi.value = np(na(yi.value).replace(/\D/g, "").slice(0, 4)); comp(w.dataset.for); });
   const syncM = () => { const m = $("#f_married").checked, g = $("#f_gender").value; d.querySelectorAll(".mnl").forEach(l => l.hidden = !(m && g === "F")); $("#spw").hidden = !m; };
   $("#f_married").onchange = syncM;
-  d.querySelectorAll("[name=gx]").forEach(r => r.onchange = () => { $("#f_gender").value = r.value; $("#eds-a").className = "pp-av g" + r.value; syncM(); });
+  d.querySelectorAll("[name=gx]").forEach(r => r.onchange = () => { $("#f_gender").value = r.value; $("#eds-a").className = "pp-av g" + r.value; $("#eds-a").innerHTML = ico(r.value); syncM(); });
   d.querySelectorAll("[name=lv]").forEach(r => r.onchange = () => { $("#f_is_living").value = r.value; $("#f_death_w").hidden = r.value === "true"; });
-  $("#f_name").oninput = e => { $("#eds-n").textContent = e.target.value || "नयाँ व्यक्ति"; $("#eds-a").textContent = Array.from(e.target.value || "?")[0]; };
+  $("#f_name").oninput = e => { $("#eds-n").textContent = e.target.value || "नयाँ व्यक्ति"; };
   let lm = (v.married_name || "").trim(); // विवाहपछिको थर बदल्दा पूरा नाम स्वतः मिलाउने
   $("#f_married_name").oninput = e => { const nv = e.target.value.trim(), nf = $("#f_name"); let n = nf.value.trim(); if (lm && n.endsWith(" " + lm)) n = n.slice(0, -(lm.length + 1)); nf.value = nv ? (n ? n + " " + nv : nv) : n; lm = nv; nf.dispatchEvent(new Event("input")); };
   $("#pick-c").onclick = async () => {
@@ -934,7 +927,6 @@ function form(action, p = null, parent = null, pre = null) {
     const cur = {}, fb = $("#f_fb")?.value.trim(), fbChg = !!$("#f_fb") && fb !== (p.facebook || "");
     FIELDS.forEach(k => { let x = $("#f_" + k).value.trim(); if (k === "is_living") x = x === "true"; cur[k] = x; });
     if (cur.is_living) cur.death_bs = "";
-    for (const k of ["birth_bs", "death_bs"]) { if (!cur[k]) continue; const f = bsFill(cur[k]); if (f === null || !bsOk(f)) return $("#fm").textContent = `${LABEL[k]}: साल ४ अंक, महिना ≤१२, गते ≤३२ हुनुपर्छ।`; cur[k] = f; }
     if (cur.gender !== "F") { cur.maiden_name = ""; cur.married_name = ""; }
     if (!$("#f_married").checked) { cur.maiden_name = ""; cur.married_name = ""; cur.spouse_id = p?.spouse_id || ""; cur.spouse_name = ""; } // अविवाहित: थर/पति-पत्नी लागू हुँदैन // पुरुष/अन्यमा यो थर लागू हुँदैन
     if (!cur.name) return $("#fm").textContent = "नाम अनिवार्य छ।";
@@ -948,7 +940,7 @@ function form(action, p = null, parent = null, pre = null) {
       if (fb && !fbOk(fb)) return $("#fm").textContent = "Facebook लिंक https://facebook.com/... जस्तो हुनुपर्छ।";
       if (isAdm()) {
         const { error } = await db.rpc("set_facebook", { pid: p.id, url: fb }); if (error) return $("#fm").textContent = error.message;
-        if (!Object.keys(payload).length) { d.close(); toast("✅ सुरक्षित भयो"); await reload(); return; }
+        if (!Object.keys(payload).length) { d.close(); toast("✅ सुरक्षित भयो"); await load(); render(); return; }
       } else payload.facebook = fb;
     }
     send(action, p?.id ?? null, payload, d);
@@ -963,7 +955,7 @@ async function submit(rows, d, okMsg) {
       const { error: e } = await db.rpc("review_request", { req: r.id, approve: true });
       if (e) return $("#fm").textContent = "अनुरोध बन्यो तर लागू हुन सकेन: " + e.message;
     }
-    d.close(); toast("✅ सुरक्षित भयो"); await reload(); return;
+    d.close(); toast("✅ सुरक्षित भयो"); await load(); render(); return;
   }
   d.close(); toast(okMsg);
 }
@@ -985,31 +977,26 @@ function otherOpts(p) { // जोडी भए उनीहरू मात्�
 }
 function kidsForm(parent) {
   const d = $("#dlg");
-  const row = () => `<div class="kc"><div class="kc-h"><b>सन्तान</b><button type="button" class="bad k-x" aria-label="हटाउने">×</button></div>
-    <div class="edg"><label>नाम *<input class="k-name"></label><label>लिङ्ग<select class="k-g"><option value="M">छोरा</option><option value="F">छोरी</option><option value="">अज्ञात</option></select></label>
-    <label>जन्म मिति (BS)<input class="k-b bsd" inputmode="numeric" maxlength="10" placeholder="YYYY-MM-DD"></label><label>जन्म स्थान<input class="k-p"></label>
-    <label>अवस्था<select class="k-l"><option value="true">जीवित</option><option value="false">दिवंगत</option></select></label>
-    <label>वैवाहिक अवस्था<select class="k-m"><option value="">अविवाहित</option><option value="1">विवाहित</option></select></label></div>
-    <div class="k-sp" hidden><label>पति/पत्नीको नाम<input class="k-sn"></label></div></div>`;
+  const row = () => `<div class="krow"><input class="k-name" placeholder="नाम" aria-label="नाम"><select class="k-g" aria-label="लिङ्ग"><option value="M">छोरा</option><option value="F">छोरी</option><option value="">—</option></select><input class="k-b" placeholder="जन्म BS" aria-label="जन्म मिति"><select class="k-l" aria-label="जीवित"><option value="true">जीवित</option><option value="false">दिवंगत</option></select><button type="button" class="bad k-x" aria-label="हटाउने">×</button></div>`;
   d.innerHTML = `<h3>"${esc(parent.name)}" का सन्तान थप्ने</h3>
-    <label>अर्को अभिभावक (${parent.gender === "F" ? "बुबा" : "आमा"}) — सूचीबाट खोज्नुहोस् वा नयाँ नाम लेख्नुहोस्<select id="k-other">${otherOpts(parent)}</select><input id="k-on"></label>
-    <div id="krows">${row()}</div><div class="row"><button type="button" class="ghost" id="k-add">+ अर्को सन्तान</button></div>
-    ${NOTE()}<div class="msg" id="fm"></div><div class="row"><button id="go">${GOT()}</button><button class="ghost" id="cx">रद्द</button></div>`;
-  (d.open || d.showModal()); $("#cx").onclick = () => d.close(); searchable($("#k-other"), $("#k-on"));
+    <label>अर्को अभिभावक (${parent.gender === "F" ? "बुबा" : "आमा"}) — सूचीमा नभए पहिले उनको विवरण थप्नुहोस्<select id="k-other">${otherOpts(parent)}</select></label>
+    <div id="krows">${row()}${row()}</div>
+    <div class="row"><button type="button" class="ghost" id="k-add">+ अर्को सन्तान</button></div>
+    ${NOTE()}
+    <div class="msg" id="fm"></div><div class="row"><button id="go">${GOT()}</button><button class="ghost" id="cx">रद्द</button></div>`;
+  (d.open || d.showModal()); $("#cx").onclick = () => d.close();
   $("#k-add").onclick = () => $("#krows").insertAdjacentHTML("beforeend", row());
-  $("#krows").onclick = e => { const x = e.target.closest(".k-x"); if (x && d.querySelectorAll(".kc").length > 1) x.closest(".kc").remove(); };
-  $("#krows").onchange = e => { if (e.target.classList.contains("k-m")) e.target.closest(".kc").querySelector(".k-sp").hidden = !e.target.value; };
+  $("#krows").oninput = e => { if (e.target.classList.contains("k-b")) e.target.value = np(na(e.target.value)); };
+  $("#krows").onclick = e => { const x = e.target.closest(".k-x"); if (x && document.querySelectorAll(".krow").length > 1) x.closest(".krow").remove(); };
   $("#go").onclick = async () => {
     if (!canEdit(parent.id)) return $("#fm").textContent = "यो व्यक्ति तपाईंको सम्पादन क्षेत्रमा हुनुहुन्न।";
-    const other = $("#k-other").value, on = $("#k-on").value.trim(), batch = Date.now() + "-" + Math.random().toString(36).slice(2, 8); let bad = "";
-    const kids = [...d.querySelectorAll(".kc")].map(r => { const q = s => r.querySelector(s).value.trim(), raw = q(".k-b"), b = raw ? bsFill(raw) : "";
-      if (raw && (b === null || !bsOk(b))) bad = `"${q(".k-name") || "सन्तान"}": जन्म मिति YYYY-MM-DD हुनुपर्छ`;
-      return { name: q(".k-name"), gender: q(".k-g"), birth_bs: b || "", birth_place: q(".k-p"), is_living: q(".k-l") === "true", ...(q(".k-m") && q(".k-sn") ? { spouse_name: q(".k-sn") } : {}) }; }).filter(r => r.name);
-    if (bad) return $("#fm").textContent = bad;
+    const other = $("#k-other").value, batch = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+    const kids = [...document.querySelectorAll(".krow")].map(r => ({ name: r.querySelector(".k-name").value.trim(), gender: r.querySelector(".k-g").value, birth_bs: na(r.querySelector(".k-b").value.trim()), is_living: r.querySelector(".k-l").value === "true" })).filter(r => r.name);
     if (!kids.length) return $("#fm").textContent = "कम्तिमा एउटा नाम लेख्नुहोस्।";
-    if (spousesOf(parent).length > 1 && !other && !on) return $("#fm").textContent = "कुन पति/पत्नीको सन्तान हो, अर्को अभिभावक छान्नुहोस्।";
-    const par = parent.gender === "F" ? { mother_id: parent.id, father_id: other, ...(!other && on ? { father_name: on } : {}) } : { father_id: parent.id, mother_id: other, ...(!other && on ? { mother_name: on } : {}) };
-    await submit(kids.map(k => ({ requested_by: me.id, action: "add", person_id: null, note: $("#nt")?.value || null, payload: { ...k, ...par, batch } })), d, `✅ ${kids.length} सन्तानको अनुरोध पठाइयो`);
+    if (spousesOf(parent).length > 1 && !other) return $("#fm").textContent = "कुन पति/पत्नीको सन्तान हो, अर्को अभिभावक छान्नुहोस्।";
+    const par = parent.gender === "F" ? { mother_id: parent.id, father_id: other } : { father_id: parent.id, mother_id: other };
+    const reqs = kids.map(k => ({ requested_by: me.id, action: "add", person_id: null, note: $("#nt")?.value || null, payload: { ...k, ...par, batch } }));
+    await submit(reqs, d, `✅ ${reqs.length} सन्तानको अनुरोध पठाइयो`);
   };
 }
 
@@ -1091,7 +1078,7 @@ async function adminView() {
   const [ttl, cnt, bodyH] = SEC[admSec];
   $("#pane").innerHTML = `<div class="adm"><div class="adm-main"><h2>${ttl} (${np(cnt)})</h2>${adm ? '<div class="row" style="margin:0 0 1rem"><button id="mkacct">➕ खाता बनाउने</button></div>' : ""}${bodyH || '<div class="card">यहाँ अहिले केही छैन।</div>'}</div>
     <aside class="adm-side" aria-label="एडमिन सेक्सन"><h4>सेक्सन</h4>${keys.map(k => `<button data-sec="${k}" class="${k === admSec ? "on" : ""}"><span>${SEC[k][0]}</span><span class="cnt">${np(SEC[k][1])}</span></button>`).join("")}</aside></div>`;
-  document.querySelectorAll("select.ps").forEach(x => searchable(x));
+  document.querySelectorAll("select.ps").forEach(searchable);
   $("#pane").onclick = async e => {
     const sc = e.target.closest("[data-sec]"); if (sc) { admSec = sc.dataset.sec; return adminView(); }
     const rc = e.target.closest("[data-rc]"); if (rc) { reqCat = rc.dataset.rc; return adminView(); }
@@ -1121,7 +1108,7 @@ async function adminView() {
     }
     if (b.dataset.x) { const reason = prompt("अस्वीकार गर्ने कारण?"); if (reason === null) return; for (const id of b.dataset.x.split(",")) { ({ error: err } = await db.rpc("review_request", { req: id, approve: false, reason })); if (err) break; } }
     if (err) return alert(err.message);
-    toast("✅ सुरक्षित भयो"); await reload();
+    toast("✅ सुरक्षित भयो"); await load(); render();
   };
 }
 
@@ -1192,7 +1179,7 @@ function ovView() {
     if (e.target.closest("#ovback")) { tab = "fam"; return render(); }
     const x = e.target.closest("[data-ov]");
     if (x) { const o = OVL[+x.dataset.ov], bx = $("#ovlist"); bx.hidden = false;
-      bx.innerHTML = `<h3>${o.t} → ${esc(o.l)} <small class="mut">(${np(o.ids.length)})</small></h3>` + (o.ids.map(id => byId[id]).filter(Boolean).sort(byBirth).map(p => `<div class="fr" data-pk="${p.id}"><div class="mav2 sm g${p.gender || "O"}">${esc(Array.from(p.name)[0])}</div><div><b>${esc(p.name)}</b><small>${esc(RR[p.id] || "")}${yr(p.birth_bs) ? " · " + yr(p.birth_bs) : ""}</small></div></div>`).join("") || '<p class="mut">कोही छैन।</p>');
+      bx.innerHTML = `<h3>${o.t} → ${esc(o.l)} <small class="mut">(${np(o.ids.length)})</small></h3>` + (o.ids.map(id => byId[id]).filter(Boolean).sort(byBirth).map(p => `<div class="fr" data-pk="${p.id}"><div class="mav2 sm g${p.gender || "O"}">${ico(p.gender)}</div><div><b>${esc(p.name)}</b><small>${esc(RR[p.id] || "")}${yr(p.birth_bs) ? " · " + yr(p.birth_bs) : ""}</small></div></div>`).join("") || '<p class="mut">कोही छैन।</p>');
       bx.scrollIntoView({ behavior: "smooth", block: "nearest" }); return; }
     const k = e.target.closest("[data-pk]"); if (k) pick(k.dataset.pk); // विवरण प्यानल खुल्छ; त्यहीँबाट Edit
   };
@@ -1215,6 +1202,3 @@ let ip; addEventListener("beforeinstallprompt", e => { e.preventDefault(); ip = 
   b.onclick = () => { const n = cur() === "dark" ? "light" : "dark"; root.dataset.theme = n; try { localStorage.setItem("vv_theme", n); } catch (e) {} paint(); };
   mq.addEventListener?.("change", paint); paint();
 })();
-
-// हेडरको "हाम्रो वंशावली" थिच्दा होम (परिवार) मा जाने
-{ const h = $("header h1"); h.style.cursor = "pointer"; h.onclick = () => { if (!me || !act) return; tab = "fam"; render(); scrollTo(0, 0); }; }
