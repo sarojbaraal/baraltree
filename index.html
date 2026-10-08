@@ -1926,15 +1926,18 @@ main{transition:margin .35s var(--ease)}
 .ovl{list-style:none;display:grid;gap:.35rem;font-size:.88rem}.ovl i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:.4rem}
 .ovb{display:grid;grid-template-columns:minmax(110px,40%) 1fr 34px;gap:.5rem;align-items:center;margin:.35rem 0;font-size:.82rem}
 .ovb div{background:var(--bg-2);border-radius:50px;height:12px;overflow:hidden}.ovb div i{display:block;height:100%;border-radius:50px}
-/* v13 — समूह मिलाउने, सन्तान फारम, खोज ✕ */
-.kc{margin:.7rem 0;padding:1rem;border-radius:18px;border:1px solid rgba(212,160,23,.3);background:var(--bg-2)}
-.kc-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem}.kc .k-x{min-height:34px;padding:0 .8rem}
-.kc .edg{grid-template-columns:1fr 1fr}
-@media (max-width:640px){.kc .edg{grid-template-columns:1fr}}
-.fh button{min-height:30px;padding:0 .6rem;font-size:.75rem;margin-left:.3rem;-webkit-text-fill-color:currentColor}
-.mc[draggable=true],.mlc[draggable=true]{cursor:grab;outline:1px dashed var(--gold);outline-offset:2px}
-.qw #qx{min-height:36px;padding:0 .7rem;flex:none}
-header h1{cursor:pointer}
+
+/* v13 — अवतार आइकन, खोज ✕, कम्प्याक्ट सच्याउने विन्डो */
+.av svg,.mav2 svg,.pp-av svg{width:58%;height:58%;fill:#fff;display:block}
+.mav2.gM{background:linear-gradient(135deg,#2563EB,#60A5FA)}.mav2.gF{background:linear-gradient(135deg,#DB2777,#F472B6)}
+.msw{width:100%;margin-bottom:1rem}.msw .msearch{margin:0;width:100%}.qx{position:absolute;right:.5rem;top:50%;transform:translateY(-50%);width:30px;min-height:30px;padding:0;border-radius:50%}
+@media (min-width:641px){
+ dialog.ed{max-width:860px}.edw{grid-template-columns:200px minmax(0,1fr);height:min(82vh,680px)}
+ .eds{padding:1.4rem .9rem}.eds .pp-av{width:84px;height:84px}
+ .edb{padding:1.1rem 1.4rem .5rem}.edb h2{font-size:1.2rem;margin-bottom:.7rem}
+ .edb label{margin-top:.5rem;font-size:.76rem}.edb input,.edb select,.edb textarea{padding:.4rem .65rem;font-size:.88rem;min-height:0}
+ .edb hr{margin:.7rem 0}.edg{gap:0 .8rem}.rad{gap:1.1rem}.rad label{font-size:.88rem}.edf{padding:.6rem 1.4rem}.edf button{padding:.45rem 1.2rem}
+}
 </style>
 </head>
 <body>
