@@ -756,7 +756,7 @@ const ageN = (b, d) => { const P = x => String(x || "").split("-").map(v => pars
 function genNo(id, n = 0) { if (tab === "tree" && cardPos[id]) return cardPos[id].d + 1; const p = byId[id]; if (!p || n > 40) return 1;
   const par = byId[p.father_id] || byId[p.mother_id]; if (par) return genNo(par.id, n + 1) + 1;
   const s = isMarriedIn(p) ? byId[p.spouse_id] : null; return s ? genNo(s.id, n + 1) : 1; }
-function relsOf(p) { // तत्काल परिवार: नाम + यो व्यक्तिसँगको साइनो
+function relsOf(p) { //अहिलेको परिवार: नाम + यो व्यक्तिसँगको साइनो
   const R = [], add = (q, l) => q && R.push({ q, l }), g = (q, m, f, o) => q.gender === "M" ? m : q.gender === "F" ? f : o;
   add(byId[p.father_id], "बुबा"); add(byId[p.mother_id], "आमा");
   spousesOf(p).forEach(i => add(byId[i], g(byId[i], "पति", "पत्नी", "श्रीमान/श्रीमती")));
@@ -833,7 +833,7 @@ const mcard = (p, core) => {
   const mine = p.id === me.position_person_id, kc = kidsOf(p).length;
   return `<div class="mc g${p.gender || "O"} ${core ? "core" : ""} ${mine ? "mine" : ""} ${p.is_living ? "" : "dead"}" tabindex="0" data-id="${p.id}"><div class="mav2">${ico(p.gender)}</div><div class="mn">${esc(p.name)}</div><div class="my">${esc(RM[p.id] || "साइनो स्पष्ट छैन")}</div>${kc ? `<span class="mb">${np(kc)}</span>` : ""}${mine ? '<span class="me">तपाईं</span>' : ""}</div>`;
 };
-function famGroups() { // १ तत्काल परिवार → २ विवाहित छोरीचेली → ३ दाजुभाइ/काका → ४ अन्य आफन्त (बाबुपट्टि, आमापट्टि, साइनो भएका, नभएका, दिवंगत)
+function famGroups() { // १अहिलेको परिवार → २ विवाहित छोरीचेली → ३ दाजुभाइ/काका → ४ अन्य आफन्त (बाबुपट्टि, आमापट्टि, साइनो भएका, नभएका, दिवंगत)
   const a = byId[me.position_person_id] || byId[me.position_parent_id] || byId[me.position_grand_id], used = new Set();
   const take = arr => arr.filter(p => p && can(p.id) && !used.has(p.id) && used.add(p.id)), sp = p => spousesOf(p).map(i => byId[i]), G = [];
   const sibsOf = x => people.filter(y => y.id !== x.id && ((x.father_id && y.father_id === x.father_id) || (x.mother_id && y.mother_id === x.mother_id))).sort(byBirth);
@@ -842,9 +842,9 @@ function famGroups() { // १ तत्काल परिवार → २ व�
     const f = byId[a.father_id], m = byId[a.mother_id], ks = kidsOf(a).sort(byBirth);
     const sons = ks.filter(k => k.gender !== "F"), ds = ks.filter(k => k.gender === "F"), ud = ds.filter(k => !spousesOf(k).length);
     const gk = sons.flatMap(x => kidsOf(x).sort(byBirth));
-    G.push(["🏠 तत्काल परिवार", take([byId[f?.father_id], byId[f?.mother_id], f, m, a, ...sp(a), ...sons, ...sons.flatMap(sp), ...ud, ...gk.filter(k => k.gender !== "F"), ...gk.filter(k => k.gender === "F" && !spousesOf(k).length)])]);
+    G.push(["🏠अहिलेको परिवार", take([byId[f?.father_id], byId[f?.mother_id], f, m, a, ...sp(a), ...sons, ...sons.flatMap(sp), ...ud, ...gk.filter(k => k.gender !== "F"), ...gk.filter(k => k.gender === "F" && !spousesOf(k).length)])]);
     const unc = f ? sibsOf(f).filter(y => y.gender !== "F") : [], bro = sibsOf(a).filter(y => !marF(y));
-    G.push(["💞 विवाहित छोरीचेली र उनको परिवार (ज्वाइँ, भान्जा-भान्जी)", take([...ds.filter(marF), ...gk.filter(marF), ...sibsOf(a).filter(marF), ...unc.flatMap(u => kidsOf(u).filter(marF))].flatMap(fam))]);
+    G.push(["💞 विवाहित छोरी-ज्वाइँ र भान्जा-भान्जी", take([...ds.filter(marF), ...gk.filter(marF), ...sibsOf(a).filter(marF), ...unc.flatMap(u => kidsOf(u).filter(marF))].flatMap(fam))]);
     const inl = a.gender === "F" ? sp(a).flatMap(h => h ? sibsOf(h).flatMap(fam) : []) : [];
     G.push(["👬 दाजुभाइ, काका-काकी र भतिजा-भतिजी", take([...bro.flatMap(fam), ...unc.flatMap(u => [u, ...sp(u), ...kidsOf(u).sort(byBirth).flatMap(k => marF(k) ? [] : fam(k))]), ...inl])]);
     const rest = people.filter(p => can(p.id) && !used.has(p.id)).sort(byBirth);
