@@ -289,6 +289,10 @@ BEGIN
 END;
 $$;
 
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT SELECT ON public.people TO anon, authenticated;
+GRANT SELECT ON public.ai_suggestions TO authenticated;
+
 GRANT EXECUTE ON FUNCTION public.is_admin_or_moderator() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.has_elevated_lineage_access() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.match_people_by_embedding(vector, float, int) TO authenticated, anon;
