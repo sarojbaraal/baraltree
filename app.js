@@ -3,7 +3,7 @@ const CFG = { url: "https://onhznyefbseptuwurqxx.supabase.co", key: "eyJhbGciOiJ
 const db = supabase.createClient(CFG.url, CFG.key);
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const LABEL = {name:"नाम",gender:"लिङ्ग",father_id:"बुबा",mother_id:"आमा",spouse_id:"पति/पत्नी",father_name:"बुबा (नयाँ नाम)",mother_name:"आमा (नयाँ नाम)",spouse_name:"पति/पत्नी (नयाँ नाम)",is_living:"जीवित",birth_bs:"जन्म मिति (BS)",death_bs:"मृत्यु मिति (BS)",phone:"फोन",address:"ठेगाना",notes:"टिप्पणी",maiden_name:"विवाहअघिको थर (Maiden)",married_name:"विवाहपछिको थर (Married)",birth_place:"जन्म स्थान"};
+const LABEL = {name:"नाम",gender:"लिङ्ग",father_id:"बुबा",mother_id:"आमा",spouse_id:"पति/पत्नी",father_name:"बुबा (नयाँ नाम)",mother_name:"आमा (नयाँ नाम)",spouse_name:"पति/पत्नी (नयाँ नाम)",is_living:"जीवित",birth_bs:"जन्म मिति (BS)",death_bs:"मृत्यु मिति (BS)",phone:"फोन",address:"ठेगाना",notes:"टिप्पणी",maiden_name:"विवाहअघिको थर (Maiden)",married_name:"विवाहपछिको थर (Married)",birth_place:"जन्म स्थान", photo_url: "प्रोफाइल फोटो"};
 const FIELDS = Object.keys(LABEL);
 const APP_VER = "V1108_09Oct";
 let qText = { tree: "", fam: "" }, keepView = null;
@@ -304,7 +304,55 @@ function render() {
   document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => { tab = b.dataset.t; render(); });
   ({ fam: famView, tree: treeView, mem: memView, mine: mineView, admin: adminView, ov: ovView })[tab]();
 }
-
+// ----------शाखा प्रिन्ट ---------
+function printBranch(personId) {
+  const p = byId[personId];
+  if (!p) return;
+  
+  // 1. Isolate the branch data
+  const branchIds = branchOf([personId]);
+  const branchPeople = people.filter(p => branchIds.has(p.id));
+  
+  // 2. Create a clean, print-only iframe or window
+  const printWindow = window.open('', '_blank', 'width=1200,height=800');
+  const svgContent = document.querySelector('#stage svg').outerHTML;
+  const cardsHtml = Array.from(document.querySelectorAll('.cd')).filter(c => branchIds.has(c.dataset.id)).map(c => c.outerHTML).join('');
+  
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>वंशावली: ${p.name} को शाखा</title>
+      <style>
+        @page { size: A3 landscape; margin: 1cm; }
+        body { font-family: 'Noto Sans Devanagari', sans-serif; background: white; color: black; }
+        .print-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .print-header h1 { margin: 0; font-size: 24px; }
+        .print-header p { margin: 5px 0 0; color: #666; }
+        .tree-container { position: relative; width: 100%; overflow: visible; }
+        /* Hide non-branch elements */
+        .cd { opacity: 0.2 !important; filter: grayscale(100%); }
+        .cd.sel, .cd.hl { opacity: 1 !important; filter: none !important; border: 2px solid #000 !important; }
+        .ln { stroke: #ccc !important; }
+        .ln.on { stroke: #000 !important; stroke-width: 2px !important; }
+      </style>
+    </head>
+    <body>
+      <div class="print-header">
+        <h1>🌳 ${p.name} को वंशावली शाखा</h1>
+        <p>मुद्रित मिति: ${new Date().toLocaleDateString('ne-NP')} | हाम्रो वंशावली</p>
+      </div>
+      <div class="tree-container">
+        ${document.querySelector('#stage').innerHTML}
+      </div>
+      <script>
+        window.onload = () => { window.print(); window.close(); };
+      <\/script>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
 // ---------- वंशवृक्ष ----------
 const hasParents = p => p.father_id || p.mother_id;
 // एक-एक विवाह भए पति/पत्नी दुवैको सन्तान एउटै देखिन्छ; बहुविवाहमा आ-आफ्नै
@@ -774,7 +822,10 @@ function detail() {
   const RL = relsOf(p); RL.splice(RL.filter(x => x.l === "बुबा" || x.l === "आमा").length, 0, { q: p, l: "यही प्रोफाइल", self: 1 });
   const rows = RL.map(({ q, l, self }) => { const ok = can(q.id); return `<div class="fr ${ok ? "" : "locked"} ${self ? "hl" : ""}" ${ok && !self ? `data-go="${q.id}"` : ""}><div class="mav2 sm g${q.gender || "O"}">${ok ? ico(q.gender) : "🔒"}</div><div><b>${esc(nm(q))}</b><small>${l}${ok && yr(q.birth_bs) ? " · " + yr(q.birth_bs) : ""}</small></div></div>`; }).join("");
   el.innerHTML = `<div class="pp-fix"><button class="ghost pp-x" id="dx" aria-label="बन्द">×</button>
-    <div class="pp-top"><div class="pp-av g${p.gender || "O"}">${ico(p.gender)}</div><div class="pp-info"><h3>${esc(p.name)}</h3>
+    <div class="pp-top">
+  <div class="pp-av g${p.gender || "O"}" style="background-image: url('${p.photo_url || ''}'); background-size: cover; background-position: center;">
+    ${!p.photo_url ? ico(p.gender) : ''}
+  </div><div class="pp-info"><h3>${esc(p.name)}</h3>
       ${rl ? `<div class="pp-l">💠 ${rl === "तपाईं" ? "तपाईं" : "तपाईंको " + esc(rl)}</div>` : ""}
       ${(() => { const a = (p.is_living || p.death_bs) ? ageN(p.birth_bs, p.is_living ? "" : p.death_bs) : null; return `<div class="pp-l">🧬 Gen ${np(genNo(p.id))}${a != null ? " · उमेर " + np(a) + " वर्ष" : ""}${p.is_living ? "" : " · दिवंगत"}</div>`; })()}
       ${addrOf(p) ? `<div class="pp-l">📍 ${esc(addrOf(p))}</div>` : ""}
@@ -945,6 +996,10 @@ function form(action, p = null, parent = null, pre = null) {
     <hr><div class="sech">सम्पर्क</div>
     <div class="edg"><label>हालको फोन नम्बर<span style="display:flex;gap:.4rem"><input id="f_phone" value="${esc(v.phone)}"><button type="button" class="ghost" id="pick-c" aria-label="सम्पर्कबाट छान्ने">📇</button></span></label>
     ${action === "update" ? `<label>Facebook लिंक<input id="f_fb" value="${esc(v.facebook)}" placeholder="https://facebook.com/..."></label>` : ""}</div>
+    <label>प्रोफाइल फोटो
+  <input type="file" id="f_photo" accept="image/*" style="margin-top:0.5rem">
+  ${v.photo_url ? `<br><img src="${esc(v.photo_url)}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin-top:0.5rem;border:2px solid var(--line)">` : ''}
+</label>
     <label>हालको ठेगाना<input id="f_address" value="${esc(v.address)}"></label>
     <hr><label>टिप्पणी<textarea id="f_notes" rows="2">${esc(v.notes)}</textarea></label>${NOTE("एडमिनलाई सन्देश (स्रोत/प्रमाण)")}
     <div class="msg" id="fm"></div></div>
@@ -982,6 +1037,24 @@ function form(action, p = null, parent = null, pre = null) {
     const cur = {}, fb = $("#f_fb")?.value.trim(), fbChg = !!$("#f_fb") && fb !== (p.facebook || "");
     autoMarried();
     FIELDS.forEach(k => { let x = $("#f_" + k).value.trim(); if (k === "is_living") x = x === "true"; cur[k] = x; });
+    const photoFile = $("#f_photo")?.files[0];
+if (photoFile) {
+  $("#fm").textContent = "📸 फोटो अपलोड हुँदैछ...";
+  const fileExt = photoFile.name.split('.').pop();
+  const fileName = `${p?.id || 'new'}-${Date.now()}.${fileExt}`;
+  
+  const { data, error: uploadError } = await db.storage
+    .from('profile-photos')
+    .upload(fileName, photoFile, { upsert: true });
+    
+  if (uploadError) {
+    $("#fm").textContent = "❌ फोटो अपलोड असफल: " + uploadError.message;
+    return; // Stop the save process if upload fails
+  }
+  
+  const { data: { publicUrl } } = db.storage.from('profile-photos').getPublicUrl(fileName);
+  cur.photo_url = publicUrl; // Add the URL to the data being saved
+}
     if (cur.gender === "M" && cur.spouse_name) { const r = wifeNames(cur.spouse_name, "", "", surnameOf(cur.name)); if (r) cur.spouse_name = r.name; }
     if (cur.is_living) cur.death_bs = "";
     if (cur.gender !== "F") { cur.maiden_name = ""; cur.married_name = ""; }
@@ -1189,6 +1262,7 @@ async function adminView() {
   st.textContent = `
 main{transition:margin .35s var(--ease)}
 /* प्रोफाइल सच्याउने विन्डो: grid को पङ्क्तिलाई उचाइमा बाँधेर बीचको भाग scroll हुने, तलका बटन सधैं देखिने */
+.pp-av { display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .edw{grid-template-rows:minmax(0,1fr);height:min(88vh,820px);height:min(88dvh,820px)}
 .edm{min-height:0}
 .edb{min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
