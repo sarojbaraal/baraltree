@@ -21,6 +21,7 @@ function MainDashboard() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -30,12 +31,27 @@ function MainDashboard() {
           setCurrentUserEmail(user.email ?? null);
         }
 
-        const { data, error } = await supabase
+        // Try querying people table directly
+        let { data, error } = await supabase
           .from("people")
           .select("*")
           .order("id", { ascending: true });
 
-        if (!error && data) {
+        // Fallback: If direct SELECT on people returned error, attempt get_people RPC
+        if (error) {
+          const rpcRes = await supabase.rpc("get_people");
+          if (!rpcRes.error && rpcRes.data) {
+            data = rpcRes.data;
+            error = null;
+          }
+        }
+
+        if (error) {
+          console.warn("Supabase fetch notice:", error);
+          if (error.code === "42501" || error.message?.includes("permission denied")) {
+            setPermissionError(error.message);
+          }
+        } else if (data) {
           setPeople(data as Person[]);
         }
       } catch (err) {
@@ -138,13 +154,58 @@ function MainDashboard() {
         </div>
       </header>
 
-      {/* Main Interactive Canvas */}
+      {/* Main Interactive Canvas / Auth Wall */}
       {isLoading ? (
         <div className="w-full h-full flex flex-col items-center justify-center gap-3">
           <div className="w-10 h-10 rounded-full border-3 border-cyan-400 border-t-transparent animate-spin" />
           <p className="text-xs text-cyan-400 font-mono tracking-widest uppercase">
             वंशावली अभिलेख लोड हुँदैछ...
           </p>
+        </div>
+      ) : permissionError && !currentUserEmail ? (
+        <div className="w-full h-full flex items-center justify-center p-6 bg-slate-950 relative">
+          {/* Subtle Ambient Glow */}
+          <div className="absolute w-96 h-96 bg-cyan-500/10 rounded-full blur-[128px] pointer-events-none" />
+
+          <div className="max-w-md w-full backdrop-blur-2xl bg-slate-900/80 border border-slate-700/70 rounded-3xl p-8 shadow-2xl text-center relative z-10 space-y-5">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-2xl text-amber-400 shadow-lg shadow-amber-500/10">
+              🔒
+            </div>
+
+            <div>
+              <h2 className="text-lg font-bold text-slate-100">
+                वंशावली अभिलेख सुरक्षित छ
+              </h2>
+              <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                पारिवारिक गोपनीयता नीति अनुसार वंशावली हेर्नको लागि तपाईंको प्रयोगकर्ता खाता प्रमाणीकरण (लगइन) हुन आवश्यक छ।
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2.5 pt-2">
+              <Link
+                href="/auth/login"
+                className="w-full py-3 rounded-xl font-bold text-xs bg-gradient-to-r from-cyan-400 to-indigo-400 text-slate-950 shadow-lg shadow-cyan-500/25 hover:opacity-95 transition-all text-center"
+              >
+                🔑 खातामा लगइन गर्नुहोस् (Sign In)
+              </Link>
+              <Link
+                href="/auth/signup"
+                className="w-full py-3 rounded-xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all text-center"
+              >
+                नयाँ सदस्यता दाबी गर्नुहोस् (Register)
+              </Link>
+            </div>
+
+            <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-400 leading-normal bg-slate-950/50 p-3 rounded-xl border border-slate-800/80 text-left">
+              <span className="font-semibold text-cyan-300 block mb-1">
+                💡 प्रशासकका लागि जानकारी:
+              </span>
+              यदि तपाईं लगइन बिना नै जो-कोहीलाई सार्वजनिक रूपमा वंशावली देखाउन चाहनुहुन्छ भने, Supabase SQL Editor मा निम्न SQL चलाउनुहोस्:
+              <code className="block mt-1 font-mono text-[10px] text-emerald-400 bg-slate-900 p-1.5 rounded border border-slate-800">
+                GRANT SELECT ON public.people TO anon;
+              </code>
+            </div>
+          </div>
         </div>
       ) : (
         <FamilyTree />
