@@ -167,9 +167,5 @@ function TreeCanvas() {
 }
 
 export default function FamilyTree() {
-  return (
-    <ReactFlowProvider>
-      <TreeCanvas />
-    </ReactFlowProvider>
-  );
+  return <TreeCanvas />;
 }

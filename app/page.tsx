@@ -2,6 +2,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { ReactFlowProvider } from "reactflow";
 import { createClient } from "@/utils/supabase/client";
 import { useTreeStore } from "@/store/useTreeStore";
 import FamilyTree from "@/components/tree/FamilyTree";
@@ -9,7 +10,7 @@ import ProfileDetailPanel from "@/components/profile/ProfileDetailPanel";
 import SemanticSearchBar from "@/components/ui/SemanticSearchBar";
 import { Person } from "@/types/database";
 
-export default function HomePage() {
+function MainDashboard() {
   const supabase = createClient();
   const setPeople = useTreeStore((s) => s.setPeople);
   const peopleMap = useTreeStore((s) => s.people);
@@ -24,13 +25,11 @@ export default function HomePage() {
   useEffect(() => {
     async function loadData() {
       try {
-        // 1. Check Auth User
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           setCurrentUserEmail(user.email ?? null);
         }
 
-        // 2. Fetch People
         const { data, error } = await supabase
           .from("people")
           .select("*")
@@ -154,5 +153,13 @@ export default function HomePage() {
       {/* Slide-in Profile Detail Drawer */}
       <ProfileDetailPanel />
     </main>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <ReactFlowProvider>
+      <MainDashboard />
+    </ReactFlowProvider>
   );
 }
