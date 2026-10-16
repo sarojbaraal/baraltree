@@ -14,13 +14,14 @@ export async function POST(req: NextRequest) {
 
     // If Gemini API Key is available, use vector cosine search
     if (geminiApiKey) {
-      const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${geminiApiKey}`;
+      const embedUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${geminiApiKey}`;
       const embedRes = await fetch(embedUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "models/text-embedding-004",
+          model: "models/gemini-embedding-001",
           content: { parts: [{ text: query }] },
+          outputDimensionality: 768,
         }),
       });
 
