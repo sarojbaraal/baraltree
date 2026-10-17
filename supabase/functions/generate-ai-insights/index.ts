@@ -57,14 +57,42 @@ serve(async (req: Request) => {
     }
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Missing Authorization header" }), {
+    const bearerToken = authHeader?.match(/^Bearer\s+(.+)$/i)?.[1];
+    if (!bearerToken) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    // Verify the actual JWT before using privileged service-role access.
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data: authData, error: authError } = await supabase.auth.getUser(bearerToken);
+    if (authError || !authData.user) {
+      return new Response(JSON.stringify({ error: "Invalid or expired session" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role, roles")
+      .eq("id", authData.user.id)
+      .maybeSingle();
+
+    const userRoles = [
+      ...(profile?.role ? [profile.role] : []),
+      ...(Array.isArray(profile?.roles) ? profile.roles : []),
+    ];
+    if (profileError || !userRoles.some((role) => role === "admin" || role === "moderator")) {
+      return new Response(JSON.stringify({ error: "Insufficient permissions" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const body: RequestPayload = await req.json();
     const { person_id } = body;
