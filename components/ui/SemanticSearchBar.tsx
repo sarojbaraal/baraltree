@@ -38,11 +38,9 @@ export default function SemanticSearchBar() {
   }, []);
 
   useEffect(() => {
-    if (!query.trim() || query.length < 2) {
-      setResults([]);
-      setIsOpen(false);
-      return;
-    }
+    // Hide stale suggestions in the render when the query is too short.
+    // Avoid synchronous state updates inside this effect.
+    if (query.trim().length < 2) return;
 
     const timer = setTimeout(async () => {
       setIsSearching(true);
@@ -98,7 +96,7 @@ export default function SemanticSearchBar() {
       </div>
 
       {/* Auto-suggest Results Modal */}
-      {isOpen && (
+      {isOpen && query.trim().length >= 2 && (
         <div className="absolute top-12 left-0 w-full rounded-2xl bg-slate-950/95 backdrop-blur-2xl border border-slate-800 shadow-2xl p-2 z-50 max-h-80 overflow-y-auto space-y-1">
           {results.map((r) => (
             <button
