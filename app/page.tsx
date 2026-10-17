@@ -196,15 +196,9 @@ function MainDashboard() {
               </Link>
             </div>
 
-            <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-400 leading-normal bg-slate-950/50 p-3 rounded-xl border border-slate-800/80 text-left">
-              <span className="font-semibold text-cyan-300 block mb-1">
-                💡 प्रशासकका लागि जानकारी:
-              </span>
-              यदि तपाईं लगइन बिना नै जो-कोहीलाई सार्वजनिक रूपमा वंशावली देखाउन चाहनुहुन्छ भने, Supabase SQL Editor मा निम्न SQL चलाउनुहोस्:
-              <code className="block mt-1 font-mono text-[10px] text-emerald-400 bg-slate-900 p-1.5 rounded border border-slate-800">
-                GRANT SELECT ON public.people TO anon;
-              </code>
-            </div>
+            <p className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 leading-relaxed">
+              वंशावलीको पहुँच प्रशासकले तय गरेको गोपनीयता र अनुमति नीतिअनुसार व्यवस्थापन गरिन्छ।
+            </p>
           </div>
         </div>
       ) : (
