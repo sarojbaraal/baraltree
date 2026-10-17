@@ -23,56 +23,44 @@ export default function AnalyticsPage() {
   const supabase = createClient();
   const [data, setData] = useState<FamilyAnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function fetchAnalytics() {
       try {
         const { data: analyticsData, error } = await supabase.rpc("get_family_analytics");
-        if (!error && analyticsData) {
-          setData(analyticsData as FamilyAnalyticsData);
-        } else {
-          // Fallback calculation from people table if RPC is not yet executed in database
-          const { data: peopleData } = await supabase.from("people").select("*");
-          if (peopleData && peopleData.length > 0) {
-            const living = peopleData.filter((p) => p.is_living).length;
-            const deceased = peopleData.length - living;
-            const male = peopleData.filter((p) => p.gender === "male" || p.gender === "M").length;
-            const female = peopleData.filter((p) => p.gender === "female" || p.gender === "F").length;
 
-            setData({
-              overview: {
-                total_members: peopleData.length,
-                living_members: living,
-                deceased_members: deceased,
-                male_count: male,
-                female_count: female,
-                other_gender_count: peopleData.length - male - female,
-              },
-              longevity: [
-                { age_bracket: "०-२० वर्ष", count: 4 },
-                { age_bracket: "२०-४० वर्ष", count: 12 },
-                { age_bracket: "४०-६० वर्ष", count: 28 },
-                { age_bracket: "६०-८० वर्ष", count: 45 },
-                { age_bracket: "८०+ वर्ष", count: 19 },
-              ],
-              geography: [
-                { location: "काठमाडौं", count: 42 },
-                { location: "झापा", count: 28 },
-                { location: "मोरङ", count: 19 },
-                { location: "कास्की", count: 14 },
-                { location: "ललितपुर", count: 11 },
-              ],
-              max_generations: 8,
-            });
+        if (error) {
+          // Never replace real family statistics with illustrative/sample values.
+          console.error("Analytics RPC failed:", error.message);
+          if (!cancelled) {
+            setLoadError("तथ्याङ्क सेवा उपलब्ध छैन वा डेटाबेसमा आवश्यक analytics function तयार छैन।");
           }
+          return;
         }
-      } catch (err) {
-        console.error("Analytics fetch error:", err);
+
+        if (!analyticsData) {
+          if (!cancelled) setLoadError("अहिले तथ्याङ्क उपलब्ध छैन।");
+          return;
+        }
+
+        if (!cancelled) setData(analyticsData as FamilyAnalyticsData);
+      } catch {
+        console.error("Analytics fetch failed.");
+        if (!cancelled) {
+          setLoadError("तथ्याङ्क लोड गर्दा समस्या भयो। कृपया केही समयपछि पुनः प्रयास गर्नुहोस्।");
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     }
+
     fetchAnalytics();
+    return () => {
+      cancelled = true;
+    };
   }, [supabase]);
 
   if (isLoading) {
@@ -85,10 +73,17 @@ export default function AnalyticsPage() {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400 text-sm gap-4">
-        <p>तथ्याङ्क उपलब्ध हुन सकेन।</p>
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400 text-sm gap-4 px-6 text-center">
+        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-300 text-xl" aria-hidden="true">
+          !
+        </div>
+        <h1 className="text-lg font-bold text-slate-100">तथ्याङ्क उपलब्ध छैन</h1>
+        <p className="max-w-lg leading-relaxed">{loadError ?? "अहिले तथ्याङ्क उपलब्ध हुन सकेन।"}</p>
+        <p className="max-w-lg text-xs text-slate-500 leading-relaxed">
+          वास्तविक वंशावली अभिलेखबाट पुष्टि नभएसम्म अनुमानित वा नमुना सङ्ख्या देखाइँदैन।
+        </p>
         <Link href="/" className="px-4 py-2 rounded-xl bg-slate-800 text-cyan-300 text-xs">
-          ← क्यानभासमा फर्कनुहोस्
+          ← वंशवृक्षमा फर्कनुहोस्
         </Link>
       </div>
     );
