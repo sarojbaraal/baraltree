@@ -38,13 +38,12 @@ export default function SemanticSearchBar() {
   }, []);
 
   useEffect(() => {
-    if (!query.trim() || query.length < 2) {
-      setResults([]);
-      setIsOpen(false);
-      return;
-    }
-
     const timer = setTimeout(async () => {
+      if (!query.trim() || query.length < 2) {
+        setResults([]);
+        setIsOpen(false);
+        return;
+      }
       setIsSearching(true);
       try {
         const res = await fetch("/api/search", {
