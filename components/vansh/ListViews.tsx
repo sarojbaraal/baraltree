@@ -1,0 +1,223 @@
+"use client";
+// "परिवार" (family) and "सदस्य" (members) tabs — ported from the original app.js famView / memView.
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { famGroups, relMap } from "@/lib/vansh/relations";
+import { ROLE_L } from "@/lib/vansh/graph";
+import { match, np, yr } from "@/lib/vansh/text";
+import type { VPerson } from "@/lib/vansh/types";
+import { useVansh } from "./VanshContext";
+import { Avatar } from "./ui";
+import { PersonForm } from "./PersonDialogs";
+
+// search text survives tab switches, like the original
+export const qText = { tree: "", fam: "" };
+
+export function FamView() {
+  const { g, me, act, perms, access, people, pick, setTab, openDialog, myPosId } = useVansh();
+  const { byId, kidsOf, byBirth } = g;
+  const { can, isAdm, isStaff } = perms;
+  const [mode, setMode] = useState<"grid" | "list">("grid");
+  const [open, setOpen] = useState<Set<number>>(new Set([0]));
+  const [q, setQ] = useState(qText.fam);
+  const [focus, setFocus] = useState<string | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const R = useMemo(() => relMap(g, me).R, [g, me]);
+  const base = me?.position_person_id ? byId[me.position_person_id] : me?.position_parent_id ? byId[me.position_parent_id] : undefined;
+  const has = !!(base || (me?.position_grand_id && byId[me.position_grand_id]));
+  const groups = useMemo(() => (me ? famGroups(g, me, perms, R) : []), [g, me, perms, R]);
+  const ic = has ? groups[0]?.members.length || 0 : 0;
+  const msg = !access.acc
+    ? "सबै वंशावली तपाईंको सामु खुला छ।"
+    : base
+    ? "तपाईंको भूमिकाअनुसार खुला भएको वंश मात्र देखिन्छ। बाँकी शाखा चार्टमा धमिला र लक छन्।"
+    : "तपाईंको स्थान अझै तोकिएको छैन। एडमिनले तोकेपछि शाखा खुल्नेछ।";
+  const dispName = (me?.position_person_id && byId[me.position_person_id]?.name) || me?.full_name || me?.email || "";
+
+  const ql = q.trim().toLowerCase();
+  const hits = ql ? people.filter((p) => can(p.id) && (match(p.name, ql) || (R[p.id] || "").includes(ql))).slice(0, 50) : [];
+  const [showHits, setShowHits] = useState(false);
+
+  const showCard = (id: string) => {
+    const gi = groups.findIndex((gr) => gr.members.some((p) => p.id === id));
+    if (gi >= 0) setOpen((o) => new Set(o).add(gi));
+    setFocus(id);
+  };
+  useEffect(() => {
+    if (!focus) return;
+    const t = setTimeout(() => ref.current?.querySelector(`[data-id="${focus}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
+    return () => clearTimeout(t);
+  }, [focus]);
+
+  const card = (p: VPerson, core: boolean) => {
+    const mine = p.id === me?.position_person_id;
+    const kc = kidsOf(p).length;
+    return (
+      <div
+        key={p.id}
+        className={`mc g${p.gender || "O"} ${core ? "core" : ""} ${mine ? "mine" : ""} ${p.is_living ? "" : "dead"}`}
+        tabIndex={0}
+        data-id={p.id}
+        onClick={() => pick(p.id)}
+        onKeyDown={(e) => e.key === "Enter" && pick(p.id)}
+      >
+        <div className="mav2"><Avatar g={p.gender} /></div>
+        <div className="mn">{p.name}</div>
+        <div className="my">{R[p.id] || "साइनो स्पष्ट छैन"}</div>
+        {kc ? <span className="mb">{np(kc)}</span> : null}
+        {mine ? <span className="me">तपाईं</span> : null}
+      </div>
+    );
+  };
+  const lrow = (p: VPerson) => (
+    <div key={p.id} className={`mlc ${p.is_living ? "" : "dead"}`} data-id={p.id} onClick={() => pick(p.id)}>
+      <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} /></div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <b>{p.name}</b>
+        <br />
+        <span className="mut">
+          {R[p.id] || "साइनो स्पष्ट छैन"}
+          {yr(p.birth_bs) ? " · " + yr(p.birth_bs) : ""}
+        </span>
+      </div>
+    </div>
+  );
+
+  const visible = groups
+    .map((gr, gi) => ({ gr, gi, l: gr.members.filter((p) => !ql || p.name.toLowerCase().includes(ql) || (R[p.id] || "").includes(ql)) }))
+    .filter((x) => x.l.length);
+
+  return (
+    <>
+      <section className="hero2">
+        <div className="hello">
+          <span className="hchip">{act ? ROLE_L[act] : ""}</span>
+          <h2>नमस्ते, {dispName}</h2>
+          <p>{msg}</p>
+        </div>
+        <div className="stats">
+          <div><b>{np(ic)}</b><span>तत्काल परिवार</span></div>
+          <div><b>{np(access.acc ? access.acc.size : people.length)}</b><span>खुला सदस्य</span></div>
+          <div><b>{np(people.length)}</b><span>कुल सदस्य</span></div>
+        </div>
+        <div className="row">
+          <button disabled={!base} onClick={() => base && showCard(base.id)}>📍 मेरो स्थान</button>
+          {act !== "general" && (
+            <button className="ghost" onClick={() => openDialog(<PersonForm action="add" />, true)}>
+              {isAdm ? "+ सदस्य थप्ने" : "+ सदस्य थप्ने अनुरोध"}
+            </button>
+          )}
+          {isStaff && <button className="ghost" onClick={() => setTab("ov")}>📊 Family Overview</button>}
+        </div>
+      </section>
+      <div className="qw msw">
+        <input
+          className="msearch"
+          placeholder="🔍 नाम वा साइनो खोज्नुहोस्…"
+          autoComplete="off"
+          value={q}
+          onChange={(e) => {
+            qText.fam = e.target.value;
+            setQ(e.target.value);
+            setShowHits(true);
+          }}
+        />
+        <button className="ghost qx" hidden={!q} aria-label="खोज मेट्ने" onClick={() => { qText.fam = ""; setQ(""); }}>✕</button>
+        <div className="qr" hidden={!ql || !showHits}>
+          {hits.map((p) => (
+            <div
+              key={p.id}
+              onClick={() => {
+                qText.fam = p.name;
+                setQ(p.name);
+                setShowHits(false);
+                pick(p.id);
+                showCard(p.id);
+              }}
+            >
+              <b>{p.name}</b>
+              <small>
+                {R[p.id] || "साइनो छैन"}
+                {yr(p.birth_bs) ? " · " + yr(p.birth_bs) : ""}
+              </small>
+            </div>
+          ))}
+          {!hits.length && <div className="none">कोही भेटिएन</div>}
+        </div>
+      </div>
+      <div className="rchips">
+        <button className={`ghost ${mode === "grid" ? "on" : ""}`} onClick={() => setMode("grid")}>▦ थम्बनेल</button>
+        <button className={`ghost ${mode === "list" ? "on" : ""}`} onClick={() => setMode("list")}>☰ सूची</button>
+        <button
+          className="ghost"
+          onClick={() => setOpen(visible.some((x) => !open.has(x.gi)) ? new Set(groups.map((_, i) => i)) : new Set())}
+        >
+          ⇕ सबै खोल्ने / बन्द
+        </button>
+      </div>
+      <div id="fgroups" ref={ref}>
+        {visible.length ? (
+          visible.map(({ gr, gi, l }) => (
+            <details
+              className="acc"
+              key={gi}
+              open={open.has(gi)}
+              onToggle={(e) => {
+                const isOpen = (e.currentTarget as HTMLDetailsElement).open;
+                setOpen((o) => {
+                  if (o.has(gi) === isOpen) return o;
+                  const n = new Set(o);
+                  if (isOpen) n.add(gi);
+                  else n.delete(gi);
+                  return n;
+                });
+              }}
+            >
+              <summary>
+                <span className="acc-t">{gr.title}</span>
+                <span className="acc-n">{np(l.length)}</span>
+              </summary>
+              <div className="acc-b">
+                <div className={mode === "list" ? "mgrid" : "cgrid"}>
+                  {l.map((p) => (mode === "list" ? lrow(p) : card(p, has && gi === 0)))}
+                </div>
+              </div>
+            </details>
+          ))
+        ) : (
+          <div className="card">कोही भेटिएन।</div>
+        )}
+      </div>
+    </>
+  );
+}
+
+export function MemView() {
+  const { g, perms, pick } = useVansh();
+  const [q, setQ] = useState("");
+  const ql = q.trim().toLowerCase();
+  const list = g.people.filter((p) => perms.can(p.id) && (!ql || match(p.name, ql))).sort(g.byBirth);
+  return (
+    <>
+      <input className="msearch" placeholder="🔍 सदस्य खोज्नुहोस्…" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="mgrid" id="mg">
+        {list.length ? (
+          list.map((p) => (
+            <div key={p.id} className="mlc" data-id={p.id} onClick={() => pick(p.id)}>
+              <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} /></div>
+              <div>
+                <b>{p.name}</b>
+                <br />
+                <span className="mut">
+                  {(p.gender === "M" ? "पुरुष" : p.gender === "F" ? "महिला" : "") + " · " + (yr(p.birth_bs) || "?")}
+                </span>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="card">कोही भेटिएन।</div>
+        )}
+      </div>
+    </>
+  );
+}
