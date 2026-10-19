@@ -30,7 +30,7 @@ export default function DetailPanel({
   onGo?: (id: string) => void;
   onPrint?: (id: string) => void;
 }) {
-  const { db, g, me, sel, perms, pick, unpick, openDialog, toast, reload, send } = useVansh();
+  const { db, g, me, sel, perms, pick, unpick, openDialog, toast, reload } = useVansh();
   const [more, setMore] = useState(false);
   const [busyAi, setBusyAi] = useState(false);
   const p = sel ? g.byId[sel] : undefined;
@@ -60,8 +60,8 @@ export default function DetailPanel({
         },
       });
       if (error) throw error;
-      const e = await send("update", p.id, { ai_summary: data.summary, ai_tags: data.tags }, "");
-      if (e) throw new Error(e);
+      const { error: e2 } = await db.rpc("set_ai_summary", { pid: p.id, summary: data.summary, tags: data.tags || [] });
+      if (e2) throw e2;
       toast("✅ AI सारांश सुरक्षित भयो!");
       await reload();
     } catch (err) {
