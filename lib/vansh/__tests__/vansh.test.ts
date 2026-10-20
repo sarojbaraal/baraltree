@@ -100,7 +100,7 @@ describe("kinship labels", () => {
     expect(R.gita).toBe("आमा");
     expect(R.shyam).toBe("भाइ");
     expect(R.mina).toBe("बहिनी");
-    expect(R.bikash).toBe("ज्वाईं");
+    expect(R.bikash).toBe("ज्वाइँ");
     expect(R.anil).toBe("भान्जा");
     expect(R.gopal).toBe("हजुरबुबा");
     expect(R.dev).toBe("काका");
