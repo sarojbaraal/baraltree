@@ -10,6 +10,14 @@ function buildStamp(): string {
 
 const nextConfig: NextConfig = {
   env: { NEXT_PUBLIC_APP_VER: buildStamp() },
+  // Old Next.js auth pages wrote to `profiles` directly (now blocked by design); the app at "/" handles sign-in/up.
+  async redirects() {
+    return ["login", "signup", "forgot-password"].map((p) => ({
+      source: `/auth/${p}`,
+      destination: "/",
+      permanent: false,
+    }));
+  },
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
