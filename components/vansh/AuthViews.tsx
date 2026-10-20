@@ -236,12 +236,12 @@ export function AuthView() {
                 </p>
                 <div className="auth-divider">वा</div>
                 <p className="mut">
-                  <button className="lnk" onClick={() => switchMode("signup")}>नयाँ खाता बनाउनुहोस् →</button>
+                  <button className="lnk" onClick={() => switchMode("signup")}>नयाँ खाता बनाउनुहोस्</button>
                 </p>
               </>
             ) : (
               <p className="mut">
-                <button className="lnk" onClick={() => switchMode("login")}>← पहिले नै खाता छ? लगइन गर्नुहोस्</button>
+                <button className="lnk" onClick={() => switchMode("login")}>पहिले नै खाता छ? लगइन गर्नुहोस्</button>
               </p>
             )}
           </div>

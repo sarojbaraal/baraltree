@@ -68,7 +68,7 @@ function Shell() {
   useEffect(() => {
     const f = () => {
       setWide(innerWidth > 640);
-      setHdrH(document.querySelector("header")?.offsetHeight || 72);
+      setHdrH((document.querySelector("header")?.offsetHeight || 60) + 22);
     };
     f();
     addEventListener("resize", f);
@@ -132,8 +132,7 @@ function Shell() {
             scrollTo(0, 0);
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="logo" src="/icon-192.png" alt="" />
+          <span className="mono" aria-hidden="true">व</span>
           <span>हाम्रो वंशावली</span>
         </h1>
         <nav id="tabs" aria-label="मुख्य मेनु">

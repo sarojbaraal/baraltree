@@ -11,14 +11,14 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 };
 export const viewport: Viewport = {
-  themeColor: "#1A1A2E",
+  themeColor: "#0a0f1f",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
 };
 
 // applies the saved theme before first paint (no flash)
-const THEME_SCRIPT = `try{document.documentElement.dataset.theme=localStorage.getItem("vv_theme")||"light"}catch(e){document.documentElement.dataset.theme="light"}`;
+const THEME_SCRIPT = `try{document.documentElement.dataset.theme=localStorage.getItem("vv_theme")||"dark"}catch(e){document.documentElement.dataset.theme="light"}`;
 
 export default function VanshLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
@@ -29,7 +29,7 @@ export default function VanshLayout({ children }: Readonly<{ children: React.Rea
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Noto+Serif+Devanagari:wght@500;600;700;900&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Hindi&family=Mukta:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
       </head>
