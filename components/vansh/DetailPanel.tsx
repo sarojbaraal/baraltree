@@ -5,7 +5,7 @@ import { relMap, relsOf, genNo } from "@/lib/vansh/relations";
 import { ordinalOf } from "@/lib/vansh/kinship";
 import { ageN, dispName, fbOk, np, yr } from "@/lib/vansh/text";
 import { useVansh } from "./VanshContext";
-import { Avatar } from "./ui";
+import { Avatar, KidCount } from "./ui";
 import { AddMenu, DeleteDialog, InviteDialog, PersonForm } from "./PersonDialogs";
 
 function Box({ c, ic, l, children }: { c: string; ic: string; l: string; children?: React.ReactNode }) {
@@ -105,6 +105,7 @@ export default function DetailPanel({
             father: (p.father_id && g.byId[p.father_id]?.name) || "अज्ञात",
             mother: (p.mother_id && g.byId[p.mother_id]?.name) || "अज्ञात",
             spouse: p.spouse_id ? g.byId[p.spouse_id]?.name : "अज्ञात",
+            children: g.kidsOf(p).map((k) => k.name).join(", ") || "उल्लेख नभएको",
           },
         },
       });
@@ -211,17 +212,7 @@ export default function DetailPanel({
                       {ok && yr(q.birth_bs) ? " · " + yr(q.birth_bs) : ""}
                     </small>
                   </div>
-                  {ok && (() => {
-                    const ks = g.kidsOf(q);
-                    const sons = ks.filter((k) => k.gender !== "F").length;
-                    const dau = ks.length - sons;
-                    return ks.length ? (
-                      <span className="kc" title="सन्तान">
-                        {sons ? <em className="m">♂ {np(sons)}</em> : null}
-                        {dau ? <em className="f">♀ {np(dau)}</em> : null}
-                      </span>
-                    ) : null;
-                  })()}
+                  {ok && <KidCount kids={g.kidsOf(q)} />}
                 </div>
               );
             })

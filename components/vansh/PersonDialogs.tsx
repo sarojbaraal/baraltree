@@ -174,7 +174,7 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
         setErr("📸 फोटो अपलोड हुँदैछ...");
         const ext = photo.name.split(".").pop();
         const fileName = `${p?.id || "new"}-${Date.now()}.${ext}`;
-        const { error: upErr } = await db.storage.from("profile-photos").upload(fileName, photo, { upsert: true });
+        const { error: upErr } = await db.storage.from("profile-photos").upload(fileName, photo, { contentType: photo.type || undefined });
         if (upErr) return setErr("❌ फोटो अपलोड असफल: " + upErr.message);
         photoUrl = db.storage.from("profile-photos").getPublicUrl(fileName).data.publicUrl;
         setErr("");
