@@ -11,6 +11,7 @@ import TreeView from "./TreeView";
 import DetailPanel from "./DetailPanel";
 import { AdminView, MineView } from "./RequestViews";
 import OverviewView from "./OverviewView";
+import { PasswordDialog } from "./PersonDialogs";
 
 const APP_VER = process.env.NEXT_PUBLIC_APP_VER || "dev";
 
@@ -60,7 +61,7 @@ function InstallButton() {
 }
 
 function Shell() {
-  const { db, phase, me, act, roles, setAct, tab, setTab, sel, perms, treeApi, people } = useVansh();
+  const { db, phase, me, act, roles, setAct, tab, setTab, sel, perms, treeApi, people, openDialog } = useVansh();
   const { theme, toggle } = useTheme();
   const [wide, setWide] = useState(true);
   const [hdrH, setHdrH] = useState(72);
@@ -100,6 +101,15 @@ function Shell() {
   ];
 
   const dispName = (me?.position_person_id && people.find((p) => p.id === me.position_person_id)?.name) || me?.full_name || me?.email || "";
+  const [oauthOnly, setOauthOnly] = useState(false);
+  useEffect(() => {
+    if (phase !== "app") return;
+    db.auth.getUser().then(({ data }) => {
+      const u = data.user;
+      const ids = (u?.identities || []).map((i) => i.provider);
+      setOauthOnly(!!u && ids.length > 0 && !ids.includes("email"));
+    });
+  }, [db, phase]);
   const showWho = phase === "app" || phase === "pos" || phase === "pending";
 
   let body: React.ReactNode = null;
@@ -156,6 +166,9 @@ function Shell() {
               ) : (
                 <span className="tag">{(act && ROLE_L[act]) || "पर्खाइमा"}</span>
               )}
+              {oauthOnly && (
+                <button className="ghost" id="pwb" title="इमेल/पासवर्ड जोड्ने" aria-label="इमेल/पासवर्ड जोड्ने" onClick={() => openDialog(<PasswordDialog />)}>🔑</button>
+              )}
               <button className="ghost" id="out" onClick={() => db.auth.signOut()}>बाहिर</button>
             </>
           )}
@@ -167,7 +180,7 @@ function Shell() {
           ⓘ
         </span>
       </header>
-      <main id="app" className={inApp && eff === "tree" ? "wide" : ""} style={pushed ? { marginLeft: 390, marginRight: 0 } : undefined}>
+      <main id="app" className={inApp && eff === "tree" ? "wide" : ""} style={pushed ? { marginLeft: "calc(var(--det-w, 372px) + 18px)", marginRight: 0 } : undefined}>
         {phase === "loading" ? null : body}
       </main>
       {panelOpen && (

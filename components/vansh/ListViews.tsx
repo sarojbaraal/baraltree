@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { famGroups, relMap } from "@/lib/vansh/relations";
 import { ROLE_L } from "@/lib/vansh/graph";
-import { match, np, yr } from "@/lib/vansh/text";
+import { dispName, match, np, yr } from "@/lib/vansh/text";
 import type { VPerson } from "@/lib/vansh/types";
 import { useVansh } from "./VanshContext";
 import { Avatar } from "./ui";
@@ -20,6 +20,7 @@ export function FamView() {
   const [open, setOpen] = useState<Set<number>>(new Set([0]));
   const [q, setQ] = useState(qText.fam);
   const [focus, setFocus] = useState<string | null>(null);
+  const [flashId, setFlashId] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   const R = useMemo(() => relMap(g, me).R, [g, me]);
@@ -32,7 +33,7 @@ export function FamView() {
     : base
     ? "तपाईंको भूमिकाअनुसार खुला भएको वंश मात्र देखिन्छ। बाँकी शाखा चार्टमा धमिला र लक छन्।"
     : "तपाईंको स्थान अझै तोकिएको छैन। एडमिनले तोकेपछि शाखा खुल्नेछ।";
-  const dispName = (me?.position_person_id && byId[me.position_person_id]?.name) || me?.full_name || me?.email || "";
+  const meName = (me?.position_person_id && byId[me.position_person_id]?.name) || me?.full_name || me?.email || "";
 
   const ql = q.trim().toLowerCase();
   const hits = ql ? people.filter((p) => can(p.id) && (match(p.name, ql) || (R[p.id] || "").includes(ql))).slice(0, 50) : [];
@@ -42,6 +43,8 @@ export function FamView() {
     const gi = groups.findIndex((gr) => gr.members.some((p) => p.id === id));
     if (gi >= 0) setOpen((o) => new Set(o).add(gi));
     setFocus(id);
+    setFlashId(id);
+    setTimeout(() => setFlashId((f) => (f === id ? null : f)), 2600);
   };
   useEffect(() => {
     if (!focus) return;
@@ -55,25 +58,25 @@ export function FamView() {
     return (
       <div
         key={p.id}
-        className={`mc g${p.gender || "O"} ${core ? "core" : ""} ${mine ? "mine" : ""} ${p.is_living ? "" : "dead"}`}
+        className={`mc g${p.gender || "O"} ${core ? "core" : ""} ${mine ? "mine" : ""} ${p.is_living ? "" : "dead"} ${flashId === p.id ? "flash" : ""}`}
         tabIndex={0}
         data-id={p.id}
         onClick={() => pick(p.id)}
         onKeyDown={(e) => e.key === "Enter" && pick(p.id)}
       >
         <div className="mav2"><Avatar g={p.gender} /></div>
-        <div className="mn">{p.name}</div>
-        <div className="my">{R[p.id] || "साइनो स्पष्ट छैन"}</div>
+        <div className="mn">{dispName(p, true)}</div>
+        <div className="my"><i className={`st ${p.is_living ? "live" : "gone"}`} title={p.is_living ? "जीवित" : "दिवंगत"} />{R[p.id] || "साइनो स्पष्ट छैन"}</div>
         {kc ? <span className="mb">{np(kc)}</span> : null}
         {mine ? <span className="me">तपाईं</span> : null}
       </div>
     );
   };
   const lrow = (p: VPerson) => (
-    <div key={p.id} className={`mlc ${p.is_living ? "" : "dead"}`} data-id={p.id} onClick={() => pick(p.id)}>
+    <div key={p.id} className={`mlc ${p.is_living ? "" : "dead"} ${flashId === p.id ? "flash" : ""}`} data-id={p.id} onClick={() => pick(p.id)}>
       <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} /></div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <b>{p.name}</b>
+        <b>{dispName(p)}</b>
         <br />
         <span className="mut">
           {R[p.id] || "साइनो स्पष्ट छैन"}
@@ -92,7 +95,7 @@ export function FamView() {
       <section className="hero2">
         <div className="hello">
           <span className="hchip">{act ? ROLE_L[act] : ""}</span>
-          <h2>नमस्ते, {dispName}</h2>
+          <h2>नमस्ते, {meName}</h2>
           <p>{msg}</p>
         </div>
         <div className="stats">
@@ -101,7 +104,6 @@ export function FamView() {
           <div><b>{np(people.length)}</b><span>कुल सदस्य</span></div>
         </div>
         <div className="row">
-          <button disabled={!base} onClick={() => base && showCard(base.id)}>📍 मेरो स्थान</button>
           {act !== "general" && (
             <button className="ghost" onClick={() => openDialog(<PersonForm action="add" />, true)}>
               {isAdm ? "+ सदस्य थप्ने" : "+ सदस्य थप्ने अनुरोध"}
@@ -111,6 +113,8 @@ export function FamView() {
           {isStaff && <button className="ghost" onClick={() => setTab("ov")}>📊 Family Overview</button>}
         </div>
       </section>
+      <div className="stickybar">
+      <button className="locate" disabled={!base} onClick={() => base && showCard(base.id)}>📍 मेरो स्थान</button>
       <div className="qw msw">
         <input
           className="msearch"
@@ -136,7 +140,7 @@ export function FamView() {
                 showCard(p.id);
               }}
             >
-              <b>{p.name}</b>
+              <b>{dispName(p)}</b>
               <small>
                 {R[p.id] || "साइनो छैन"}
                 {yr(p.birth_bs) ? " · " + yr(p.birth_bs) : ""}
@@ -145,6 +149,7 @@ export function FamView() {
           ))}
           {!hits.length && <div className="none">कोही भेटिएन</div>}
         </div>
+      </div>
       </div>
       <div className="rchips">
         <button className={`ghost ${mode === "grid" ? "on" : ""}`} onClick={() => setMode("grid")}>▦ थम्बनेल</button>
@@ -207,7 +212,7 @@ export function MemView() {
             <div key={p.id} className="mlc" data-id={p.id} onClick={() => pick(p.id)}>
               <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} /></div>
               <div>
-                <b>{p.name}</b>
+                <b>{dispName(p)}</b>
                 <br />
                 <span className="mut">
                   {(p.gender === "M" ? "पुरुष" : p.gender === "F" ? "महिला" : "") + " · " + (yr(p.birth_bs) || "?")}

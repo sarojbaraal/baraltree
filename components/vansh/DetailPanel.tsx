@@ -1,9 +1,9 @@
 "use client";
 // Profile side panel (FamilySearch-style) — ported from the original app.js detail().
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { relMap, relsOf, genNo } from "@/lib/vansh/relations";
 import { ordinalOf } from "@/lib/vansh/kinship";
-import { ageN, fbOk, np, yr } from "@/lib/vansh/text";
+import { ageN, dispName, fbOk, np, yr } from "@/lib/vansh/text";
 import { useVansh } from "./VanshContext";
 import { Avatar } from "./ui";
 import { AddMenu, DeleteDialog, InviteDialog, PersonForm } from "./PersonDialogs";
@@ -33,6 +33,53 @@ export default function DetailPanel({
 }) {
   const { db, g, me, sel, perms, pick, unpick, openDialog, toast, reload } = useVansh();
   const [more, setMore] = useState(false);
+  const asideRef = useRef<HTMLElement>(null);
+
+  // desktop: remembered width, set by dragging the right edge
+  useEffect(() => {
+    try {
+      const w = parseInt(localStorage.getItem("vv_det_w") || "", 10);
+      if (w >= 300 && w <= 680) document.documentElement.style.setProperty("--det-w", w + "px");
+    } catch {}
+  }, []);
+  const startResize = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const left = asideRef.current?.getBoundingClientRect().left || 0;
+    let w = 0;
+    const move = (ev: PointerEvent) => {
+      w = Math.max(300, Math.min(680, Math.round(ev.clientX - left)));
+      document.documentElement.style.setProperty("--det-w", w + "px");
+    };
+    const up = () => {
+      removeEventListener("pointermove", move);
+      removeEventListener("pointerup", up);
+      if (w) try { localStorage.setItem("vv_det_w", String(w)); } catch {}
+    };
+    addEventListener("pointermove", move);
+    addEventListener("pointerup", up);
+  };
+  // phone: drag the header down to close the bottom sheet
+  const swipe = useRef<{ y: number; dy: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    if (innerWidth > 640) return;
+    swipe.current = { y: e.touches[0].clientY, dy: 0 };
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    const s = swipe.current;
+    if (!s || !asideRef.current) return;
+    s.dy = Math.max(0, e.touches[0].clientY - s.y);
+    asideRef.current.style.transform = `translateY(${s.dy}px)`;
+    asideRef.current.style.transition = "none";
+  };
+  const onTouchEnd = () => {
+    const s = swipe.current;
+    swipe.current = null;
+    const el = asideRef.current;
+    if (!s || !el) return;
+    el.style.transition = "";
+    if (s.dy > 90) unpick();
+    else el.style.transform = "";
+  };
   const [busyAi, setBusyAi] = useState(false);
   const p = sel ? g.byId[sel] : undefined;
   if (!p) return null;
@@ -74,8 +121,10 @@ export default function DetailPanel({
   };
 
   return (
-    <aside id="det" style={top ? { top } : undefined}>
-      <div className="pp-fix">
+    <>
+    <aside id="det" ref={asideRef} style={top ? { top } : undefined}>
+      <div className="pp-fix" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+        <div className="sheet-handle" />
         <button className="ghost pp-x" id="dx" aria-label="बन्द" onClick={unpick}>×</button>
         <div className="pp-top">
           <div
@@ -85,11 +134,11 @@ export default function DetailPanel({
             {!p.photo_url && <Avatar g={p.gender} />}
           </div>
           <div className="pp-info">
-            <h3>{p.name}</h3>
+            <h3>{dispName(p)}</h3>
             {rl && <div className="pp-l">💠 {rl === "तपाईं" ? "तपाईं" : "तपाईंको " + rl}</div>}
             {ord && <div className="pp-l">🔢 {ord} {p.gender === "F" ? "छोरी" : "छोरा"}</div>}
             <div className="pp-l">
-              🧬 Gen {np(genNo(g, p.id, depthOf))}
+              <i className={`st ${p.is_living ? "live" : "gone"}`} title={p.is_living ? "जीवित" : "दिवंगत"} /> 🧬 Gen {np(genNo(g, p.id, depthOf))}
               {age != null ? " · उमेर " + np(age) + " वर्ष" : ""}
               {p.is_living ? "" : " · दिवंगत"}
             </div>
@@ -140,7 +189,7 @@ export default function DetailPanel({
         <p className="mut" style={{ marginTop: "1rem" }}>यो शाखाको नाम मात्र हेर्न मिल्छ।</p>
       ) : (
         <>
-          <div className="pp-h">तत्काल परिवार</div>
+          <div className="pp-h">परिवार</div>
           {RL.length ? (
             RL.map(({ q, l, self }) => {
               const ok = can(q.id);
@@ -154,14 +203,25 @@ export default function DetailPanel({
                     pick(q.id);
                   }}
                 >
-                  <div className={`mav2 sm g${q.gender || "O"}`}>{ok ? <Avatar g={q.gender} /> : "🔒"}</div>
-                  <div>
-                    <b>{nm(q)}</b>
+                  {ok ? <i className={`st ${q.is_living ? "live" : "gone"}`} title={q.is_living ? "जीवित" : "दिवंगत"} /> : <span>🔒</span>}
+                  <div className="fn">
+                    <b>{ok ? dispName(q) : nm(q)}</b>
                     <small>
                       {l}
                       {ok && yr(q.birth_bs) ? " · " + yr(q.birth_bs) : ""}
                     </small>
                   </div>
+                  {ok && (() => {
+                    const ks = g.kidsOf(q);
+                    const sons = ks.filter((k) => k.gender !== "F").length;
+                    const dau = ks.length - sons;
+                    return ks.length ? (
+                      <span className="kc" title="सन्तान">
+                        {sons ? <em className="m">♂ {np(sons)}</em> : null}
+                        {dau ? <em className="f">♀ {np(dau)}</em> : null}
+                      </span>
+                    ) : null;
+                  })()}
                 </div>
               );
             })
@@ -211,5 +271,7 @@ export default function DetailPanel({
         </>
       )}
     </aside>
+    <div className="det-grip" style={top ? { top } : undefined} role="separator" aria-orientation="vertical" aria-label="चौडाइ मिलाउनुहोस्" onPointerDown={startResize} />
+    </>
   );
 }

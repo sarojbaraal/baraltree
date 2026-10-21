@@ -9,7 +9,7 @@ import {
 } from "@/lib/vansh/requests";
 import { fbOk, surnameOf, wifeNames, yr } from "@/lib/vansh/text";
 import { useVansh } from "./VanshContext";
-import { Avatar, DateField, Sx, SXMSG, personOptions, useSx } from "./ui";
+import { Avatar, DateField, PasswordField, Sx, SXMSG, personOptions, useSx } from "./ui";
 
 const siteUrl = () => `${location.origin}${location.pathname}`;
 
@@ -688,6 +688,37 @@ export function AnchorDialog({ userId, current, onDone }: { userId?: string; cur
       <div className="row">
         <button onClick={() => save(false)}>सुरक्षित गर्ने</button>
         {cur && <button className="bad" onClick={() => save(true)}>सन्दर्भ हटाउने</button>}
+        <button className="ghost" onClick={closeDialog}>रद्द</button>
+      </div>
+    </>
+  );
+}
+
+// ---------------- add email/password to a Google/Facebook account ----------------
+export function PasswordDialog() {
+  const { db, closeDialog, toast, me } = useVansh();
+  const [a, setA] = useState("");
+  const [b, setB] = useState("");
+  const [err, setErr] = useState("");
+  const save = async () => {
+    if (a.length < 6) return setErr("पासवर्ड कम्तिमा ६ अक्षरको हुनुपर्छ।");
+    if (a !== b) return setErr("दुई पासवर्ड मिलेन।");
+    const { error } = await db.auth.updateUser({ password: a });
+    if (error) return setErr(error.message);
+    toast("✅ अब इमेल र पासवर्डले पनि लगइन गर्न सकिन्छ");
+    closeDialog();
+  };
+  return (
+    <>
+      <h3>🔑 इमेल / पासवर्ड जोड्ने</h3>
+      <p className="mut">
+        तपाईं Google/Facebook बाट लगइन हुनुभएको छ। पासवर्ड राखेपछि <b>{me?.email}</b> र यो पासवर्डले पनि लगइन गर्न सकिन्छ।
+      </p>
+      <PasswordField label="नयाँ पासवर्ड" value={a} onChange={setA} autoComplete="new-password" />
+      <PasswordField label="पासवर्ड फेरि लेख्नुहोस्" value={b} onChange={setB} autoComplete="new-password" onEnter={save} />
+      <div className="msg">{err}</div>
+      <div className="row">
+        <button onClick={save}>सुरक्षित गर्ने</button>
         <button className="ghost" onClick={closeDialog}>रद्द</button>
       </div>
     </>

@@ -26,6 +26,10 @@ function Say({ m }: { m: { t: string; ok?: boolean } | null }) {
 export function AuthView() {
   const { db, invite } = useVansh();
   const [mode, setMode] = useState<Mode>("login");
+  const [viaOauth, setViaOauth] = useState(false);
+  useEffect(() => {
+    try { setViaOauth(localStorage.getItem("vv_oauth") === "1"); } catch {}
+  }, []);
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [fn, setFn] = useState("");
@@ -55,6 +59,7 @@ export function AuthView() {
       if (mode === "login") {
         const { error } = await db.auth.signInWithPassword({ email: e, password: pw });
         if (error) say(error.message);
+        else try { localStorage.removeItem("vv_oauth"); } catch {}
       } else if (mode === "signup") {
         const name = fn.trim();
         if (!name) return say("पूरा नाम लेख्नुहोस्।");
@@ -85,6 +90,7 @@ export function AuthView() {
   };
 
   const oauth = async (provider: "google" | "facebook") => {
+    try { localStorage.setItem("vv_oauth", "1"); } catch {}
     const { error } = await db.auth.signInWithOAuth({ provider, options: { redirectTo: siteUrl() } });
     if (error) say(error.message);
   };
@@ -231,9 +237,17 @@ export function AuthView() {
           <div className="auth-footer-links">
             {mode === "login" ? (
               <>
-                <p className="mut">
-                  <button className="lnk" onClick={() => switchMode("forgot")}>पासवर्ड बिर्सनुभयो?</button>
-                </p>
+                {viaOauth ? (
+                  <p className="mut" style={{ textAlign: "center", fontSize: "0.85rem" }}>
+                    पछिल्लो पटक Google/Facebook बाट लगइन गर्नुभएको थियो। पासवर्ड राख्न लगइनपछि 🔑 थिच्नुहोस्।
+                    <br />
+                    <button className="lnk" onClick={() => { try { localStorage.removeItem("vv_oauth"); } catch {} setViaOauth(false); }}>मसँग पासवर्ड छ</button>
+                  </p>
+                ) : (
+                  <p className="mut">
+                    <button className="lnk" onClick={() => switchMode("forgot")}>पासवर्ड बिर्सनुभयो?</button>
+                  </p>
+                )}
                 <div className="auth-divider">वा</div>
                 <p className="mut">
                   <button className="lnk" onClick={() => switchMode("signup")}>नयाँ खाता बनाउनुहोस्</button>

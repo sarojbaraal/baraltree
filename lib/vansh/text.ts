@@ -171,3 +171,9 @@ export function composeDate(y: string, m: string, d: string): string {
   const z = (n: string | number) => String(n).padStart(2, "0");
   return yy ? `${yy}-${m ? z(m) : "00"}-${d ? z(d) : "00"}` : "";
 }
+
+/** Name for display: demised people get "स्वर्गीय " (or "स्व. " when compact). Stored names are never changed. */
+export function dispName(p: { name: string; is_living?: boolean | null }, compact = false): string {
+  if (p.is_living !== false || /^(स्वर्गीय|स्व\.)\s/.test(p.name)) return p.name;
+  return (compact ? "स्व. " : "स्वर्गीय ") + p.name;
+}

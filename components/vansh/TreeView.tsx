@@ -7,7 +7,7 @@ import {
 } from "@/lib/vansh/layout";
 import { exportCSV, exportJPG, exportJSON, exportSVG, exportXLSX, svgText } from "@/lib/vansh/exporters";
 import { diffImport, parseImportRows, readImportFile } from "@/lib/vansh/importer";
-import { match, np, yr } from "@/lib/vansh/text";
+import { dispName, match, np, yr } from "@/lib/vansh/text";
 import { relMap } from "@/lib/vansh/relations";
 import type { VPerson } from "@/lib/vansh/types";
 import { useVansh } from "./VanshContext";
@@ -443,7 +443,7 @@ export default function TreeView() {
           <div id="qr" className="qr" hidden={!ql || !showHits}>
             {matches.slice(0, 50).map((p: VPerson) => (
               <div key={p.id} onClick={() => choose(p.id)}>
-                <b>{p.name}</b>
+                <b>{dispName(p)}</b>
                 <small>
                   {[p.father_id && byId[p.father_id] && "बुबा: " + byId[p.father_id].name, yr(p.birth_bs)].filter(Boolean).join(" · ")}
                 </small>
@@ -520,8 +520,8 @@ export default function TreeView() {
               >
                 <div className="av">{ok ? <Avatar g={p.gender} /> : "🔒"}</div>
                 <div className="tx">
-                  <small className="gn">Gen {d + 1}</small>
-                  <b>{nm(p)}</b>
+                  <small className="gn"><i className={`st ${p.is_living ? "live" : "gone"}`} title={p.is_living ? "जीवित" : "दिवंगत"} /> Gen {d + 1}</small>
+                  <b>{ok ? dispName(p, true) : nm(p)}</b>
                   <span>{ok ? (yr(p.birth_bs) || "?") + (p.is_living ? "" : " – " + (yr(p.death_bs) || "?")) : "लक"}</span>
                 </div>
               </div>
