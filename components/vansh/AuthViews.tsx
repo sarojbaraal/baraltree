@@ -7,7 +7,7 @@ import { PasswordField } from "./ui";
 type Mode = "login" | "signup" | "forgot";
 const TITLE: Record<Mode, string> = { login: "स्वागत छ", signup: "खाता बनाउनुहोस्", forgot: "पासवर्ड रिसेट" };
 const SUBTITLE: Record<Mode, string> = {
-  login: "तपाईंको वंशावलीमा फेरि स्वागत छ",
+  login: "तपाईंको वंशावली हेर्न लगईन गर्नुहोस्।",
   signup: "आफ्नो परिवारको इतिहास सुरक्षित गर्नुहोस्",
   forgot: "चिन्ता नगर्नुहोस्, हामी मद्दत गर्छौं",
 };
