@@ -638,3 +638,58 @@ export function InviteDialog({ p }: { p: VPerson }) {
     </>
   );
 }
+
+// ---------------- kinship reference ("म फलानाको … हुँ") ----------------
+const ANCHOR_LABEL: [string, string][] = [
+  ["son", "छोरा"], ["daughter", "छोरी"], ["father", "बुबा"], ["mother", "आमा"],
+  ["husband", "पति"], ["wife", "पत्नी"], ["brother", "दाजु / भाइ"], ["sister", "दिदी / बहिनी"],
+];
+
+/** Sets who the kinship terms are counted from. `userId` set = an admin choosing for another member. */
+export function AnchorDialog({ userId, current, onDone }: { userId?: string; current?: { target_id: string; relation_type: string } | null; onDone?: () => void }) {
+  const { db, g, perms, me, closeDialog, toast, boot } = useVansh();
+  const cur = userId ? current : me?.custom_anchor;
+  const [rel, setRel] = useState(cur?.relation_type || "son");
+  const sx = useSx({ value: cur?.target_id, label: cur?.target_id ? g.byId[cur.target_id]?.name || "" : "" });
+  const [err, setErr] = useState("");
+  const opts = personOptions(g, perms, (p) => {
+    const f = p.father_id ? g.byId[p.father_id] : null;
+    return (f ? " (बुबा: " + f.name + ")" : "") + (p.birth_bs ? " · " + String(p.birth_bs).slice(0, 4) : "");
+  });
+  const save = async (clear: boolean) => {
+    if (!clear && !sx.value) return setErr("सूचीबाट व्यक्ति छान्नुहोस्।");
+    const args = clear ? { p_target: null, p_rel: null } : { p_target: sx.value, p_rel: rel };
+    const { error } = userId ? await db.rpc("admin_set_anchor", { p_user: userId, ...args }) : await db.rpc("set_my_anchor", args);
+    if (error) return setErr(error.message);
+    toast(clear ? "सन्दर्भ हटाइयो" : "✅ सन्दर्भ सुरक्षित भयो");
+    closeDialog();
+    if (!userId) await boot();
+    onDone?.();
+  };
+  return (
+    <>
+      <h3>🧭 नाता गणनाको सन्दर्भ</h3>
+      <p className="mut">
+        नाताका शब्द (काका, भतिजा, भिनाजु…) यहाँबाट गनिन्छन्। {userId ? "यो सदस्य" : "म"} वंशावलीमा कसैको छोरा/छोरी, पति/पत्नी, दाजुभाइ… हुँ भनेर जनाउनुहोस्। तोकिएको स्थान भए त्यो भन्दा यही सन्दर्भ पहिले प्रयोग हुन्छ।
+      </p>
+      <label>
+        {userId ? "यो सदस्य" : "म"} यिनको…
+        <select value={rel} onChange={(e) => setRel(e.target.value)}>
+          {ANCHOR_LABEL.map(([v, t]) => (
+            <option key={v} value={v}>{t}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        हुँ — व्यक्ति
+        <Sx st={sx} options={opts} />
+      </label>
+      <div className="msg">{err}</div>
+      <div className="row">
+        <button onClick={() => save(false)}>सुरक्षित गर्ने</button>
+        {cur && <button className="bad" onClick={() => save(true)}>सन्दर्भ हटाउने</button>}
+        <button className="ghost" onClick={closeDialog}>रद्द</button>
+      </div>
+    </>
+  );
+}

@@ -8,6 +8,7 @@ import {
 import { exportCSV, exportJPG, exportJSON, exportSVG, exportXLSX, svgText } from "@/lib/vansh/exporters";
 import { diffImport, parseImportRows, readImportFile } from "@/lib/vansh/importer";
 import { match, np, yr } from "@/lib/vansh/text";
+import { relMap } from "@/lib/vansh/relations";
 import type { VPerson } from "@/lib/vansh/types";
 import { useVansh } from "./VanshContext";
 import { Avatar } from "./ui";
@@ -330,7 +331,8 @@ export default function TreeView() {
 
   // ---------- search ----------
   const ql = q.trim().toLowerCase();
-  const matches = ql ? people.filter((p) => can(p.id) && match(p.name, ql)) : [];
+  const kin = useMemo(() => relMap(g, me).R, [g, me]);
+  const matches = ql ? people.filter((p) => can(p.id) && (match(p.name, ql) || (kin[p.id] || "").includes(ql))) : [];
   const choose = (id: string) => {
     const name = byId[id]?.name || "";
     qText.tree = name;

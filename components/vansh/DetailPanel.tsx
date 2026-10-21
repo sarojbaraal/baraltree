@@ -2,6 +2,7 @@
 // Profile side panel (FamilySearch-style) — ported from the original app.js detail().
 import React, { useState } from "react";
 import { relMap, relsOf, genNo } from "@/lib/vansh/relations";
+import { ordinalOf } from "@/lib/vansh/kinship";
 import { ageN, fbOk, np, yr } from "@/lib/vansh/text";
 import { useVansh } from "./VanshContext";
 import { Avatar } from "./ui";
@@ -40,6 +41,7 @@ export default function DetailPanel({
   const ce = canEdit(p.id);
   const lim = !!p.name_only;
   const rl = relMap(g, me).R[p.id];
+  const ord = ordinalOf(g, p.id);
   const RL: { q: typeof p; l: string; self?: boolean }[] = relsOf(g, p);
   RL.splice(RL.filter((x) => x.l === "बुबा" || x.l === "आमा").length, 0, { q: p, l: "यही प्रोफाइल", self: true });
   const age = p.is_living || p.death_bs ? ageN(p.birth_bs, p.is_living ? "" : p.death_bs) : null;
@@ -85,6 +87,7 @@ export default function DetailPanel({
           <div className="pp-info">
             <h3>{p.name}</h3>
             {rl && <div className="pp-l">💠 {rl === "तपाईं" ? "तपाईं" : "तपाईंको " + rl}</div>}
+            {ord && <div className="pp-l">🔢 {ord} {p.gender === "F" ? "छोरी" : "छोरा"}</div>}
             <div className="pp-l">
               🧬 Gen {np(genNo(g, p.id, depthOf))}
               {age != null ? " · उमेर " + np(age) + " वर्ष" : ""}

@@ -7,7 +7,7 @@ import { match, np, yr } from "@/lib/vansh/text";
 import type { VPerson } from "@/lib/vansh/types";
 import { useVansh } from "./VanshContext";
 import { Avatar } from "./ui";
-import { PersonForm } from "./PersonDialogs";
+import { AnchorDialog, PersonForm } from "./PersonDialogs";
 
 // search text survives tab switches, like the original
 export const qText = { tree: "", fam: "" };
@@ -107,6 +107,7 @@ export function FamView() {
               {isAdm ? "+ सदस्य थप्ने" : "+ सदस्य थप्ने अनुरोध"}
             </button>
           )}
+          <button className="ghost" onClick={() => openDialog(<AnchorDialog />)}>🧭 नाता सन्दर्भ</button>
           {isStaff && <button className="ghost" onClick={() => setTab("ov")}>📊 Family Overview</button>}
         </div>
       </section>

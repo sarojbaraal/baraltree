@@ -8,6 +8,7 @@ import { np } from "@/lib/vansh/text";
 import { useVansh } from "./VanshContext";
 import { Sx, personOptions, useSx } from "./ui";
 import { AcctDialog } from "./AdminDialogs";
+import { AnchorDialog } from "./PersonDialogs";
 
 function Req({ r, byId }: { r: ChangeRequest; byId: Record<string, VPerson> }) {
   const d = describeRequest(r, byId);
@@ -95,7 +96,7 @@ const initialRoles = (u: VProfile): string[] => {
   return !u.roles?.length && u.role === "pending" ? ["general"] : base;
 };
 
-function UserCard({ u, isNew, onSave }: { u: VProfile; isNew: boolean; onSave: (u: VProfile, roles: string[], pos: string) => Promise<void> }) {
+function UserCard({ u, isNew, onSave, onAnchor }: { u: VProfile; isNew: boolean; onSave: (u: VProfile, roles: string[], pos: string) => Promise<void>; onAnchor: () => void }) {
   const { g, perms } = useVansh();
   const [roles, setRoles] = useState<string[]>(() => initialRoles(u));
   const sx = useSx({ value: u.position_person_id, label: u.position_person_id ? g.byId[u.position_person_id]?.name || "" : "" });
@@ -132,6 +133,7 @@ function UserCard({ u, isNew, onSave }: { u: VProfile; isNew: boolean; onSave: (
         >
           {isNew ? "स्वीकृत गर्ने" : "सुरक्षित गर्ने"}
         </button>
+        <button className="ghost" onClick={onAnchor}>🧭 नाता सन्दर्भ{u.custom_anchor ? " ✓" : ""}</button>
       </div>
     </div>
   );
@@ -158,6 +160,7 @@ export function AdminView() {
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
+  const anchorFor = (u: VProfile) => openDialog(<AnchorDialog userId={u.id} current={u.custom_anchor} onDone={fetchAll} />);
 
   const refresh = async () => {
     toast("✅ सुरक्षित भयो");
@@ -266,9 +269,9 @@ export function AdminView() {
       </>
     );
   } else if (cur === "new") {
-    body = <>{pend.map((u) => <UserCard key={u.id} u={u} isNew onSave={saveUser} />)}</>;
+    body = <>{pend.map((u) => <UserCard key={u.id} u={u} isNew onSave={saveUser} onAnchor={() => anchorFor(u)} />)}</>;
   } else if (cur === "mem") {
-    body = <>{mem.map((u) => <UserCard key={u.id} u={u} isNew={false} onSave={saveUser} />)}</>;
+    body = <>{mem.map((u) => <UserCard key={u.id} u={u} isNew={false} onSave={saveUser} onAnchor={() => anchorFor(u)} />)}</>;
   } else {
     const hg: Record<string, ChangeRequest[]> = {};
     hist.forEach((r) => (hg[r.status + ":" + r.action] ||= []).push(r));

@@ -73,3 +73,9 @@ Status: ✅ done · 🟡 partial · ❌ missing · ⛔ deliberately not adopted
 2. Anchor: `set_my_anchor` UI, `admin_set_anchor` RPC, smart relation search.
 3. Cheap UI: sticky controls, flash, स्वर्गीय, परिवार list + ♂♀, status dot, OAuth password rules, drawer resize/swipe.
 4. Global avatars bucket + admin upload.
+
+## Phase 2 progress (2026-10-21)
+- ✅ Kinship engine rewritten (`lib/vansh/kinship.ts`): path/Dijkstra, collapse, सौतेनी rule, ordinals, custom anchor, 26 tests.
+- ✅ "नाता सन्दर्भ" dialog (self) + admin per-user button; `admin_set_anchor` in `20261021_admin_set_anchor.sql` (run in SQL editor).
+- ✅ Relation words searchable in family tab and chart; जेठो/माइलो/…/कान्छो shown in detail panel.
+- ⏳ Next: cheap UI items (sticky controls, flash, स्वर्गीय, परिवार list + ♂♀, status dot, OAuth password rules, drawer resize/swipe), global avatars.
