@@ -29,7 +29,7 @@ export function FamView() {
   const groups = useMemo(() => (me ? famGroups(g, me, perms, R) : []), [g, me, perms, R]);
   const ic = has ? groups[0]?.members.length || 0 : 0;
   const msg = !access.acc
-    ? "सबै वंशावली तपाईंको सामु खुला छ।"
+    ? "सबै वंशावली तपाईंको लागि खुला छ।"
     : base
     ? "तपाईंको भूमिकाअनुसार खुला भएको वंश मात्र देखिन्छ। बाँकी शाखा चार्टमा धमिला र लक छन्।"
     : "तपाईंको स्थान अझै तोकिएको छैन। एडमिनले तोकेपछि शाखा खुल्नेछ।";
@@ -99,7 +99,7 @@ export function FamView() {
           <p>{msg}</p>
         </div>
         <div className="stats">
-          <div><b>{np(ic)}</b><span>तत्काल परिवार</span></div>
+          <div><b>{np(ic)}</b><span>अहिलेको परिवार</span></div>
           <div><b>{np(access.acc ? access.acc.size : people.length)}</b><span>खुला सदस्य</span></div>
           <div><b>{np(people.length)}</b><span>कुल सदस्य</span></div>
         </div>

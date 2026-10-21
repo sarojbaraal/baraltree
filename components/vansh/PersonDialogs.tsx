@@ -247,7 +247,7 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
             <input type="checkbox" checked={married} onChange={(e) => setMarried(e.target.checked)} /> विवाहित हो
           </label>
           <label>
-            नाम * (नाम + विवाहअघिको थर [+ विवाहपछिको थर])
+            नाम
             <input value={name} onChange={(e) => setName(e.target.value)} />
           </label>
           <label>
@@ -571,11 +571,11 @@ export function AddMenu({ p }: { p: VPerson }) {
       <h3>&quot;{p.name}&quot; सँग को थप्ने?</h3>
       <p className="mut">कुन नाता थप्ने छान्नुहोस्।</p>
       <div className="relg">
-        <button disabled={hp} onClick={() => go("father")}>👨 बुबा{hp ? " (पहिले नै छ)" : ""}</button>
-        <button disabled={hm} onClick={() => go("mother")}>👩 आमा{hm ? " (पहिले नै छ)" : ""}</button>
-        <button onClick={() => go("spouse")}>💞 पति/पत्नी</button>
-        <button onClick={() => go("kids")}>👶 छोरा/छोरी</button>
-        <button onClick={() => go("sib")}>👫 दाजुभाइ/दिदीबहिनी</button>
+        <button disabled={hp} onClick={() => go("father")}> बुबा{hp ? " (पहिले नै हुनुहुन्छ)" : ""}</button>
+        <button disabled={hm} onClick={() => go("mother")}> आमा{hm ? " (पहिले नै हुनुहुन्छ)" : ""}</button>
+        <button onClick={() => go("spouse")}> पति/पत्नी</button>
+        <button onClick={() => go("kids")}> छोरा/छोरी</button>
+        <button onClick={() => go("sib")}> दाजुभाइ/दिदीबहिनी</button>
       </div>
       <div className="row">
         <button className="ghost" onClick={closeDialog}>रद्द</button>

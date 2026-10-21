@@ -1388,7 +1388,7 @@ function inviteForm(p) {
 function addMenu(p) {
   const d = $("#dlg"), hp = !!p.father_id, hm = !!p.mother_id;
   d.innerHTML = `<h3>"${esc(p.name)}" सँग को थप्ने?</h3><p class="mut">कुन नाता थप्ने छान्नुहोस्।</p><div class="relg">
-    <button data-r="father" ${hp ? "disabled" : ""}>👨 बुबा${hp ? " (पहिले नै छ)" : ""}</button><button data-r="mother" ${hm ? "disabled" : ""}>👩 आमा${hm ? " (पहिले नै छ)" : ""}</button>
+    <button data-r="father" ${hp ? "disabled" : ""}>👨 बुबा${hp ? " (पहिले नै हुनुहुन्छ)" : ""}</button><button data-r="mother" ${hm ? "disabled" : ""}>👩 आमा${hm ? " (पहिले नै हुनुहुन्छ)" : ""}</button>
     <button data-r="spouse">💞 पति/पत्नी</button><button data-r="kids">👶 छोरा/छोरी</button><button data-r="sib">👫 दाजुभाइ/दिदीबहिनी</button></div>
     <div class="row"><button class="ghost" id="cx">रद्द</button></div>`;
   d.open || d.showModal(); $("#cx").onclick = () => d.close();
@@ -1442,7 +1442,7 @@ function famView() {
   sel = null; HL = null;
   const R = smartMap(); RM = R;
   const base = byId[me.position_person_id] || byId[me.position_parent_id], has = !!(base || byId[me.position_grand_id]), G = famGroups(), ic = has ? G[0][1].length : 0;
-  const msg = !ACC ? "सबै वंशावली तपाईंको सामु खुला छ।" : base ? "तपाईंको भूमिकाअनुसार खुला भएको वंश मात्र देखिन्छ। बाँकी शाखा चार्टमा धमिला र लक छन्।" : "तपाईंको स्थान अझै तोकिएको छैन। एडमिनले तोकेपछि शाखा खुल्नेछ।";
+  const msg = !ACC ? "सबै वंशावली तपाईंको लागि खुला छ।" : base ? "तपाईंको भूमिकाअनुसार खुला भएको वंश मात्र देखिन्छ। बाँकी शाखा चार्टमा धमिला र लक छन्।" : "तपाईंको स्थान अझै तोकिएको छैन। एडमिनले तोकेपछि शाखा खुल्नेछ।";
   $("#pane").innerHTML = `<section class="hero2"><div class="hello"><span class="hchip">${ROLE_L[act]}</span><h2>नमस्ते, ${esc(dispName())}</h2><p>${msg}</p></div>
     <div class="stats"><div><b>${np(ic)}</b><span>परिवार</span></div><div><b>${np(ACC ? ACC.size : people.length)}</b><span>खुला सदस्य</span></div><div><b>${np(people.length)}</b><span>कुल सदस्य</span></div></div>
     <div class="row">${act !== "general" ? `<button class="ghost" id="addp">${isAdm() ? "+ सदस्य थप्ने" : "+ सदस्य थप्ने अनुरोध"}</button>` : ""}${isStaff() ? '<button class="ghost" id="ovb">📊 Family Overview</button>' : ""}<button class="ghost" id="exp">📥 निर्यात / प्रिन्ट</button></div></section>
@@ -1545,7 +1545,7 @@ function form(action, p = null, parent = null, pre = null) {
   d.innerHTML = `<div class="edw"><aside class="eds"><div class="avw"><div class="pp-av g${v.gender || "O"}" id="eds-a" style="${v.photo_url ? `background-image:url('${esc(v.photo_url)}');background-size:cover;background-position:center` : ""}">${v.photo_url ? "" : ico(v.gender)}</div><button type="button" class="av-cam" id="f_cam" title="फोटो अपलोड गर्नुहोस्" aria-label="फोटो अपलोड गर्नुहोस्">📷</button><input type="file" id="f_photo" accept="image/*" hidden></div><b id="eds-n">${esc(v.name || "नयाँ व्यक्ति")}</b><span id="eds-y">${esc(yr(v.birth_bs))}</span></aside>
     <div class="edm"><button type="button" class="ghost pp-x" id="cx2" aria-label="बन्द">×</button><div class="edb"><h2>${ttl}</h2>
     <div class="rad">${radio("gx", "M", "पुरुष", v.gender || "")}${radio("gx", "F", "महिला", v.gender || "")}${radio("gx", "O", "अन्य / अज्ञात", v.gender || "")}</div><input type="hidden" id="f_gender" value="${esc(v.gender || "")}"><label class="rcb" style="margin-top:.9rem"><input type="checkbox" id="f_married" ${married ? "checked" : ""}> विवाहित हो</label>
-    <label>नाम * (नाम + विवाहअघिको थर [+ विवाहपछिको थर])<input id="f_name" value="${esc(v.name)}"></label>
+    <label>नाम <input id="f_name" value="${esc(v.name)}"></label>
     <div class="edg mnl" ${v.gender === "F" && married ? "" : "hidden"}><input type="hidden" id="f_maiden_name" value="${esc(v.maiden_name)}"><label>विवाहपछिको थर (पतिको थरबाट स्वतः, नामको अन्त्यमा जोडिन्छ)<input id="f_married_name" value="${esc(v.married_name)}"></label></div>
     <hr><div class="edg"><div><label>जन्म मिति (BS) — YYYY-MM-DD</label>${dateField("f_birth_bs", v.birth_bs)}</div><label>जन्म स्थान<input id="f_birth_place" value="${esc(v.birth_place)}"></label></div>
     <hr><div class="rad">${radio("lv", "true", "जीवित", !!v.is_living)}${radio("lv", "false", "दिवंगत", !!v.is_living)}</div><input type="hidden" id="f_is_living" value="${v.is_living ? "true" : "false"}">
@@ -1903,9 +1903,9 @@ function ovView() {
   const ag = Object.entries(B); if (unk.length) ag.push(["वर्ष नभएका", unk]);
   $("#pane").innerHTML = `<div class="row" style="margin:0 0 1rem"><button class="ghost" id="ovback">← परिवार</button></div><h2>📊 Family Overview <small class="mut">${np(pool.length)} सदस्य · कुनै भागमा क्लिक गर्नुहोस्</small></h2><div class="card hscroll" id="ovlist" hidden></div><div class="ovgrid">`
     + donut("१. लिङ्ग", [["पुरुष", f(p => p.gender === "M")], ["महिला", f(p => p.gender === "F")], ["अन्य/नतोकिएको", f(p => p.gender !== "M" && p.gender !== "F")]].filter(d => d[1].length))
-    + donut("२. जीवित बनाम दिवंगत", [["जीवित", f(p => p.is_living)], ["दिवंगत", f(p => !p.is_living)]].filter(d => d[1].length))
+    + donut("२. जीवित तथा दिवंगत", [["जीवित", f(p => p.is_living)], ["दिवंगत", f(p => !p.is_living)]].filter(d => d[1].length))
     + donut("३. वैवाहिक स्थिति", [["विवाहित", f(p => spousesOf(p).length)], ["अविवाहित/अज्ञात", f(p => !spousesOf(p).length)]].filter(d => d[1].length))
-    + (base ? bars("४. मसँग साझा पुर्खा भएका (नाता अनुसार)", ovGroups(pool, base)) : `<div class="card ovc"><h3>४. साझा पुर्खा</h3><p class="mut">तपाईंको स्थान तोकिएपछि यो चार्ट देखिन्छ।</p></div>`)
+    + (base ? bars("४. म सँग साझा पुर्खा भएका (नाता अनुसार)", ovGroups(pool, base)) : `<div class="card ovc"><h3>४. साझा पुर्खा</h3><p class="mut">तपाईंको स्थान तोकिएपछि यो चार्ट देखिन्छ।</p></div>`)
     + bars("५. उमेर वितरण (वर्ष)", ag, "उमेर = BS वर्षको अन्तर (अनुमानित)।") + `</div>`;
   $("#pane").onclick = e => {
     if (e.target.closest("#ovback")) { tab = "fam"; return render(); }

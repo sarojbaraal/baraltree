@@ -181,14 +181,14 @@ export default function OverviewView() {
           onPick={onPick}
           data={nz([["पुरुष", f((p) => p.gender === "M")], ["महिला", f((p) => p.gender === "F")], ["अन्य/नतोकिएको", f((p) => p.gender !== "M" && p.gender !== "F")]])}
         />
-        <Donut title="२. जीवित बनाम दिवंगत" onPick={onPick} data={nz([["जीवित", f((p) => p.is_living)], ["दिवंगत", f((p) => !p.is_living)]])} />
+        <Donut title="२. जीवित तथा दिवंगत" onPick={onPick} data={nz([["जीवित", f((p) => p.is_living)], ["दिवंगत", f((p) => !p.is_living)]])} />
         <Donut
           title="३. वैवाहिक स्थिति"
           onPick={onPick}
           data={nz([["विवाहित", f((p) => g.spousesOf(p).length > 0)], ["अविवाहित/अज्ञात", f((p) => !g.spousesOf(p).length)]])}
         />
         {base ? (
-          <Bars title="४. मसँग साझा पुर्खा भएका (नाता अनुसार)" data={ovGroups(g, pool, base)} onPick={onPick} />
+          <Bars title="४. म सँग साझा पुर्खा भएका (नाता अनुसार)" data={ovGroups(g, pool, base)} onPick={onPick} />
         ) : (
           <div className="card ovc">
             <h3>४. साझा पुर्खा</h3>

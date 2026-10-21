@@ -50,7 +50,7 @@ Status: ✅ done · 🟡 partial · ❌ missing · ⛔ deliberately not adopted
 | Drawer: mobile bottom sheet + swipe-to-close | 🟡 bottom sheet yes, swipe no |
 | `overscroll-behavior: contain` | ✅ |
 | Compact sticky header, "⋮ More" | ✅ |
-| "तत्काल परिवार" → "परिवार", list view, ♂2 ♀1 counts | ❌ |
+| "अहिलेको परिवार" → "परिवार", list view, ♂2 ♀1 counts | ❌ |
 | Sticky "मेरो स्थान" + search on family tab | ❌ |
 | Glow pulse (`flash`) on locate | ❌ (scrolls only) |
 | Overview charts (gender, living, marital, age, shared ancestors) | ✅ |
