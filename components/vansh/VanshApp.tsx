@@ -1,6 +1,7 @@
 "use client";
 // App shell: header (tabs, user, theme), the active view, profile panel, dialogs, toast, PWA install button.
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { ROLE_L } from "@/lib/vansh/graph";
 import type { Role, TabKey } from "@/lib/vansh/types";
 import { VanshProvider, useVansh } from "./VanshContext";
@@ -142,7 +143,15 @@ function Shell() {
             scrollTo(0, 0);
           }}
         >
-          <span className="mono" aria-hidden="true">व</span>
+          <Image
+            src="/icon.png"
+            alt=""
+            aria-hidden="true"
+            width={42}
+            height={42}
+            className="mono"
+            style={{ objectFit: "cover" }}
+          />
           <span>हाम्रो वंशावली</span>
         </h1>
         <nav id="tabs" aria-label="मुख्य मेनु">
