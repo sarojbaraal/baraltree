@@ -4,7 +4,7 @@
 <meta charset="utf-8"><script>try{document.documentElement.dataset.theme=localStorage.getItem("vv_theme")||"light"}catch(e){document.documentElement.dataset.theme="light"}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>हाम्रो वंशावली v</title>
-<meta name="index-version" content="V1108_09Oct">
+<meta name="index-version" content="V1109_21Oct">
 <meta name="theme-color" content="#1A1A2E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -2122,6 +2122,31 @@ label{color:var(--ink-soft)}
 .flash{animation:flash .9s ease-in-out 3!important;border-color:var(--acc)!important}
 #totop{position:fixed;right:20px;bottom:20px;z-index:900;width:48px;height:48px;min-height:48px;padding:0;border-radius:50%;font-size:1.2rem;box-shadow:0 0 18px var(--acc-glow),var(--shadow)}
 @media (max-width:640px){#totop{bottom:calc(76px + env(safe-area-inset-bottom))}.fam-sticky #gome{padding:.4rem .7rem;font-size:.78rem}}
+
+/* ═════ v19 — खोज ▾, अवतार कैमरा, विवरण खण्ड, परिवार sticky, anchor ═════ */
+:root{--glow:rgba(0,243,255,.35)}
+.qw .qx{right:2.7rem}
+.qv{position:absolute;right:.5rem;top:50%;transform:translateY(-50%);width:30px;min-height:30px;padding:0;border-radius:50%;font-size:.9rem;z-index:2}
+.qv:hover{transform:translateY(-50%)}
+.qw input#fq,.qw input#mq,.qi #q{padding-right:5.4rem}
+.qg{position:sticky;top:0;z-index:1;padding:.35rem .9rem;font-size:.74rem;font-weight:800;letter-spacing:.03em;color:var(--acc);background:var(--bg-2);border-bottom:1px solid var(--line)}
+.qr [data-q].act{background:var(--acc-glow);box-shadow:inset 3px 0 0 var(--acc)}
+.avw{position:relative;width:fit-content;margin:0 auto .9rem}.eds .avw .pp-av{margin:0}
+.av-cam{position:absolute;right:-2px;bottom:-2px;width:32px;height:32px;min-height:32px;padding:0;border-radius:50%;font-size:.95rem;line-height:1;z-index:3;display:grid;place-items:center;border:2px solid var(--card);overflow:visible;box-shadow:0 0 12px var(--glow)}
+.av-cam::before{display:none}
+.av-cam::after{content:"फोटो अपलोड गर्नुहोस्";position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);white-space:nowrap;padding:.25rem .6rem;border-radius:8px;background:rgba(11,12,21,.96);color:var(--acc);font-size:.72rem;opacity:0;pointer-events:none;transition:opacity .2s}
+.av-cam:hover::after,.av-cam:focus-visible::after{opacity:1}
+#det .pp-av .sd{top:2px;right:2px;bottom:auto}
+.dh{display:block;margin-top:.25rem;font-size:.72rem}
+#det .fr{display:block}#det .fr b{display:flex;align-items:center}
+#det .pp-fam{position:sticky;top:0;z-index:3;max-height:30vh;overflow:auto;padding:.2rem 0 .5rem;background:var(--card);border-bottom:1px solid var(--line)}
+.anc-why{margin:.5rem 0;padding:.55rem .8rem;border-radius:12px;background:var(--bg-2);font-size:.86rem;color:var(--ink-soft)}
+:root[data-theme="dark"] .mut,:root[data-theme="dark"] .pp-l{color:#94a3b8}
+@media (max-width:640px){
+  .eds{display:flex;align-items:center;gap:.8rem;padding:.7rem 1rem;text-align:left}
+  .eds .avw{margin:0}.eds .pp-av{width:56px;height:56px;font-size:1.4rem}.eds span{display:none}
+  .edw{grid-template-rows:auto minmax(0,1fr)}
+}
 </style>
 </head>
 <body>
