@@ -7,7 +7,7 @@ import { ACT, STATUS, describeRequest, groupBatches } from "@/lib/vansh/requests
 import { np } from "@/lib/vansh/text";
 import { useVansh } from "./VanshContext";
 import { Sx, personOptions, useSx } from "./ui";
-import { AcctDialog } from "./AdminDialogs";
+import { AcctDialog, AvatarsDialog } from "./AdminDialogs";
 import { AnchorDialog } from "./PersonDialogs";
 
 function Req({ r, byId }: { r: ChangeRequest; byId: Record<string, VPerson> }) {
@@ -336,6 +336,7 @@ export function AdminView() {
         {adm && (
           <div className="row" style={{ margin: "0 0 1rem" }}>
             <button onClick={() => openDialog(<AcctDialog onDone={fetchAll} />)}>➕ खाता बनाउने</button>
+            <button className="ghost" onClick={() => openDialog(<AvatarsDialog />)}>🖼 डिफल्ट अवतार</button>
           </div>
         )}
         {empty || (cur === "hist" && !hist.length) ? <div className="card">यहाँ अहिले केही छैन।</div> : body}

@@ -616,3 +616,13 @@ dialog.ed { width: min(960px, 96vw); padding: 0; overflow: hidden; }
   .stickybar { top: 70px; margin: 0 -.3rem .8rem; flex-wrap: wrap; }
   .stickybar .qw { flex: 1 1 100%; }
 }
+
+/* ================= phase 4: site avatars ================= */
+.avimg { display: block; width: 100%; height: 100%; object-fit: cover; }
+.avset { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin-top: .8rem; text-align: center; }
+.avset .card { margin: 0; display: grid; gap: .5rem; justify-items: center; }
+.avset .mav2 { width: 84px; height: 84px; }
+.filebtn { position: relative; display: inline-flex; }
+.filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.filebtn span { display: inline-flex; align-items: center; min-height: 40px; padding: .45rem 1.1rem; border-radius: 12px; font-weight: 600; font-size: .92rem; color: var(--ink-2); background: var(--surface); border: 1px solid var(--line-2); }
+.filebtn:hover span { color: var(--ink); border-color: var(--cy); }

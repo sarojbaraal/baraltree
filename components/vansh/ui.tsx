@@ -1,12 +1,18 @@
 "use client";
 // Small shared UI pieces: avatar, password field, searchable person picker, BS date field, dialog host.
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { getSiteAvatars, subscribeSiteAvatars } from "@/lib/vansh/avatars";
 import { composeDate, match, MONTHS_NE, na, np } from "@/lib/vansh/text";
 import type { VPerson } from "@/lib/vansh/types";
 import type { Graph, Perms } from "@/lib/vansh/graph";
 import { useVansh } from "./VanshContext";
 
 export function Avatar({ g }: { g?: string | null }) {
+  const site = useSyncExternalStore(subscribeSiteAvatars, getSiteAvatars, () => ({}) as ReturnType<typeof getSiteAvatars>);
+  const url = g === "F" ? site.F : site.M;
+  if (url)
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img className="avimg" src={url} alt="" draggable={false} />;
   return (
     <svg aria-hidden="true">
       <use href={`#${g === "F" ? "avF" : "avM"}`} width="100%" height="100%" />

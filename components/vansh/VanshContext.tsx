@@ -9,6 +9,7 @@ import {
   type Access, type Graph, type Perms,
 } from "@/lib/vansh/graph";
 import { guardRequest, makeRequest } from "@/lib/vansh/requests";
+import { loadSiteAvatars, primeSiteAvatars } from "@/lib/vansh/avatars";
 
 export type Phase = "loading" | "auth" | "reset" | "pos" | "pending" | "app";
 
@@ -177,6 +178,11 @@ export function VanshProvider({ children }: { children: React.ReactNode }) {
   }, [db, loadPeople, toast]);
 
   // auth events
+  useEffect(() => {
+    primeSiteAvatars();
+    loadSiteAvatars(db);
+  }, [db]);
+
   useEffect(() => {
     // an invitation link (?invite=token) is remembered, then removed from the address bar
     try {

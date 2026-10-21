@@ -1,10 +1,12 @@
 "use client";
 // Admin dialogs: import preview and "create account" (ported from the original app.js previewImport / acctForm).
-import React, { useState } from "react";
+import React, { useState, useSyncExternalStore } from "react";
+import { AVATAR_FILES, getSiteAvatars, loadSiteAvatars, subscribeSiteAvatars, type SiteAvatars } from "@/lib/vansh/avatars";
 import { IMPORT_LABELS, type ImportDiff } from "@/lib/vansh/importer";
 import { ORDER, ROLE_L } from "@/lib/vansh/graph";
 import { fbOk, np } from "@/lib/vansh/text";
 import { useVansh } from "./VanshContext";
+import { Avatar } from "./ui";
 
 const rowStyle: React.CSSProperties = { padding: ".55rem 0", borderBottom: "1px solid var(--line)", fontSize: ".88rem" };
 
@@ -188,6 +190,77 @@ export function AcctDialog({ onDone }: { onDone: () => void }) {
           Facebook निम्तो
         </button>
         <button className="ghost" onClick={closeDialog}>रद्द</button>
+      </div>
+    </>
+  );
+}
+
+// ---------------- site-wide default avatars ----------------
+const EXT: Record<string, string> = { "image/svg+xml": "svg", "image/png": "png", "image/webp": "webp", "image/jpeg": "jpg" };
+
+export function AvatarsDialog() {
+  const { db, closeDialog, toast } = useVansh();
+  const [busy, setBusy] = useState<"M" | "F" | null>(null);
+  const [err, setErr] = useState("");
+  const site = useSyncExternalStore(subscribeSiteAvatars, getSiteAvatars, () => ({}) as SiteAvatars);
+
+  const clear = async (g: "M" | "F") => {
+    const { data } = await db.storage.from("site-assets").list("", { limit: 50 });
+    const old = (data || []).filter((o) => o.name.split(".")[0] === AVATAR_FILES[g]).map((o) => o.name);
+    if (old.length) await db.storage.from("site-assets").remove(old);
+  };
+  const upload = async (g: "M" | "F", f?: File | null) => {
+    if (!f) return;
+    const ext = EXT[f.type];
+    if (!ext) return setErr("SVG, PNG, WEBP वा JPG फाइल मात्र चल्छ।");
+    if (f.size > 512 * 1024) return setErr("फाइल ५१२ KB भन्दा सानो हुनुपर्छ।");
+    setErr("");
+    setBusy(g);
+    try {
+      await clear(g);
+      const { error } = await db.storage.from("site-assets").upload(`${AVATAR_FILES[g]}.${ext}`, f, { contentType: f.type, upsert: true });
+      if (error) throw error;
+      await loadSiteAvatars(db);
+      toast("✅ अवतार बदलियो");
+    } catch (e) {
+      setErr((e as Error).message + " — site-assets भण्डारको SQL चलाइसक्नुभएको छ?");
+    } finally {
+      setBusy(null);
+    }
+  };
+  const reset = async (g: "M" | "F") => {
+    setBusy(g);
+    try {
+      await clear(g);
+      await loadSiteAvatars(db);
+      toast("डिफल्ट अवतार फर्कियो");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <>
+      <h3>🖼 डिफल्ट अवतार</h3>
+      <p className="mut">फोटो नभएका सबै सदस्यमा यही देखिन्छ। फाइल नराखे अहिलेको मूल चित्र नै चल्छ।</p>
+      <div className="avset">
+        {(["M", "F"] as const).map((g) => (
+          <div key={g} className="card">
+            <div className={`mav2 g${g}`} style={{ margin: "0 auto .6rem" }}>
+              <Avatar g={g} />
+            </div>
+            <b>{g === "M" ? "पुरुष" : "महिला"}</b>
+            <label className="filebtn">
+              <input type="file" accept="image/svg+xml,image/png,image/webp,image/jpeg" disabled={!!busy} onChange={(e) => { upload(g, e.target.files?.[0]); e.target.value = ""; }} />
+              <span>{busy === g ? "राख्दै…" : "फाइल छान्नुहोस्"}</span>
+            </label>
+            {site[g] && <button className="bad" disabled={!!busy} onClick={() => reset(g)}>मूल चित्र फर्काउने</button>}
+          </div>
+        ))}
+      </div>
+      <div className="msg">{err}</div>
+      <div className="row">
+        <button className="ghost" onClick={closeDialog}>बन्द</button>
       </div>
     </>
   );

@@ -79,4 +79,5 @@ Status: ✅ done · 🟡 partial · ❌ missing · ⛔ deliberately not adopted
 - ✅ "नाता सन्दर्भ" dialog (self) + admin per-user button; `admin_set_anchor` in `20261021_admin_set_anchor.sql` (run in SQL editor).
 - ✅ Relation words searchable in family tab and chart; जेठो/माइलो/…/कान्छो shown in detail panel.
 - ✅ Phase 3 UI: sticky मेरो स्थान + search, flash pulse, स्वर्गीय/स्व., परिवार list + ♂♀ counts, status dot, 🔑 add-password for OAuth users (+ forgot link hidden after OAuth login), drawer resize (width remembered) + swipe-down on phones.
-- ⏳ Next: global male/female avatars (site-assets bucket + admin upload).
+- ✅ Phase 4: global male/female avatars — `site-assets` bucket SQL (`20261021b_site_assets.sql`), admin dialog 🖼 डिफल्ट अवतार, cached URLs, built-in SVG fallback.
+- ⏳ Remaining: deploy edge functions to the new project, Auth URLs/providers, invite other members.
