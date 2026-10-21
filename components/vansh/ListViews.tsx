@@ -6,7 +6,7 @@ import { ROLE_L } from "@/lib/vansh/graph";
 import { dispName, match, np, yr } from "@/lib/vansh/text";
 import type { VPerson } from "@/lib/vansh/types";
 import { useVansh } from "./VanshContext";
-import { Avatar } from "./ui";
+import { Avatar, KidCount } from "./ui";
 import { AnchorDialog, PersonForm } from "./PersonDialogs";
 
 // search text survives tab switches, like the original
@@ -54,7 +54,6 @@ export function FamView() {
 
   const card = (p: VPerson, core: boolean) => {
     const mine = p.id === me?.position_person_id;
-    const kc = kidsOf(p).length;
     return (
       <div
         key={p.id}
@@ -67,7 +66,7 @@ export function FamView() {
         <div className="mav2"><Avatar g={p.gender} /></div>
         <div className="mn">{dispName(p, true)}</div>
         <div className="my"><i className={`st ${p.is_living ? "live" : "gone"}`} title={p.is_living ? "जीवित" : "दिवंगत"} />{R[p.id] || "साइनो स्पष्ट छैन"}</div>
-        {kc ? <span className="mb">{np(kc)}</span> : null}
+        <KidCount kids={kidsOf(p)} />
         {mine ? <span className="me">तपाईं</span> : null}
       </div>
     );
@@ -83,6 +82,7 @@ export function FamView() {
           {yr(p.birth_bs) ? " · " + yr(p.birth_bs) : ""}
         </span>
       </div>
+      <KidCount kids={kidsOf(p)} />
     </div>
   );
 

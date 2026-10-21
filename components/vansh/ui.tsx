@@ -20,6 +20,19 @@ export function Avatar({ g }: { g?: string | null }) {
   );
 }
 
+/** A person's children as coloured counts: ♂ 2 ♀ 1 (nothing when there are none). */
+export function KidCount({ kids }: { kids: VPerson[] }) {
+  if (!kids.length) return null;
+  const sons = kids.filter((k) => k.gender !== "F").length;
+  const dau = kids.length - sons;
+  return (
+    <span className="kc" title="सन्तान">
+      {sons ? <em className="m">♂ {np(sons)}</em> : null}
+      {dau ? <em className="f">♀ {np(dau)}</em> : null}
+    </span>
+  );
+}
+
 const EYE = (
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
     <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
