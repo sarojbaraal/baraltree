@@ -163,8 +163,8 @@ async function showInvite() {
 }
 function authView(mode = "login") {
   const hideForgot = (() => { try { return localStorage.getItem("vv_oauth") === "1"; } catch (e) { return false; } })();
-  const TITLE = { login: "स्वागत छ", signup: "खाता बनाउनुहोस्", forgot: "पासवर्ड रिसेट" };
-  const SUBTITLE = { login: "तपाईंको वंशावलीमा फेरि स्वागत छ", signup: "आफ्नो परिवारको इतिहास सुरक्षित गर्नुहोस्", forgot: "चिन्ता नगर्नुहोस्, हामी मद्दत गर्छौं" };
+  const TITLE = { login: "स्वागतम्!", signup: "खाता बनाउनुहोस्", forgot: "पासवर्ड रिसेट" };
+  const SUBTITLE = { login: "तपाईंको वंशावली हेर्न लगईन गर्नुहोस्!", signup: "आफ्नो परिवारको इतिहास सुरक्षित गर्नुहोस्", forgot: "चिन्ता नगर्नुहोस्, हामी मद्दत गर्छौं" };
   const BTN = { login: "लगइन गर्नुहोस्", signup: "खाता बनाउनुहोस्", forgot: "रिसेट लिंक पठाउनुहोस्" };
 
   $("#app").classList.remove("wide");
