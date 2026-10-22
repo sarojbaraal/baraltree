@@ -160,7 +160,7 @@ export default function OverviewView() {
               .sort(g.byBirth)
               .map((p) => (
                 <div className="fr" key={p.id} onClick={() => pick(p.id)}>
-                  <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} /></div>
+                  <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} photo={p.photo_url} /></div>
                   <div>
                     <b>{p.name}</b>
                     <small>

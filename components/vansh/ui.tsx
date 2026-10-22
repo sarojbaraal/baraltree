@@ -7,9 +7,10 @@ import type { VPerson } from "@/lib/vansh/types";
 import type { Graph, Perms } from "@/lib/vansh/graph";
 import { useVansh } from "./VanshContext";
 
-export function Avatar({ g }: { g?: string | null }) {
+/** photo_url (when set) overrides the default avatar everywhere. */
+export function Avatar({ g, photo }: { g?: string | null; photo?: string | null }) {
   const site = useSyncExternalStore(subscribeSiteAvatars, getSiteAvatars, () => ({}) as ReturnType<typeof getSiteAvatars>);
-  const url = g === "F" ? site.F : site.M;
+  const url = photo || (g === "F" ? site.F : site.M);
   if (url)
     // eslint-disable-next-line @next/next/no-img-element
     return <img className="avimg" src={url} alt="" draggable={false} />;
@@ -173,63 +174,58 @@ export function Sx({
   );
 }
 
-// ---------- BS date field (YYYY / month / day) ----------
+// ---------- BS date field: one box, auto "YYYY-MM-DD" in Nepali digits ----------
+/** digits → "YYYY", "YYYY-MM" or "YYYY-MM-DD"; a month/day that can only be one digit long gets its leading 0. */
+function fmtDate(digits: string): string {
+  let y = digits.slice(0, 4);
+  let rest = digits.slice(4);
+  let m = "";
+  let d = "";
+  if (rest) {
+    if (+rest[0] > 1) rest = "0" + rest;
+    m = rest.slice(0, 2);
+    rest = rest.slice(2);
+  }
+  if (rest) {
+    if (+rest[0] > 3) rest = "0" + rest;
+    d = rest.slice(0, 2);
+  }
+  y = y.slice(0, 4);
+  return [y, m, d].filter((x, i) => x || i === 0).join("-");
+}
+
 export function DateField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const q = String(value || "").split("-");
-  const [y, setY] = useState(np(q[0] || ""));
-  const [m, setM] = useState(q[1] && +q[1] ? String(+q[1]) : "");
-  const [d, setD] = useState(q[2] && +q[2] ? String(+q[2]) : "");
-  const z = (n: number) => np(String(n).padStart(2, "0"));
-  const emit = (yy: string, mm: string, dd: string) => onChange(composeDate(yy, mm, dd));
+  const initial = String(value || "").replace(/(-00)+$/, "");
+  const [text, setText] = useState(np(initial));
+  const plain = na(text);
+  const [y, m = "", d = ""] = plain.split("-");
+  const bad =
+    (m.length === 2 && (+m < 1 || +m > 12) ? "महिना ०१ देखि १२ सम्म हुनुपर्छ" : "") ||
+    (d.length === 2 && (+d < 1 || +d > 32) ? "गते ०१ देखि ३२ सम्म हुनुपर्छ" : "");
+  const change = (raw: string) => {
+    let digits = na(raw).replace(/\D/g, "").slice(0, 8);
+    // a backspace over an auto-inserted hyphen must still delete a digit
+    if (raw.length < text.length && digits === plain.replace(/\D/g, "")) digits = digits.slice(0, -1);
+    const f = fmtDate(digits);
+    setText(np(f));
+    const [yy, mm, dd] = f.split("-");
+    onChange(composeDate(yy || "", mm && +mm >= 1 && +mm <= 12 ? mm : "", dd && +dd >= 1 && +dd <= 32 ? dd : ""));
+  };
   return (
-    <div className="dtr">
+    <div className="dtr1">
       <input
-        className="dy"
+        className="dsingle"
         inputMode="numeric"
-        maxLength={4}
-        placeholder="YYYY"
-        aria-label="साल"
-        value={y}
-        onChange={(e) => {
-          const v = np(na(e.target.value).replace(/\D/g, "").slice(0, 4));
-          setY(v);
-          emit(v, m, d);
-        }}
+        autoComplete="off"
+        maxLength={10}
+        placeholder="बर्ष-महिना-गते (जस्तै २०४५-०५-१२)"
+        aria-label="मिति (वि.सं.)"
+        aria-invalid={bad ? true : undefined}
+        value={text}
+        onChange={(e) => change(e.target.value)}
       />
-      <span className="dsep">-</span>
-      <select
-        className="dm"
-        aria-label="महिना"
-        value={m}
-        onChange={(e) => {
-          setM(e.target.value);
-          emit(y, e.target.value, d);
-        }}
-      >
-        <option value="">००</option>
-        {MONTHS_NE.map((n, i) => (
-          <option key={n} value={String(i + 1)}>
-            {z(i + 1)} · {n}
-          </option>
-        ))}
-      </select>
-      <span className="dsep">-</span>
-      <select
-        className="dd"
-        aria-label="गते"
-        value={d}
-        onChange={(e) => {
-          setD(e.target.value);
-          emit(y, m, e.target.value);
-        }}
-      >
-        <option value="">००</option>
-        {Array.from({ length: 32 }, (_, i) => (
-          <option key={i} value={String(i + 1)}>
-            {z(i + 1)}
-          </option>
-        ))}
-      </select>
+      {m.length === 2 && +m >= 1 && +m <= 12 && !bad && <small className="mut">{MONTHS_NE[+m - 1]}{d.length === 2 ? ` ${np(+d)} गते` : ""}, {np(y)}</small>}
+      {bad && <small className="dterr">{bad}</small>}
     </div>
   );
 }

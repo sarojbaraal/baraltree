@@ -1,17 +1,18 @@
 "use client";
 // Profile side panel (FamilySearch-style) — ported from the original app.js detail().
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { relMap, relsOf, genNo } from "@/lib/vansh/relations";
-import { ordinalOf } from "@/lib/vansh/kinship";
+import { kinChain, ordinalOf, stepWord } from "@/lib/vansh/kinship";
+import { chartGoto } from "@/lib/vansh/chartGoto";
 import { ageN, dispName, fbOk, np, yr } from "@/lib/vansh/text";
 import { useVansh } from "./VanshContext";
 import { Avatar, KidCount } from "./ui";
 import { AddMenu, DeleteDialog, InviteDialog, PersonForm } from "./PersonDialogs";
 
-function Box({ c, ic, l, children }: { c: string; ic: string; l: string; children?: React.ReactNode }) {
+function Box({ c, ic, l, children, mg }: { c: string; ic: string; l: string; children?: React.ReactNode; mg?: boolean }) {
   if (!children) return null;
   return (
-    <div className="ib w" style={{ ["--c" as string]: c }}>
+    <div className={`ib w${mg ? " mgl" : ""}`} style={{ ["--c" as string]: mg ? "var(--mg)" : c }}>
       <span className="ii">{ic}</span>
       <div>
         <small>{l}</small>
@@ -31,7 +32,7 @@ export default function DetailPanel({
   onGo?: (id: string) => void;
   onPrint?: (id: string) => void;
 }) {
-  const { db, g, me, sel, perms, pick, unpick, openDialog, toast, reload } = useVansh();
+  const { db, g, me, sel, perms, pick, unpick, openDialog, toast, reload, setTab } = useVansh();
   const [more, setMore] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
 
@@ -81,6 +82,7 @@ export default function DetailPanel({
     else el.style.transform = "";
   };
   const [busyAi, setBusyAi] = useState(false);
+  const kc = useMemo(() => (sel && me ? kinChain(g.people, me, sel) : null), [g.people, me, sel]);
   const p = sel ? g.byId[sel] : undefined;
   if (!p) return null;
 
@@ -130,9 +132,8 @@ export default function DetailPanel({
         <div className="pp-top">
           <div
             className={`pp-av g${p.gender || "O"}`}
-            style={p.photo_url ? { backgroundImage: `url('${p.photo_url}')`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
           >
-            {!p.photo_url && <Avatar g={p.gender} />}
+            <Avatar g={p.gender} photo={p.photo_url} />
           </div>
           <div className="pp-info">
             <h3>{dispName(p)}</h3>
@@ -146,6 +147,20 @@ export default function DetailPanel({
             {g.addrOf(p) && <div className="pp-l">📍 {g.addrOf(p)}</div>}
           </div>
         </div>
+        {!lim && (
+          <button
+            className="chartbtn"
+            onClick={() => {
+              if (onGo) onGo(p.id);
+              else {
+                chartGoto.id = p.id;
+                setTab("tree");
+              }
+            }}
+          >
+            🌳 चार्टमा हेर्नुहोस्
+          </button>
+        )}
         {!lim && (
           <div className="pp-act">
             <button onClick={() => document.getElementById("pi")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
@@ -169,7 +184,7 @@ export default function DetailPanel({
             {isAdm && (
               <button
                 disabled={busyAi}
-                style={{ marginLeft: "0.5rem", background: "linear-gradient(135deg, #8B5CF6, #EC4899)", color: "white", border: "none" }}
+                className="ghost"
                 onClick={aiSummary}
               >
                 <i>✨</i> AI Summary
@@ -190,6 +205,24 @@ export default function DetailPanel({
         <p className="mut" style={{ marginTop: "1rem" }}>यो शाखाको नाम मात्र हेर्न मिल्छ।</p>
       ) : (
         <>
+          {kc && kc.chain.length > 1 && (
+            <>
+              <div className="pp-h">नाताको बाटो</div>
+              <ol className="kpath" aria-label="नाताको बाटो">
+                {kc.chain.map((h, i) => {
+                  const last = i === kc.chain.length - 1;
+                  const ok = can(h.person.id);
+                  return (
+                    <li key={h.person.id + i} className={last ? "kp-end" : ""}>
+                      <span className="kp-rel">{i === 0 ? "तपाईं" : stepWord(h.step as never)}</span>
+                      <span className="kp-name">{i === 0 ? "" : ok ? dispName(h.person, true) : nm(h.person)}</span>
+                    </li>
+                  );
+                })}
+              </ol>
+              {kc.term && <div className="kp-sum">∴ {dispName(p, true)} तपाईंको <b>{kc.term}</b> हुनुहुन्छ</div>}
+            </>
+          )}
           <div className="pp-h">परिवार</div>
           {RL.length ? (
             RL.map(({ q, l, self }) => {
@@ -222,6 +255,10 @@ export default function DetailPanel({
           <div className="pp-h" id="pi">व्यक्तिगत विवरण</div>
           <Box c="#F59E0B" ic="🎂" l="जन्म मिति (BS)">{p.birth_bs}</Box>
           {!p.is_living && <Box c="#6B7280" ic="🕊" l="मृत्यु मिति (BS)">{p.death_bs}</Box>}
+          {!p.is_living && <Box c="#6B7280" ic="🪦" l="मृत्यु स्थान" mg>{p.death_place}</Box>}
+          <Box c="" ic="🎓" l="शिक्षा" mg>{p.education}</Box>
+          <Box c="" ic="💼" l="पेशा" mg>{p.occupation}</Box>
+          <Box c="" ic="💒" l="विवाह मिति (BS)" mg>{p.marriage_bs}</Box>
           {p.gender === "F" && (
             <>
               <Box c="#EC4899" ic="👰" l="विवाहअघिको थर">{p.maiden_name}</Box>

@@ -1,6 +1,7 @@
 "use client";
 // Dialogs for adding / editing / deleting people and relations (ported from the original app.js: form, kidsForm,
 // spouseForm, parentForm, addMenu, inviteForm).
+import PhotoCrop from "./PhotoCrop";
 import React, { useEffect, useRef, useState } from "react";
 import type { VPerson, NewRequest } from "@/lib/vansh/types";
 import { ORDER, ROLE_L } from "@/lib/vansh/graph";
@@ -96,6 +97,10 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
   const [birth, setBirth] = useState(v.birth_bs || "");
   const [death, setDeath] = useState(v.death_bs || "");
   const [birthPlace, setBirthPlace] = useState(v.birth_place || "");
+  const [deathPlace, setDeathPlace] = useState(v.death_place || "");
+  const [education, setEducation] = useState(v.education || "");
+  const [occupation, setOccupation] = useState(v.occupation || "");
+  const [marriageBs, setMarriageBs] = useState(v.marriage_bs || "");
   const [phone, setPhone] = useState(v.phone || "");
   const [fb, setFb] = useState(v.facebook || "");
   const [address, setAddress] = useState(v.address || "");
@@ -172,10 +177,9 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
       let photoUrl: string | undefined;
       if (photo) {
         setErr("📸 फोटो अपलोड हुँदैछ...");
-        const ext = photo.name.split(".").pop();
-        const fileName = `${p?.id || "new"}-${Date.now()}.${ext}`;
+        const fileName = `${p?.id || "new"}-${Date.now()}.webp`;
         const { error: upErr } = await db.storage.from("profile-photos").upload(fileName, photo, { contentType: photo.type || undefined });
-        if (upErr) return setErr("❌ फोटो अपलोड असफल: " + upErr.message);
+        if (upErr) return setErr(`❌ फोटो अपलोड असफल: ${/row-level|policy/i.test(upErr.message) ? "तपाईंलाई फोटो राख्ने अनुमति छैन। एडमिनलाई भन्नुहोस्" : /size|large|payload/i.test(upErr.message) ? "फोटो धेरै ठूलो छ" : /network|fetch/i.test(upErr.message) ? "इन्टरनेट जडान जाँच्नुहोस्" : upErr.message}`);
         photoUrl = db.storage.from("profile-photos").getPublicUrl(fileName).data.publicUrl;
         setErr("");
       }
@@ -192,6 +196,7 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
             father_name: father.newName, mother_name: mother.newName, spouse_name: spouse.newName,
             is_living: living, birth_bs: birth, death_bs: death, phone, address, notes,
             maiden_name: finalMaiden, married_name: finalMarried, birth_place: birthPlace,
+            death_place: deathPlace, education, occupation, marriage_bs: married ? marriageBs : "",
           },
         },
         fbOk
@@ -252,11 +257,7 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
           </label>
           <label>
             प्रोफाइल फोटो
-            <input type="file" accept="image/*" style={{ marginTop: "0.5rem" }} onChange={(e) => setPhoto(e.target.files?.[0] || null)} />
-            {v.photo_url && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={v.photo_url} alt="" style={{ width: 60, height: 60, borderRadius: "50%", objectFit: "cover", marginTop: "0.5rem", border: "2px solid var(--line)", display: "block" }} />
-            )}
+            <PhotoCrop onChange={setPhoto} current={v.photo_url} />
           </label>
           <div className="edg mnl" hidden={!(gender === "F" && married)}>
             <label>
@@ -281,8 +282,30 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
             {radio("lv", "false", "दिवंगत", String(living), (x) => setLiving(x === "true"))}
           </div>
           <div hidden={living}>
-            <label>मृत्यु मिति (BS)</label>
-            <DateField value={death} onChange={setDeath} />
+            <div className="edg">
+              <div>
+                <label>मृत्यु मिति (BS)</label>
+                <DateField value={death} onChange={setDeath} />
+              </div>
+              <label>
+                मृत्यु स्थान
+                <input value={deathPlace} onChange={(e) => setDeathPlace(e.target.value)} />
+              </label>
+            </div>
+          </div>
+          <div className="edg">
+            <label>
+              शिक्षा
+              <input value={education} onChange={(e) => setEducation(e.target.value)} placeholder="जस्तै: स्नातक, SLC" />
+            </label>
+            <label>
+              पेशा
+              <input value={occupation} onChange={(e) => setOccupation(e.target.value)} placeholder="जस्तै: शिक्षक, किसान" />
+            </label>
+          </div>
+          <div hidden={!married}>
+            <label>विवाह मिति (BS)</label>
+            <DateField value={marriageBs} onChange={setMarriageBs} />
           </div>
           <hr />
           <div className="sech">परिवार</div>
