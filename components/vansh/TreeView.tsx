@@ -375,6 +375,8 @@ export default function TreeView() {
       <body>${sprite}<div class="print-header"><h1>🌳 ${esc(p.name)} को वंशावली शाखा</h1>
       <p>मुद्रित मिति: ${new Date().toLocaleDateString("ne-NP")} | हाम्रो वंशावली</p></div>
       <div id="pstage" style="width:${layoutRef.current.W}px;height:${layoutRef.current.H}px">${stage.innerHTML}</div>
+      <h2 style="margin-top:24px;page-break-before:always">सदस्य विवरण</h2>
+      <table class="ptable" border="1" cellpadding="4" style="border-collapse:collapse;width:100%;font-size:12px"><thead><tr>${["नाम","जन्म (BS)","जन्म स्थान","मृत्यु (BS)","मृत्यु स्थान","शिक्षा","पेशा","विवाह (BS)"].map((h) => `<th style="text-align:left;background:#f4f4f4">${h}</th>`).join("")}</tr></thead><tbody>${[...g.branchOf([id])].map((x) => byId[x]).filter((x) => x && can(x.id) && !x.name_only).sort(g.byBirth).map((x) => `<tr>${[dispName(x), x.birth_bs, x.birth_place, x.is_living ? "" : x.death_bs, x.is_living ? "" : x.death_place, x.education, x.occupation, x.marriage_bs].map((c) => `<td>${esc(String(c || ""))}</td>`).join("")}</tr>`).join("")}</tbody></table>
       <script>window.onload=function(){setTimeout(function(){window.print();window.close()},400)}<\/script></body></html>`);
     w.document.close();
   };

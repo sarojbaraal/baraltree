@@ -677,3 +677,7 @@ dialog::backdrop { background: rgba(4, 7, 22, .42); backdrop-filter: blur(3px); 
 .dtr1 .dsingle { font-variant-numeric: tabular-nums; letter-spacing: .04em; }
 .dtr1 .dsingle[aria-invalid="true"] { border-color: var(--bad, #ef4444); }
 .dterr { color: var(--bad, #ef4444); }
+
+/* ---------- phase 6: new detail fields ---------- */
+.ib.mgl small { color: var(--mg); font-weight: 600; }
+.ptable { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 12px; }

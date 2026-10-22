@@ -21,6 +21,10 @@ export interface VPerson {
   maiden_name?: string | null;
   married_name?: string | null;
   birth_place?: string | null;
+  death_place?: string | null;
+  education?: string | null;
+  occupation?: string | null;
+  marriage_bs?: string | null;
   email?: string | null;
   facebook?: string | null;
   photo_url?: string | null;

@@ -27,6 +27,10 @@ export const LABEL: Record<string, string> = {
   maiden_name: "विवाहअघिको थर (Maiden) ",
   married_name: "विवाहपछिको थर (Married) ",
   birth_place: "जन्म स्थान ",
+  death_place: "मृत्यु स्थान ",
+  education: "शिक्षा ",
+  occupation: "पेशा ",
+  marriage_bs: "विवाह मिति (BS) ",
   photo_url: "प्रोफाइल फोटो ",
 };
 export const XL: Record<string, string> = {

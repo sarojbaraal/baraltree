@@ -9,10 +9,10 @@ import { useVansh } from "./VanshContext";
 import { Avatar, KidCount } from "./ui";
 import { AddMenu, DeleteDialog, InviteDialog, PersonForm } from "./PersonDialogs";
 
-function Box({ c, ic, l, children }: { c: string; ic: string; l: string; children?: React.ReactNode }) {
+function Box({ c, ic, l, children, mg }: { c: string; ic: string; l: string; children?: React.ReactNode; mg?: boolean }) {
   if (!children) return null;
   return (
-    <div className="ib w" style={{ ["--c" as string]: c }}>
+    <div className={`ib w${mg ? " mgl" : ""}`} style={{ ["--c" as string]: mg ? "var(--mg)" : c }}>
       <span className="ii">{ic}</span>
       <div>
         <small>{l}</small>
@@ -255,6 +255,10 @@ export default function DetailPanel({
           <div className="pp-h" id="pi">व्यक्तिगत विवरण</div>
           <Box c="#F59E0B" ic="🎂" l="जन्म मिति (BS)">{p.birth_bs}</Box>
           {!p.is_living && <Box c="#6B7280" ic="🕊" l="मृत्यु मिति (BS)">{p.death_bs}</Box>}
+          {!p.is_living && <Box c="#6B7280" ic="🪦" l="मृत्यु स्थान" mg>{p.death_place}</Box>}
+          <Box c="" ic="🎓" l="शिक्षा" mg>{p.education}</Box>
+          <Box c="" ic="💼" l="पेशा" mg>{p.occupation}</Box>
+          <Box c="" ic="💒" l="विवाह मिति (BS)" mg>{p.marriage_bs}</Box>
           {p.gender === "F" && (
             <>
               <Box c="#EC4899" ic="👰" l="विवाहअघिको थर">{p.maiden_name}</Box>

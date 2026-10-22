@@ -19,6 +19,10 @@ export interface ImportRow {
   phone: string;
   address: string;
   notes: string;
+  death_place: string;
+  education: string;
+  occupation: string;
+  marriage_bs: string;
 }
 
 const GMAP: Record<string, string> = {
@@ -95,6 +99,10 @@ export function parseImportRows(g: Graph, raw: Record<string, unknown>[]): Parse
       phone: cell(o.phone),
       address: cell(o.address),
       notes: cell(o.notes),
+      death_place: cell(o.death_place),
+      education: cell(o.education),
+      occupation: cell(o.occupation),
+      marriage_bs: cell(o.marriage_bs),
     };
   });
   return { rows: out, dateWarn };
@@ -124,7 +132,7 @@ export interface ImportDiff {
   cleared: number;
 }
 export const IMPORT_LABELS: Record<string, string> = { ...LABEL, father: "बुबा", mother: "आमा", spouse: "पति/पत्नी" };
-const KEYS = ["name", "gender", "father", "mother", "spouse", "is_living", "birth_bs", "death_bs", "phone", "address", "notes"];
+const KEYS = ["name", "gender", "father", "mother", "spouse", "is_living", "birth_bs", "death_bs", "phone", "address", "notes", "death_place", "education", "occupation", "marriage_bs"];
 const G_NE: Record<string, string> = { M: "पुरुष", F: "महिला", O: "अन्य" };
 
 export function diffImport(g: Graph, out: ImportRow[]): ImportDiff {
@@ -142,6 +150,10 @@ export function diffImport(g: Graph, out: ImportRow[]): ImportDiff {
     phone: o.phone || "",
     address: o.address || "",
     notes: o.notes || "",
+    death_place: o.death_place || "",
+    education: o.education || "",
+    occupation: o.occupation || "",
+    marriage_bs: o.marriage_bs || "",
   });
   const viewOld = (p: VPerson) => ({
     name: p.name || "",
@@ -155,6 +167,10 @@ export function diffImport(g: Graph, out: ImportRow[]): ImportDiff {
     phone: p.phone || "",
     address: p.address || "",
     notes: p.notes || "",
+    death_place: p.death_place || "",
+    education: p.education || "",
+    occupation: p.occupation || "",
+    marriage_bs: p.marriage_bs || "",
   });
   const add: Record<string, string>[] = [];
   const chg: ImportDiff["chg"] = [];

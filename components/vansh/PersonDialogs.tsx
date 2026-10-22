@@ -97,6 +97,10 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
   const [birth, setBirth] = useState(v.birth_bs || "");
   const [death, setDeath] = useState(v.death_bs || "");
   const [birthPlace, setBirthPlace] = useState(v.birth_place || "");
+  const [deathPlace, setDeathPlace] = useState(v.death_place || "");
+  const [education, setEducation] = useState(v.education || "");
+  const [occupation, setOccupation] = useState(v.occupation || "");
+  const [marriageBs, setMarriageBs] = useState(v.marriage_bs || "");
   const [phone, setPhone] = useState(v.phone || "");
   const [fb, setFb] = useState(v.facebook || "");
   const [address, setAddress] = useState(v.address || "");
@@ -192,6 +196,7 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
             father_name: father.newName, mother_name: mother.newName, spouse_name: spouse.newName,
             is_living: living, birth_bs: birth, death_bs: death, phone, address, notes,
             maiden_name: finalMaiden, married_name: finalMarried, birth_place: birthPlace,
+            death_place: deathPlace, education, occupation, marriage_bs: married ? marriageBs : "",
           },
         },
         fbOk
@@ -277,8 +282,30 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
             {radio("lv", "false", "दिवंगत", String(living), (x) => setLiving(x === "true"))}
           </div>
           <div hidden={living}>
-            <label>मृत्यु मिति (BS)</label>
-            <DateField value={death} onChange={setDeath} />
+            <div className="edg">
+              <div>
+                <label>मृत्यु मिति (BS)</label>
+                <DateField value={death} onChange={setDeath} />
+              </div>
+              <label>
+                मृत्यु स्थान
+                <input value={deathPlace} onChange={(e) => setDeathPlace(e.target.value)} />
+              </label>
+            </div>
+          </div>
+          <div className="edg">
+            <label>
+              शिक्षा
+              <input value={education} onChange={(e) => setEducation(e.target.value)} placeholder="जस्तै: स्नातक, SLC" />
+            </label>
+            <label>
+              पेशा
+              <input value={occupation} onChange={(e) => setOccupation(e.target.value)} placeholder="जस्तै: शिक्षक, किसान" />
+            </label>
+          </div>
+          <div hidden={!married}>
+            <label>विवाह मिति (BS)</label>
+            <DateField value={marriageBs} onChange={setMarriageBs} />
           </div>
           <hr />
           <div className="sech">परिवार</div>
