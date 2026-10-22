@@ -103,7 +103,7 @@ describe("kinship labels", () => {
     expect(R.bikash).toBe("ज्वाइँ");
     expect(R.anil).toBe("भान्जा");
     expect(R.gopal).toBe("हजुरबुबा");
-    expect(R.dev).toBe("काका");
+    expect(R.dev).toBe("कान्छो काका");
   });
   it("labels from Mina's side", () => {
     const { R } = relMap(g, meAt("mina"));

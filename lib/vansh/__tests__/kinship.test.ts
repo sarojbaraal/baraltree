@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { person } from "./fixtures";
 import { createGraph } from "../graph";
-import { kinFor, kinFrom, kinshipBetween, ordinalOf, ordinalWord, withAnchor } from "../kinship";
+import { kinFor, kinFrom, kinshipBetween, ordinalOf, ordinalWord, olderThan, unresolvedCohorts, withAnchor } from "../kinship";
 import type { VPerson } from "../types";
 
 const P = (id: string, g: "M" | "F", birth: string | null, o: Partial<VPerson> = {}) =>
-  person({ id, name: id, gender: g, birth_bs: birth, ...o });
+  person({ id, name: id, gender: g, birth_bs: birth && birth.length === 4 ? `${birth}-06-15` : birth, ...o });
 
 /**
  * Paternal grandparents gf+gm: bada(1990)+badaW, phupuO(1992)+phupuOH, hari(1995, my father)+gita+step, phupuY(1998)+phupuYH, kaka(2000)+kakiW
@@ -81,8 +81,8 @@ describe("kinship dictionary (from ram)", () => {
     expect(r.gita).toBe("आमा");
     expect(r.gf).toBe("हजुरबुबा");
     expect(r.gm).toBe("हजुरआमा");
-    expect(r.mgf).toBe("हजुरबुबा");
-    expect(r.mgm).toBe("हजुरआमा");
+    expect(r.mgf).toBe("हजुरबुबा (मावली)");
+    expect(r.mgm).toBe("हजुरआमा (मावली)");
   });
   it("siblings by age", () => {
     expect(r.dajyu).toBe("दाजु");
@@ -92,13 +92,13 @@ describe("kinship dictionary (from ram)", () => {
   });
   it("paternal uncles and aunts", () => {
     expect(r.bada).toBe("ठूलोबुबा");
-    expect(r.kaka).toBe("काका");
+    expect(r.kaka).toBe("कान्छो काका");
     expect(r.phupuO).toBe("ठूलीफुपू");
     expect(r.phupuY).toBe("सानीफुपू");
   });
   it("maternal uncles and aunts", () => {
     expect(r.mama).toBe("मामा");
-    expect(r.thuli).toBe("ठूलीआमा");
+    expect(r.thuli).toBe("ठूलीआमा (मावली)");
     expect(r.sani).toBe("सानिमा");
   });
   it("uncles' spouses", () => {
@@ -122,10 +122,10 @@ describe("kinship dictionary (from ram)", () => {
     expect(r.kakaSon).toBe("भाइ"); // father's brother's son, younger
     expect(r.phupuDau).toBe("दिदी"); // फुपूको छोरी, older
     expect(r.phupuDauH).toBe("भिनाजु"); // फुपूको छोरीको पति — never a long phrase
-    expect(r.mamaSon).toBe("भाइ");
-    expect(r.mamaSonW).toBe("बुहारी");
+    expect(r.mamaSon).toBe("भाइ (मावली)");
+    expect(r.mamaSonW).toBe("बुहारी (मावली)");
     expect(r.phupuGrand).toBe("भान्जा"); // फुपूका छोराछोरीका सन्तान
-    expect(r.mamaSonKid).toBe("भान्जा");
+    expect(r.mamaSonKid).toBe("भान्जा (मावली)");
     expect(r.badaSonKid).toBe("भतिजी"); // father's brother's son's child
     expect(r.phupuGrand).toBe("भान्जा");
     // a father's brother's DAUGHTER's child is भान्जा, like a sister's child
@@ -230,7 +230,7 @@ describe("kinshipBetween / ordinals", () => {
     expect(kinshipBetween(g, "ram", "hari")).toBe("बुबा");
     expect(kinshipBetween(g, "hari", "ram")).toBe("छोरा");
     expect(kinshipBetween(g, "kiran", "ram")).toBe("बुबा");
-    expect(kinshipBetween(g, "bhai", "kaka")).toBe("काका");
+    expect(kinshipBetween(g, "bhai", "kaka")).toBe("कान्छो काका");
   });
   it("ranks sons: जेठो, माइलो, साइलो, कान्छो", () => {
     // dajyu 2020, ram 2025, bhai 2030, halfBro 2033
@@ -253,5 +253,28 @@ describe("kinshipBetween / ordinals", () => {
     expect(ordinalOf(g, "bahini")).toBe("कान्छी");
     const d = data().map((p) => (p.id === "bhai" ? { ...p, birth_bs: null } : p));
     expect(ordinalOf(createGraph(d), "ram")).toBeNull();
+  });
+});
+
+describe("strict birth-date order", () => {
+  const mk = (b: string) => P("x", "M", b);
+  it("unknown month/day never decides", () => {
+    expect(olderThan(mk("2032-00-00"), mk("2032-05-01"))).toBeNull();
+    expect(olderThan(mk("2031-00-00"), mk("2032-05-01"))).toBe(true);
+    expect(olderThan(mk("2032-05-00"), mk("2032-05-20"))).toBeNull();
+    expect(olderThan(mk("2032-04-09"), mk("2032-05-01"))).toBe(true);
+    expect(olderThan(mk("2032-05-01"), mk("2032-05-01"))).toBeNull();
+  });
+  it("year-only or duplicate dates → no ordinal, listed for review", () => {
+    const d = data().map((p) => (p.id === "bhai" ? { ...p, birth_bs: "2030" } : p));
+    expect(ordinalOf(createGraph(d), "ram")).toBeNull();
+    expect(unresolvedCohorts(createGraph(d)).some((c) => c.problem === "तारिख अधुरो")).toBe(true);
+    const dup = data().map((p) => (p.id === "bhai" ? { ...p, birth_bs: "2025-06-15" } : p));
+    expect(ordinalOf(createGraph(dup), "ram")).toBeNull();
+  });
+  it("middle ranks", () => {
+    expect(ordinalWord(5, 11, true)).toBe("राइली");
+    expect(ordinalWord(9, 11, false)).toBe("जन्तरे");
+    expect(ordinalWord(2, 12, false)).toBeNull();
   });
 });
