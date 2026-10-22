@@ -692,3 +692,22 @@ dialog::backdrop { background: rgba(4, 7, 22, .42); backdrop-filter: blur(3px); 
 .qr .qh:hover { background: var(--solid); }
 .qr div.act { background: var(--cy-glow); }
 .qr { max-height: min(60vh, 420px); overflow-y: auto; overscroll-behavior: contain; }
+
+/* ---------- सम्बन्ध समीक्षा ---------- */
+.rv-sum { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; margin-bottom: .9rem; }
+.rv-sum > div { padding: .7rem .9rem; border-radius: 16px; background: var(--surface); border: 1px solid var(--line-2); display: flex; flex-direction: column; }
+.rv-sum b { font-size: 1.5rem; line-height: 1.1; }
+.rv-sum span { font-size: .78rem; color: var(--mut); }
+.rv-sum .bad { border-color: #ef4444; } .rv-sum .bad b { color: #ef4444; }
+.rv-sum .warn { border-color: var(--mg); } .rv-sum .warn b { color: var(--mg); }
+.rv-sum .ok b { color: #22c55e; }
+.rv-list { display: grid; gap: .7rem; }
+.rv { border-left: 4px solid var(--line-2); }
+.rv.error { border-left-color: #ef4444; } .rv.warn { border-left-color: var(--mg); } .rv.info { border-left-color: var(--cy); }
+.rv-h { display: flex; justify-content: space-between; gap: .5rem; font-size: .78rem; margin-bottom: .25rem; }
+.rv-lv { padding: .05rem .5rem; border-radius: 99px; font-weight: 700; }
+.rv-lv.error { background: rgba(239,68,68,.18); color: #ef4444; } .rv-lv.warn { background: var(--mg-glow); color: var(--mg); } .rv-lv.info { background: var(--cy-glow); color: var(--cy); }
+.rv p { margin: .3rem 0 .5rem; font-size: .88rem; line-height: 1.45; }
+.rv-people { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .6rem; }
+.rv-people button { min-height: 32px; padding: .2rem .65rem; font-size: .85rem; }
+@media (max-width: 560px) { .rv-sum { grid-template-columns: 1fr 1fr; } }
