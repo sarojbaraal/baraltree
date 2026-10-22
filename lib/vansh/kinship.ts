@@ -8,7 +8,7 @@
 // short word, never a description. Terms that cannot be named exactly are left out (null) instead of guessed.
 import type { VPerson, VProfile } from "./types";
 import type { Graph } from "./graph";
-import { np } from "./text";
+import { na, np } from "./text";
 
 export type Step = "f" | "m" | "s" | "d" | "h" | "w";
 
@@ -38,11 +38,30 @@ const isF = (p?: VPerson | null) => p?.gender === "F";
 /** Pick a term by the person's gender; unknown gender gets `o` (default "m/f"). */
 const by = (p: VPerson | undefined | null, m: string, f: string, o = `${m}/${f}`) => (isM(p) ? m : isF(p) ? f : o);
 
-/** true = a is older than b, false = younger, null = unknown or same date. Dates are BS "YYYY-MM-DD" (00 = unknown). */
+/** Parses a BS date into [year, month, day]; 0 = unknown part. */
+function dateParts(d?: string | null): [number, number, number] | null {
+  if (!d) return null;
+  const q = na(String(d)).split("-").map((x) => parseInt(x, 10) || 0);
+  return q[0] > 0 ? [q[0], q[1] || 0, q[2] || 0] : null;
+}
+const fullDate = (d?: string | null) => {
+  const q = dateParts(d);
+  return !!q && q[1] > 0 && q[2] > 0;
+};
+
+/**
+ * true = a is older than b, false = younger, null = cannot be told (missing, same, or an unknown month/day that
+ * would decide it). Compares year, then month, then day; a 00 part stops the comparison.
+ */
 export function olderThan(a?: VPerson | null, b?: VPerson | null): boolean | null {
-  if (!a?.birth_bs || !b?.birth_bs) return null;
-  if (a.birth_bs === b.birth_bs) return null;
-  return a.birth_bs < b.birth_bs;
+  const x = dateParts(a?.birth_bs);
+  const y = dateParts(b?.birth_bs);
+  if (!x || !y) return null;
+  for (let i = 0; i < 3; i++) {
+    if (i > 0 && (!x[i] || !y[i])) return null;
+    if (x[i] !== y[i]) return x[i] < y[i];
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------- adjacency
@@ -362,19 +381,42 @@ const CORE = [
   /^[hw][fm][sd]$/, // spouse's siblings
 ];
 
+/** Which side of the family a path runs through: मावली (via mother's parents), ससुराली (via spouse), else blood. */
+function sideOf(path: string): "" | " (मावली)" | " (ससुराली)" {
+  if (/^m[fm]/.test(path)) return " (मावली)";
+  if (/^[hw]/.test(path) && path.length > 1 && !/^[hw][sd]/.test(path)) return " (ससुराली)";
+  return "";
+}
+
+// uncle/aunt words that get a birth-order prefix: माइलो काका, कान्छो मामा, जेठी फुपू
+const ORDERED = new Set(["काका", "मामा", "फुपू"]);
+
 function run(net: Net, anchorId: string): Kin {
   const sc: SpouseCount = (p) => net.spouses[p.id]?.length || 0;
   const R: Record<string, string> = {};
   const paths: Record<string, string> = {};
   const C = new Set<string>();
   const found = search(net, anchorId);
+  const base: Record<string, string> = {};
   Object.keys(found).forEach((id) => {
     if (id === VIRTUAL_ME) return;
     const { path, nodes } = found[id];
     paths[id] = path;
     const term = termForPath(path, nodes.map((n) => net.byId[n]), sc);
-    if (term) R[id] = term;
+    if (term) base[id] = term;
     if (CORE.some((r) => r.test(path)) || path === "") C.add(id);
+  });
+  // the same word on different sides (हजुरबुबा, बहिनी …) → tell the sides apart
+  const sides: Record<string, Set<string>> = {};
+  Object.keys(base).forEach((id) => (sides[base[id]] ||= new Set()).add(sideOf(paths[id])));
+  Object.keys(base).forEach((id) => {
+    let t = base[id];
+    if (ORDERED.has(t)) {
+      const w = ordinalIn(net, net.byId[id]);
+      if (w && !(t === "काका" && w.startsWith("जेठ"))) t = `${w} ${t}`;
+    }
+    const sd = sideOf(paths[id]);
+    R[id] = sd && sides[base[id]].size > 1 ? t + sd : t;
   });
   return { R, paths, C, anchorId };
 }
@@ -402,27 +444,104 @@ export function kinshipBetween(g: Pick<Graph, "people">, fromId: string, toId: s
   return kinFrom(g.people, fromId).R[toId] ?? null;
 }
 
-// ---------------------------------------------------------------- ordinals
+// ---------------------------------------------------------------- ordinals (जेठो, माइलो … कान्छो)
 
-const ORD_M = ["जेठो", "माइलो", "साइलो", "काइँलो"];
-const ORD_F = ["जेठी", "माइली", "साइली", "काइँली"];
+const MIDDLE = ["माइलो", "साइलो", "काइँलो", "राइलो", "ठाइलो", "झाइँलो", "अन्तरे", "जन्तरे", "पानी मन्तरे"];
+const MAX_COHORT = MIDDLE.length + 2;
+const feminine = (w: string) => (/लो$/.test(w) ? w.replace(/लो$/, "ली") : w);
 
-/** Rank word for position `rank` (1-based) of `total` in a group: जेठो, माइलो, साइलो, काइँलो … and always कान्छो for the last. */
+/** Rank word for position `rank` (1-based) of `total` in a group: जेठो, माइलो … कान्छो. null when no word exists. */
 export function ordinalWord(rank: number, total: number, female: boolean): string | null {
-  if (total < 2 || rank < 1 || rank > total) return null;
+  if (total < 2 || total > MAX_COHORT || rank < 1 || rank > total) return null;
+  if (rank === 1) return female ? "जेठी" : "जेठो";
   if (rank === total) return female ? "कान्छी" : "कान्छो";
-  if (rank <= ORD_M.length) return (female ? ORD_F : ORD_M)[rank - 1];
-  return `${np(rank)}औँ`;
+  const w = MIDDLE[rank - 2];
+  return female ? feminine(w) : w;
 }
 
-/** जेठो / माइलो / … / कान्छो among a person's same-gender siblings (same father, else same mother). */
+export interface Cohort {
+  /** Same-gender children of the same father (else mother), oldest first when resolvable. */
+  members: VPerson[];
+  /** Why the order cannot be named, or null when it can. */
+  problem: "तारिख अधुरो" | "तारिख दोहोरिएको" | "धेरै सन्तान" | null;
+}
+
+function cohortIn(net: Net, p: VPerson): Cohort | null {
+  if (p.gender !== "M" && p.gender !== "F") return null;
+  const key = p.father_id ? "father_id" : p.mother_id ? "mother_id" : null;
+  if (!key) return null;
+  const members = net.people.filter((x) => x.gender === p.gender && x[key] === p[key]);
+  if (members.length < 2) return null;
+  let problem: Cohort["problem"] = null;
+  if (members.length > MAX_COHORT) problem = "धेरै सन्तान";
+  else if (members.some((x) => !fullDate(x.birth_bs))) problem = "तारिख अधुरो";
+  else if (new Set(members.map((x) => parseInt(na(x.birth_bs!).split("-").join(""), 10))).size !== members.length) problem = "तारिख दोहोरिएको";
+  if (!problem) members.sort((a, b) => (olderThan(a, b) ? -1 : 1));
+  return { members, problem };
+}
+
+function ordinalIn(net: Net, p: VPerson): string | null {
+  const c = cohortIn(net, p);
+  if (!c || c.problem) return null;
+  return ordinalWord(c.members.findIndex((x) => x.id === p.id) + 1, c.members.length, p.gender === "F");
+}
+
+/** जेठो / माइलो / … / कान्छो among a person's same-gender siblings. null unless every birth date is complete and distinct. */
 export function ordinalOf(g: Pick<Graph, "people">, id: string): string | null {
-  const p = g.people.find((x) => x.id === id);
-  if (!p || (p.gender !== "M" && p.gender !== "F")) return null;
-  const same = g.people.filter(
-    (x) => x.gender === p.gender && ((p.father_id && x.father_id === p.father_id) || (!p.father_id && p.mother_id && x.mother_id === p.mother_id))
-  );
-  if (same.length < 2 || same.some((x) => !x.birth_bs)) return null;
-  same.sort((a, b) => a.birth_bs!.localeCompare(b.birth_bs!) || String(a.created_at).localeCompare(String(b.created_at)));
-  return ordinalWord(same.findIndex((x) => x.id === id) + 1, same.length, p.gender === "F");
+  const net = buildNet(g.people);
+  const p = net.byId[id];
+  return p ? ordinalIn(net, p) : null;
+}
+
+/** Sibling groups whose birth order cannot be named — for the admin "सम्बन्ध समीक्षा" list. */
+export function unresolvedCohorts(g: Pick<Graph, "people">): { parent: VPerson | undefined; gender: "M" | "F"; members: VPerson[]; problem: NonNullable<Cohort["problem"]> }[] {
+  const net = buildNet(g.people);
+  const seen = new Set<string>();
+  const out: ReturnType<typeof unresolvedCohorts> = [];
+  net.people.forEach((p) => {
+    const c = cohortIn(net, p);
+    if (!c?.problem) return;
+    const key = String(p.father_id || p.mother_id) + p.gender;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ parent: net.byId[(p.father_id || p.mother_id)!], gender: p.gender as "M" | "F", members: c.members, problem: c.problem });
+  });
+  return out;
+}
+
+// ---------------------------------------------------------------- path display
+
+export interface KinHop {
+  person: VPerson;
+  /** How this person relates to the previous one in the chain ("" for the first). */
+  step: Step | "";
+}
+const STEP_WORD: Record<Step, string> = { f: "बुबा", m: "आमा", s: "छोरा", d: "छोरी", h: "पति", w: "पत्नी" };
+export const stepWord = (s: Step) => STEP_WORD[s];
+
+/** The chain of people from the signed-in user to `targetId` (e.g. तपाईं → बुबा → बुबा → काका), plus the final term. */
+export function kinChain(
+  people: VPerson[],
+  me: (Pick<VProfile, "position_person_id" | "position_parent_id"> & { custom_anchor?: CustomAnchor | null }) | null,
+  targetId: string
+): { chain: KinHop[]; term: string | null } | null {
+  if (!me) return null;
+  const { people: list, anchorId } = withAnchor(people, me);
+  if (!anchorId) return null;
+  const net = buildNet(list);
+  const r = search(net, anchorId)[targetId];
+  if (!r) return null;
+  const steps = r.path.split("") as Step[];
+  const chain: KinHop[] = r.nodes.map((id, i) => ({ person: net.byId[id], step: i === 0 ? "" : steps[i - 1] }));
+  const sc: SpouseCount = (p) => net.spouses[p.id]?.length || 0;
+  const term = r.path === "" ? "तपाईं" : termForPath(r.path, r.nodes.map((n) => net.byId[n]), sc);
+  return { chain, term };
+}
+
+// ---------------------------------------------------------------- search helpers
+
+const ORD_PREFIX = /^(जेठो|जेठी|माइलो|माइली|साइलो|साइली|काइँलो|काइँली|राइलो|राइली|ठाइलो|ठाइली|झाइँलो|झाइँली|अन्तरे|जन्तरे|पानी मन्तरे|कान्छो|कान्छी)\s+/;
+/** "माइलो काका" → "काका"; "हजुरबुबा (मावली)" → "हजुरबुबा". The word people search and group by. */
+export function baseTerm(term: string): string {
+  return term.replace(/\s*\((मावली|ससुराली)\)\s*$/, "").replace(ORD_PREFIX, "").trim();
 }

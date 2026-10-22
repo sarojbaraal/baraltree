@@ -7,7 +7,9 @@ import { ageN, dispName, match, np, surnameOf, yr } from "@/lib/vansh/text";
 import type { VPerson } from "@/lib/vansh/types";
 import { useVansh } from "./VanshContext";
 import { Avatar, KidCount } from "./ui";
+import PersonSearch from "./PersonSearch";
 import { AnchorDialog, PersonForm } from "./PersonDialogs";
+import DownloadMenu from "./DownloadMenu";
 
 // search text survives tab switches, like the original
 export const qText = { tree: "", fam: "" };
@@ -36,8 +38,7 @@ export function FamView() {
   const meName = (me?.position_person_id && byId[me.position_person_id]?.name) || me?.full_name || me?.email || "";
 
   const ql = q.trim().toLowerCase();
-  const hits = ql ? people.filter((p) => can(p.id) && (match(p.name, ql) || (R[p.id] || "").includes(ql))).slice(0, 50) : [];
-  const [showHits, setShowHits] = useState(false);
+  const visiblePeople = useMemo(() => people.filter((p) => can(p.id)), [people, can]);
 
   const showCard = (id: string) => {
     const gi = groups.findIndex((gr) => gr.members.some((p) => p.id === id));
@@ -63,7 +64,7 @@ export function FamView() {
         onClick={() => pick(p.id)}
         onKeyDown={(e) => e.key === "Enter" && pick(p.id)}
       >
-        <div className="mav2"><Avatar g={p.gender} /></div>
+        <div className="mav2"><Avatar g={p.gender} photo={p.photo_url} /></div>
         <div className="mn">{dispName(p, true)}</div>
         <div className="my"><i className={`st ${p.is_living ? "live" : "gone"}`} title={p.is_living ? "जीवित" : "दिवंगत"} />{R[p.id] || "साइनो स्पष्ट छैन"}</div>
         <KidCount kids={kidsOf(p)} />
@@ -73,7 +74,7 @@ export function FamView() {
   };
   const lrow = (p: VPerson) => (
     <div key={p.id} className={`mlc ${p.is_living ? "" : "dead"} ${flashId === p.id ? "flash" : ""}`} data-id={p.id} onClick={() => pick(p.id)}>
-      <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} /></div>
+      <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} photo={p.photo_url} /></div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <b>{dispName(p)}</b>
         <br />
@@ -111,45 +112,29 @@ export function FamView() {
           )}
           <button className="ghost" onClick={() => openDialog(<AnchorDialog />)}>🧭 नाता सन्दर्भ</button>
           {isStaff && <button className="ghost" onClick={() => setTab("ov")}>📊 Family Overview</button>}
+          <DownloadMenu />
         </div>
       </section>
       <div className="stickybar">
       <button className="locate" disabled={!base} onClick={() => base && showCard(base.id)}>📍 मेरो स्थान</button>
-      <div className="qw msw">
-        <input
-          className="msearch"
-          placeholder="🔍 नाम वा साइनो खोज्नुहोस्…"
-          autoComplete="off"
-          value={q}
-          onChange={(e) => {
-            qText.fam = e.target.value;
-            setQ(e.target.value);
-            setShowHits(true);
-          }}
-        />
-        <button className="ghost qx" hidden={!q} aria-label="खोज मेट्ने" onClick={() => { qText.fam = ""; setQ(""); }}>✕</button>
-        <div className="qr" hidden={!ql || !showHits}>
-          {hits.map((p) => (
-            <div
-              key={p.id}
-              onClick={() => {
-                qText.fam = p.name;
-                setQ(p.name);
-                setShowHits(false);
-                pick(p.id);
-                showCard(p.id);
-              }}
-            >
-              <b>{dispName(p)}</b>
-              <small>
-                {R[p.id] || "साइनो छैन"}
-                {yr(p.birth_bs) ? " · " + yr(p.birth_bs) : ""}
-              </small>
-            </div>
-          ))}
-          {!hits.length && <div className="none">कोही भेटिएन</div>}
-        </div>
-      </div>
+      <PersonSearch
+        id="fq"
+        className="msw"
+        value={q}
+        people={visiblePeople}
+        rel={R}
+        onChange={(t) => {
+          qText.fam = t;
+          setQ(t);
+        }}
+        onChoose={(id) => {
+          const p = byId[id];
+          qText.fam = p?.name || "";
+          setQ(p?.name || "");
+          pick(id);
+          showCard(id);
+        }}
+      />
       </div>
       <div className="rchips">
         <button className={`ghost ${mode === "grid" ? "on" : ""}`} onClick={() => setMode("grid")}>▦ थम्बनेल</button>
@@ -233,7 +218,12 @@ const valueOf = (g: Graph, p: VPerson, k: FKey): string | null =>
   k === "gender" ? p.gender || null : k === "age" ? ageGroupOf(p) : k === "marital" ? (g.spousesOf(p).length ? "m" : "u") : surnameChangeOf(g, p);
 
 export function MemView() {
+<<<<<<< HEAD
   const { g, perms, pick } = useVansh();
+=======
+  const { g, me, perms, pick } = useVansh();
+  const [q, setQ] = useState("");
+>>>>>>> 5cebe2a77a1f9e7d6df5c8460b267f82e4c7d93d
   const [status, setStatus] = useState<Status>("live");
   const [tab, setTab] = useState<FKey>("gender");
   const [open, setOpen] = useState(true);
@@ -261,6 +251,7 @@ export function MemView() {
     return { list, counts };
   }, [g, perms, status, f]);
 
+<<<<<<< HEAD
   const cur = TABS.find((t) => t.k === tab)!;
   const big = tab !== "age";
 
@@ -272,6 +263,59 @@ export function MemView() {
           <span className="mf-ind" style={{ transform: `translateX(${STATUS.findIndex(([s]) => s === status) * 100}%)` }} />
           {STATUS.map(([s, l]) => (
             <button key={s} role="tab" aria-selected={status === s} className={status === s ? "on" : ""} onClick={() => setStatus(s)}>
+=======
+  const ql = q.trim().toLowerCase();
+  const R = useMemo(() => relMap(g, me).R, [g, me]);
+  const visiblePeople = useMemo(() => g.people.filter((p) => perms.can(p.id)), [g.people, perms]);
+  const list = useMemo(
+    () =>
+      g.people
+        .filter((p) => {
+          if (!perms.can(p.id)) return false;
+          if (ql && !match(p.name, ql) && !(R[p.id] || "").includes(ql)) return false;
+          if (status === "live" && !p.is_living) return false;
+          if (status === "dead" && p.is_living) return false;
+          if (f.gender.length && !f.gender.includes(p.gender || "")) return false;
+          if (f.age.length) {
+            const a = ageGroup(p);
+            if (!a || !f.age.includes(a)) return false;
+          }
+          if (f.marital.length && !f.marital.includes(g.spousesOf(p).length ? "m" : "u")) return false;
+          if (f.surname.length) {
+            const s = surnameChange(p);
+            if (!s || !f.surname.includes(s)) return false;
+          }
+          return true;
+        })
+        .sort(g.byBirth),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [g, perms, ql, status, f, R]
+  );
+
+  return (
+    <>
+      <div className="row" style={{ margin: "0 0 .7rem" }}>
+        <button className={`ghost ${status === "all" ? "on" : ""}`} onClick={() => setStatus("all")}>सबै</button>
+        <button className={`ghost ${status === "live" ? "on" : ""}`} onClick={() => setStatus("live")}>🟢 जीवित</button>
+        <button className={`ghost ${status === "dead" ? "on" : ""}`} onClick={() => setStatus("dead")}>🕊 दिवंगत</button>
+        <PersonSearch id="mq" className="msw memq" value={q} people={visiblePeople} rel={R} placeholder="🔍 सदस्य वा साइनो…" onChange={setQ} onChoose={(id) => pick(id)} />
+      </div>
+
+      <div className="rchips" style={{ margin: ".4rem 0" }}>
+        {FILTER_TABS.map((t) => (
+          <button key={t.k} className={`ghost ${openTab === t.k ? "on" : ""}`} onClick={() => setOpenTab(openTab === t.k ? null : t.k)}>
+            {t.label}{f[t.k].length ? ` (${np(f[t.k].length)})` : ""}
+          </button>
+        ))}
+        {activeCount > 0 && (
+          <button className="bad" onClick={() => setF(EMPTY_F)}>✕ सबै हटाउने</button>
+        )}
+      </div>
+      {openTab && (
+        <div className="rchips" style={{ margin: "0 0 .8rem" }}>
+          {FILTER_TABS.find((t) => t.k === openTab)!.opts.map(([v, l]) => (
+            <button key={v} className={`ghost ${f[openTab].includes(v) ? "on" : ""}`} onClick={() => toggleOpt(openTab, v)}>
+>>>>>>> 5cebe2a77a1f9e7d6df5c8460b267f82e4c7d93d
               {l}
             </button>
           ))}
@@ -335,7 +379,7 @@ export function MemView() {
         {list.length ? (
           list.map((p) => (
             <div key={p.id} className={`mlc ${p.is_living ? "" : "dead"}`} data-id={p.id} onClick={() => pick(p.id)}>
-              <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} /></div>
+              <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} photo={p.photo_url} /></div>
               <div>
                 <b>{dispName(p)}</b>
                 <br />

@@ -9,6 +9,8 @@ import { useVansh } from "./VanshContext";
 import { Sx, personOptions, useSx } from "./ui";
 import { AcctDialog, AvatarsDialog } from "./AdminDialogs";
 import { AnchorDialog } from "./PersonDialogs";
+import ReviewPanel, { reviewCount } from "./ReviewPanel";
+import { reviewIssues } from "@/lib/vansh/review";
 
 function Req({ r, byId }: { r: ChangeRequest; byId: Record<string, VPerson> }) {
   const d = describeRequest(r, byId);
@@ -71,7 +73,7 @@ export function MineView() {
 }
 
 // ---------------- admin ----------------
-type Sec = "req" | "new" | "mem" | "hist";
+type Sec = "req" | "new" | "mem" | "hist" | "rev";
 const REQ_SEL = "*, profiles!change_requests_requested_by_fkey(full_name,email)";
 
 function RoleBoxes({ roles, onChange }: { roles: string[]; onChange: (r: string[]) => void }) {
@@ -175,7 +177,7 @@ export function AdminView() {
   const groups = groupBatches(reqs);
   const okIds = hist.filter((r) => r.status === "approved").map((r) => r.id);
   const cn = (c: string) => (c === "all" ? groups.length : groups.filter((x) => x.items[0].action === c).length);
-  const keys: Sec[] = adm ? ["req", "new", "mem", "hist"] : ["req"];
+  const keys: Sec[] = adm ? ["req", "new", "mem", "rev", "hist"] : ["req"];
   const cur: Sec = keys.includes(sec) ? sec : keys[0];
 
   const approve = async (ids: string[]) => {
@@ -215,10 +217,12 @@ export function AdminView() {
     await refresh();
   };
 
+  const revN = adm ? reviewCount(reviewIssues(g.people)) : 0;
   const sections: Record<Sec, [string, number]> = {
     new: ["🆕 नयाँ सदस्य", pend.length],
     mem: ["🛡 सदस्य भूमिका", mem.length],
     req: ["📨 परिवर्तन अनुरोध", groups.length],
+    rev: ["🧭 सम्बन्ध समीक्षा", revN],
     hist: ["🕘 अनुरोध इतिहास", hist.length],
   };
 
@@ -268,6 +272,8 @@ export function AdminView() {
         </div>
       </>
     );
+  } else if (cur === "rev") {
+    body = <ReviewPanel />;
   } else if (cur === "new") {
     body = <>{pend.map((u) => <UserCard key={u.id} u={u} isNew onSave={saveUser} onAnchor={() => anchorFor(u)} />)}</>;
   } else if (cur === "mem") {
@@ -326,7 +332,7 @@ export function AdminView() {
   }
 
   const [ttl, cnt] = sections[cur];
-  const empty = cnt === 0 && cur !== "hist";
+  const empty = cnt === 0 && cur !== "hist" && cur !== "rev";
   return (
     <div className="adm">
       <div className="adm-main">

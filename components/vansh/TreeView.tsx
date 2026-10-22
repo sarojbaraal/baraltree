@@ -1,19 +1,18 @@
 "use client";
 // Interactive family chart: pan / pinch / wheel zoom, fold / unfold branches, search, downloads.
 // Ported from the original app.js treeView(), draw(), zoom helpers and export hooks.
+import { chartGoto } from "@/lib/vansh/chartGoto";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   CH, CW, GEN, compactCollapsed, computeLayout, initialCollapsed, openUp,
 } from "@/lib/vansh/layout";
-import { exportCSV, exportJPG, exportJSON, exportSVG, exportXLSX, svgText } from "@/lib/vansh/exporters";
-import { diffImport, parseImportRows, readImportFile } from "@/lib/vansh/importer";
 import { dispName, match, np, yr } from "@/lib/vansh/text";
 import { relMap } from "@/lib/vansh/relations";
 import type { VPerson } from "@/lib/vansh/types";
 import { useVansh } from "./VanshContext";
 import { Avatar } from "./ui";
+import PersonSearch from "./PersonSearch";
 import { PersonForm } from "./PersonDialogs";
-import { ImportPreview } from "./AdminDialogs";
 import { qText } from "./ListViews";
 
 // folded branches survive tab switches (like the original's module-level state)
@@ -26,7 +25,7 @@ interface View {
 }
 
 export default function TreeView() {
-  const { db, g, me, people, perms, act, sel, pick, unpick, toast, treeApi, openDialog, closeDialog, reload, myPosId } = useVansh();
+  const { g, me, people, perms, act, sel, pick, unpick, toast, treeApi, openDialog, myPosId } = useVansh();
   const { byId } = g;
   const { can, nm, isAdm } = perms;
 
@@ -51,14 +50,11 @@ export default function TreeView() {
   hlRef.current = hlId;
   const hl = useMemo(() => (hlId ? g.branchOf([hlId]) : null), [g, hlId]);
   const [q, setQ] = useState(qText.tree);
-  const [showHits, setShowHits] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const chartRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const zrRef = useRef<HTMLInputElement>(null);
   const cwRef = useRef<HTMLDivElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
   const V = useRef<View>({ x: 0, y: 0, k: 1 });
   const afterDraw = useRef<(() => void) | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -214,6 +210,11 @@ export default function TreeView() {
   useEffect(() => {
     home();
     goMe(true);
+    if (chartGoto.id && byId[chartGoto.id]) {
+      const id = chartGoto.id;
+      chartGoto.id = null;
+      setTimeout(() => reveal(id), 60);
+    }
     const ch = chartRef.current!;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -224,15 +225,10 @@ export default function TreeView() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         clear();
-        setMenuOpen(false);
       }
-    };
-    const onDown = (e: PointerEvent) => {
-      if (!(e.target as HTMLElement).closest?.("details.menu")) setMenuOpen(false);
     };
     const onFs = () => setTimeout(fit, 120);
     window.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onDown);
     document.addEventListener("fullscreenchange", onFs);
     const zr = zrRef.current!;
     const onZr = () => {
@@ -244,8 +240,7 @@ export default function TreeView() {
     return () => {
       ch.removeEventListener("wheel", onWheel);
       window.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onDown);
-      document.removeEventListener("fullscreenchange", onFs);
+        document.removeEventListener("fullscreenchange", onFs);
       zr.removeEventListener("change", onZr);
       timers.current.forEach(clearTimeout);
     };
@@ -308,7 +303,6 @@ export default function TreeView() {
   };
   const onChartClick = (e: React.MouseEvent) => {
     if (moved.current) return;
-    setShowHits(false);
     const target = e.target as HTMLElement;
     const tg = target.closest(".tg") as HTMLElement | null;
     if (tg) {
@@ -332,12 +326,11 @@ export default function TreeView() {
   // ---------- search ----------
   const ql = q.trim().toLowerCase();
   const kin = useMemo(() => relMap(g, me).R, [g, me]);
-  const matches = ql ? people.filter((p) => can(p.id) && (match(p.name, ql) || (kin[p.id] || "").includes(ql))) : [];
+  const visible = useMemo(() => people.filter((p) => can(p.id)), [people, can]);
   const choose = (id: string) => {
     const name = byId[id]?.name || "";
     qText.tree = name;
     setQ(name);
-    setShowHits(false);
     setCollapsed(openUp(g, collapsed, id));
     afterDraw.current = () => {
       glide(id, 1);
@@ -362,27 +355,6 @@ export default function TreeView() {
       afterDraw.current = home;
     }
   };
-  const svg = () => svgText(layoutRef.current, can, nm);
-  const doImport = async (f: File) => {
-    try {
-      const raw = await readImportFile(f);
-      const parsed = parseImportRows(g, raw);
-      const kept = people.filter((p) => !parsed.rows.some((o) => o.id === p.id)).length;
-      const diff = diffImport(g, parsed.rows);
-      const ok = await new Promise<boolean>((res) =>
-        openDialog(<ImportPreview diff={diff} kept={kept} dateWarn={parsed.dateWarn} onResolve={res} />)
-      );
-      closeDialog();
-      if (!ok) return;
-      const { data, error } = await db.rpc("import_people", { payload: parsed.rows });
-      if (error) throw error;
-      alert(`${data} व्यक्ति आयात भयो।`);
-      await reload();
-    } catch (er) {
-      alert("आयात भएन: " + ((er as Error).message || er));
-    }
-  };
-
   const printBranch = (id: string) => {
     const p = byId[id];
     const stage = stageRef.current;
@@ -401,6 +373,8 @@ export default function TreeView() {
       <body>${sprite}<div class="print-header"><h1>🌳 ${esc(p.name)} को वंशावली शाखा</h1>
       <p>मुद्रित मिति: ${new Date().toLocaleDateString("ne-NP")} | हाम्रो वंशावली</p></div>
       <div id="pstage" style="width:${layoutRef.current.W}px;height:${layoutRef.current.H}px">${stage.innerHTML}</div>
+      <h2 style="margin-top:24px;page-break-before:always">सदस्य विवरण</h2>
+      <table class="ptable" border="1" cellpadding="4" style="border-collapse:collapse;width:100%;font-size:12px"><thead><tr>${["नाम","जन्म (BS)","जन्म स्थान","मृत्यु (BS)","मृत्यु स्थान","शिक्षा","पेशा","विवाह (BS)"].map((h) => `<th style="text-align:left;background:#f4f4f4">${h}</th>`).join("")}</tr></thead><tbody>${[...g.branchOf([id])].map((x) => byId[x]).filter((x) => x && can(x.id) && !x.name_only).sort(g.byBirth).map((x) => `<tr>${[dispName(x), x.birth_bs, x.birth_place, x.is_living ? "" : x.death_bs, x.is_living ? "" : x.death_place, x.education, x.occupation, x.marriage_bs].map((c) => `<td>${esc(String(c || ""))}</td>`).join("")}</tr>`).join("")}</tbody></table>
       <script>window.onload=function(){setTimeout(function(){window.print();window.close()},400)}<\/script></body></html>`);
     w.document.close();
   };
@@ -418,40 +392,19 @@ export default function TreeView() {
   return (
     <div className="chartwrap" id="cw" ref={cwRef}>
       <div className="tools">
-        <div className="qw">
-          <span className="qi">
-            <input
-              id="q"
-              placeholder="🔍 नाम खोज्नुहोस्…"
-              aria-label="खोज"
-              autoComplete="off"
-              value={q}
-              onChange={(e) => {
-                qText.tree = e.target.value;
-                setQ(e.target.value);
-                setShowHits(true);
-              }}
-              onKeyDown={(e) => e.key === "Enter" && matches[0] && choose(matches[0].id)}
-            />
-            <button className="ghost qx" id="qx" hidden={!q} aria-label="खोज मेट्ने" onClick={() => { qText.tree = ""; setQ(""); }}>
-              ✕
-            </button>
-          </span>
-          <span id="qc" className="mut">
-            {ql ? (matches.length ? `${np(matches.length)} मिल्यो` : "भेटिएन") : ""}
-          </span>
-          <div id="qr" className="qr" hidden={!ql || !showHits}>
-            {matches.slice(0, 50).map((p: VPerson) => (
-              <div key={p.id} onClick={() => choose(p.id)}>
-                <b>{dispName(p)}</b>
-                <small>
-                  {[p.father_id && byId[p.father_id] && "बुबा: " + byId[p.father_id].name, yr(p.birth_bs)].filter(Boolean).join(" · ")}
-                </small>
-              </div>
-            ))}
-            {!matches.length && <div className="none">कोही भेटिएन</div>}
-          </div>
-        </div>
+        <PersonSearch
+          id="q"
+          value={q}
+          people={visible}
+          rel={kin}
+          placeholder="🔍 नाम वा साइनो खोज्नुहोस्…"
+          onChange={(t) => {
+            qText.tree = t;
+            setQ(t);
+          }}
+          onChoose={choose}
+          summary={(n) => <span id="qc" className="mut">{n ? `${np(n)} मिल्यो` : "भेटिएन"}</span>}
+        />
         <button className="ghost" aria-label="सानो" onClick={() => mid(0.9)}>−</button>
         <input type="number" id="zr" ref={zrRef} min={2} max={250} step={5} inputMode="numeric" aria-label="जुम प्रतिशत" title="जुम % लेखेर Enter थिच्नुहोस्" />
         <span className="mut">%</span>
@@ -467,36 +420,6 @@ export default function TreeView() {
           सबै शाखा खोल्ने
         </button>
         <button className="ghost" title="शाखा बन्द गर्ने" onClick={compact}>संक्षिप्त</button>
-        <details className="menu" open={menuOpen} onToggle={(e) => setMenuOpen((e.currentTarget as HTMLDetailsElement).open)}>
-          <summary>{isAdm ? "⇩ डाउनलोड" : "⇩ बंशावली डाउनलोड"}</summary>
-          <div onClick={() => setMenuOpen(false)}>
-            {isAdm && (
-              <>
-                <button className="ghost" onClick={() => exportXLSX(g).catch((e) => alert(e.message))}>📊 Excel (.xlsx)</button>
-                <button className="ghost" onClick={() => exportCSV(g)}>📄 CSV</button>
-                <button className="ghost" onClick={() => exportJSON(people)}>💾 JSON (ब्याकअप)</button>
-              </>
-            )}
-            <button className="ghost" onClick={() => exportSVG(svg())}>🖼 फोटो (HD) (SVG)</button>
-            <button className="ghost" onClick={() => exportJPG(svg(), layout.W, layout.H).catch((e) => alert(e.message))}>📷 फोटो (SD) (JPG)</button>
-            {isAdm && (
-              <>
-                <button className="ghost" onClick={() => fileRef.current?.click()}>📥 अपलोड गर्नुहोस्</button>
-                <input
-                  type="file"
-                  ref={fileRef}
-                  accept=".xlsx,.xls,.csv,.json"
-                  hidden
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) doImport(f);
-                    e.target.value = "";
-                  }}
-                />
-              </>
-            )}
-          </div>
-        </details>
       </div>
       <div id="chart" ref={chartRef} onPointerDown={onChartDown} onClick={onChartClick} onKeyDown={(e) => {
         const id = (e.target as HTMLElement).dataset?.id;
@@ -518,7 +441,7 @@ export default function TreeView() {
                 data-id={p.id}
                 style={{ left: x, top: y, width: CW, height: CH, ["--gc" as string]: GEN[d % GEN.length] }}
               >
-                <div className="av">{ok ? <Avatar g={p.gender} /> : "🔒"}</div>
+                <div className="av">{ok ? <Avatar g={p.gender} photo={p.photo_url} /> : "🔒"}</div>
                 <div className="tx">
                   <small className="gn"><i className={`st ${p.is_living ? "live" : "gone"}`} title={p.is_living ? "जीवित" : "दिवंगत"} /> Gen {d + 1}</small>
                   <b>{ok ? dispName(p, true) : nm(p)}</b>

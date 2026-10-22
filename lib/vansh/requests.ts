@@ -43,7 +43,10 @@ export function buildPersonPayload(inp: FormInput, fbOkFn: (u: string) => boolea
     const r = wifeNames(String(cur.spouse_name), "", "", surnameOf(String(cur.name)));
     if (r) cur.spouse_name = r.name;
   }
-  if (cur.is_living) cur.death_bs = "";
+  if (cur.is_living) {
+    cur.death_bs = "";
+    cur.death_place = "";
+  }
   if (cur.gender !== "F") {
     cur.maiden_name = "";
     cur.married_name = "";
@@ -54,7 +57,7 @@ export function buildPersonPayload(inp: FormInput, fbOkFn: (u: string) => boolea
     cur.spouse_id = p?.spouse_id || "";
     cur.spouse_name = "";
   }
-  for (const k of ["birth_bs", "death_bs"]) {
+  for (const k of ["birth_bs", "death_bs", "marriage_bs"]) {
     // Dates already stored in another shape (e.g. year only) are accepted until the user edits them.
     const unchanged = !!p && String(cur[k]) === String((p as unknown as Record<string, unknown>)[k] ?? "");
     if (cur[k] && !unchanged && !DATE_RE.test(String(cur[k]))) return { error: "मिति YYYY-MM-DD ढाँचामा हुनुपर्छ (साल ४ अंक)।" };

@@ -6,11 +6,12 @@ import { yr } from "./text";
 
 export const PF = [
   "id", "name", "gender", "father_id", "mother_id", "spouse_id", "more_spouse_ids", "is_living", "birth_bs", "death_bs",
-  "phone", "address", "notes", "maiden_name", "married_name", "birth_place", "email", "facebook",
+  "phone", "address", "notes", "maiden_name", "married_name", "birth_place", "email", "facebook", "death_place", "education", "occupation", "marriage_bs",
 ] as const;
 
 export const SHEET_COLS = [
   "id", "name", "gender", "father", "mother", "spouse", "is_living", "birth_bs", "death_bs", "phone", "address", "notes",
+  "death_place", "education", "occupation", "marriage_bs",
 ] as const;
 export type SheetRow = Record<(typeof SHEET_COLS)[number], string>;
 
@@ -47,6 +48,10 @@ export function sheetRows(g: Graph): SheetRow[] {
     phone: p.phone || "",
     address: p.address || "",
     notes: p.notes || "",
+    death_place: p.death_place || "",
+    education: p.education || "",
+    occupation: p.occupation || "",
+    marriage_bs: p.marriage_bs || "",
   }));
 }
 
