@@ -8,6 +8,7 @@ import type { VPerson } from "@/lib/vansh/types";
 import { useVansh } from "./VanshContext";
 import { Avatar, KidCount } from "./ui";
 import { AnchorDialog, PersonForm } from "./PersonDialogs";
+import DownloadMenu from "./DownloadMenu";
 
 // search text survives tab switches, like the original
 export const qText = { tree: "", fam: "" };
@@ -111,6 +112,7 @@ export function FamView() {
           )}
           <button className="ghost" onClick={() => openDialog(<AnchorDialog />)}>🧭 नाता सन्दर्भ</button>
           {isStaff && <button className="ghost" onClick={() => setTab("ov")}>📊 Family Overview</button>}
+          <DownloadMenu />
         </div>
       </section>
       <div className="stickybar">

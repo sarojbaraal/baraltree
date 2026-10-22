@@ -671,3 +671,9 @@ dialog::backdrop { background: rgba(4, 7, 22, .42); backdrop-filter: blur(3px); 
 .kpath li.kp-end { background: color-mix(in srgb, var(--cy) 18%, transparent); border: 1px solid var(--cy); }
 .kp-sum { margin: .2rem 1.1rem .6rem; font-size: .85rem; color: var(--ink-2); }
 .kp-sum b { color: var(--cy); }
+
+/* ---------- phase 5: single-box BS date ---------- */
+.dtr1 { display: flex; flex-direction: column; gap: .25rem; }
+.dtr1 .dsingle { font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+.dtr1 .dsingle[aria-invalid="true"] { border-color: var(--bad, #ef4444); }
+.dterr { color: var(--bad, #ef4444); }

@@ -6,15 +6,12 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import {
   CH, CW, GEN, compactCollapsed, computeLayout, initialCollapsed, openUp,
 } from "@/lib/vansh/layout";
-import { exportCSV, exportJPG, exportJSON, exportSVG, exportXLSX, svgText } from "@/lib/vansh/exporters";
-import { diffImport, parseImportRows, readImportFile } from "@/lib/vansh/importer";
 import { dispName, match, np, yr } from "@/lib/vansh/text";
 import { relMap } from "@/lib/vansh/relations";
 import type { VPerson } from "@/lib/vansh/types";
 import { useVansh } from "./VanshContext";
 import { Avatar } from "./ui";
 import { PersonForm } from "./PersonDialogs";
-import { ImportPreview } from "./AdminDialogs";
 import { qText } from "./ListViews";
 
 // folded branches survive tab switches (like the original's module-level state)
@@ -27,7 +24,7 @@ interface View {
 }
 
 export default function TreeView() {
-  const { db, g, me, people, perms, act, sel, pick, unpick, toast, treeApi, openDialog, closeDialog, reload, myPosId } = useVansh();
+  const { g, me, people, perms, act, sel, pick, unpick, toast, treeApi, openDialog, myPosId } = useVansh();
   const { byId } = g;
   const { can, nm, isAdm } = perms;
 
@@ -53,13 +50,11 @@ export default function TreeView() {
   const hl = useMemo(() => (hlId ? g.branchOf([hlId]) : null), [g, hlId]);
   const [q, setQ] = useState(qText.tree);
   const [showHits, setShowHits] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const chartRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const zrRef = useRef<HTMLInputElement>(null);
   const cwRef = useRef<HTMLDivElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
   const V = useRef<View>({ x: 0, y: 0, k: 1 });
   const afterDraw = useRef<(() => void) | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -230,15 +225,10 @@ export default function TreeView() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         clear();
-        setMenuOpen(false);
       }
-    };
-    const onDown = (e: PointerEvent) => {
-      if (!(e.target as HTMLElement).closest?.("details.menu")) setMenuOpen(false);
     };
     const onFs = () => setTimeout(fit, 120);
     window.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onDown);
     document.addEventListener("fullscreenchange", onFs);
     const zr = zrRef.current!;
     const onZr = () => {
@@ -250,8 +240,7 @@ export default function TreeView() {
     return () => {
       ch.removeEventListener("wheel", onWheel);
       window.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onDown);
-      document.removeEventListener("fullscreenchange", onFs);
+        document.removeEventListener("fullscreenchange", onFs);
       zr.removeEventListener("change", onZr);
       timers.current.forEach(clearTimeout);
     };
@@ -368,27 +357,6 @@ export default function TreeView() {
       afterDraw.current = home;
     }
   };
-  const svg = () => svgText(layoutRef.current, can, nm);
-  const doImport = async (f: File) => {
-    try {
-      const raw = await readImportFile(f);
-      const parsed = parseImportRows(g, raw);
-      const kept = people.filter((p) => !parsed.rows.some((o) => o.id === p.id)).length;
-      const diff = diffImport(g, parsed.rows);
-      const ok = await new Promise<boolean>((res) =>
-        openDialog(<ImportPreview diff={diff} kept={kept} dateWarn={parsed.dateWarn} onResolve={res} />)
-      );
-      closeDialog();
-      if (!ok) return;
-      const { data, error } = await db.rpc("import_people", { payload: parsed.rows });
-      if (error) throw error;
-      alert(`${data} व्यक्ति आयात भयो।`);
-      await reload();
-    } catch (er) {
-      alert("आयात भएन: " + ((er as Error).message || er));
-    }
-  };
-
   const printBranch = (id: string) => {
     const p = byId[id];
     const stage = stageRef.current;
@@ -473,36 +441,6 @@ export default function TreeView() {
           सबै शाखा खोल्ने
         </button>
         <button className="ghost" title="शाखा बन्द गर्ने" onClick={compact}>संक्षिप्त</button>
-        <details className="menu" open={menuOpen} onToggle={(e) => setMenuOpen((e.currentTarget as HTMLDetailsElement).open)}>
-          <summary>{isAdm ? "⇩ डाउनलोड" : "⇩ बंशावली डाउनलोड"}</summary>
-          <div onClick={() => setMenuOpen(false)}>
-            {isAdm && (
-              <>
-                <button className="ghost" onClick={() => exportXLSX(g).catch((e) => alert(e.message))}>📊 Excel (.xlsx)</button>
-                <button className="ghost" onClick={() => exportCSV(g)}>📄 CSV</button>
-                <button className="ghost" onClick={() => exportJSON(people)}>💾 JSON (ब्याकअप)</button>
-              </>
-            )}
-            <button className="ghost" onClick={() => exportSVG(svg())}>🖼 फोटो (HD) (SVG)</button>
-            <button className="ghost" onClick={() => exportJPG(svg(), layout.W, layout.H).catch((e) => alert(e.message))}>📷 फोटो (SD) (JPG)</button>
-            {isAdm && (
-              <>
-                <button className="ghost" onClick={() => fileRef.current?.click()}>📥 अपलोड गर्नुहोस्</button>
-                <input
-                  type="file"
-                  ref={fileRef}
-                  accept=".xlsx,.xls,.csv,.json"
-                  hidden
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) doImport(f);
-                    e.target.value = "";
-                  }}
-                />
-              </>
-            )}
-          </div>
-        </details>
       </div>
       <div id="chart" ref={chartRef} onPointerDown={onChartDown} onClick={onChartClick} onKeyDown={(e) => {
         const id = (e.target as HTMLElement).dataset?.id;
