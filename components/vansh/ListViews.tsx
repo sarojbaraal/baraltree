@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { famGroups, relMap } from "@/lib/vansh/relations";
 import { ROLE_L } from "@/lib/vansh/graph";
-import { dispName, match, np, yr } from "@/lib/vansh/text";
+import { ageN, dispName, match, np, surnameOf, yr } from "@/lib/vansh/text";  
 import type { VPerson } from "@/lib/vansh/types";
 import { useVansh } from "./VanshContext";
 import { Avatar, KidCount } from "./ui";
@@ -199,17 +199,113 @@ export function FamView() {
 }
 
 export function MemView() {
+  // ---------------- सदस्य tab ----------------
+type FKey = "gender" | "age" | "marital" | "surname";
+type Status = "live" | "dead" | "all";
+
+const FILTER_TABS: { k: FKey; label: string; opts: [string, string][] }[] = [
+  { k: "gender", label: "लिङ्ग", opts: [["F", "महिला"], ["M", "पुरुष"]] },
+  { k: "age", label: "उमेर समूह", opts: [["0", "०–२०"], ["20", "२०–४०"], ["40", "४०–६०"], ["60", "६०–८०"], ["80", "८०+"]] },
+  { k: "marital", label: "वैवाहिक अवस्था", opts: [["m", "विवाहित"], ["u", "अविवाहित"]] },
+  { k: "surname", label: "थर परिवर्तन", opts: [["b2o", "बरालबाट अन्य"], ["o2b", "अन्यबाट बराल"]] },
+];
+const BARAL = "बराल";
+const EMPTY_F: Record<FKey, string[]> = { gender: [], age: [], marital: [], surname: [] };
+
+export function MemView() {
   const { g, perms, pick } = useVansh();
   const [q, setQ] = useState("");
+  const [status, setStatus] = useState<Status>("live");
+  const [openTab, setOpenTab] = useState<FKey | null>(null);
+  const [f, setF] = useState<Record<FKey, string[]>>(EMPTY_F);
+
+  const toggleOpt = (k: FKey, v: string) =>
+    setF((cur) => ({ ...cur, [k]: cur[k].includes(v) ? cur[k].filter((x) => x !== v) : [...cur[k], v] }));
+  const activeCount = Object.values(f).reduce((a, l) => a + l.length, 0);
+
+  const ageGroup = (p: VPerson): string | null => {
+    if (!p.is_living && !p.death_bs) return null;
+    const a = ageN(p.birth_bs, p.is_living ? "" : p.death_bs);
+    return a == null ? null : String(Math.min(80, Math.floor(a / 20) * 20));
+  };
+  /** b2o = बरालबाट अन्य, o2b = अन्यबाट बराल (विवाहपछि थर बदलिएका महिला मात्र) */
+  const surnameChange = (p: VPerson): string | null => {
+    if (p.gender !== "F") return null;
+    const sp = g.spousesOf(p)[0];
+    const maiden = p.maiden_name || surnameOf(p.father_id ? g.byId[p.father_id]?.name : "");
+    const married = p.married_name || (sp ? surnameOf(g.byId[sp]?.name) : "");
+    if (!maiden || !married || maiden === married) return null;
+    if (maiden === BARAL) return "b2o";
+    if (married === BARAL) return "o2b";
+    return null;
+  };
+
   const ql = q.trim().toLowerCase();
-  const list = g.people.filter((p) => perms.can(p.id) && (!ql || match(p.name, ql))).sort(g.byBirth);
+  const list = useMemo(
+    () =>
+      g.people
+        .filter((p) => {
+          if (!perms.can(p.id)) return false;
+          if (ql && !match(p.name, ql)) return false;
+          if (status === "live" && !p.is_living) return false;
+          if (status === "dead" && p.is_living) return false;
+          if (f.gender.length && !f.gender.includes(p.gender || "")) return false;
+          if (f.age.length) {
+            const a = ageGroup(p);
+            if (!a || !f.age.includes(a)) return false;
+          }
+          if (f.marital.length && !f.marital.includes(g.spousesOf(p).length ? "m" : "u")) return false;
+          if (f.surname.length) {
+            const s = surnameChange(p);
+            if (!s || !f.surname.includes(s)) return false;
+          }
+          return true;
+        })
+        .sort(g.byBirth),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [g, perms, ql, status, f]
+  );
+
   return (
     <>
-      <input className="msearch" placeholder="🔍 सदस्य खोज्नुहोस्…" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="row" style={{ margin: "0 0 .7rem" }}>
+        <button className={`ghost ${status === "all" ? "on" : ""}`} onClick={() => setStatus("all")}>सबै</button>
+        <button className={`ghost ${status === "live" ? "on" : ""}`} onClick={() => setStatus("live")}>🟢 जीवित</button>
+        <button className={`ghost ${status === "dead" ? "on" : ""}`} onClick={() => setStatus("dead")}>🕊 दिवंगत</button>
+        <input
+          className="msearch"
+          style={{ width: 170, marginBottom: 0, marginLeft: "auto", padding: ".4rem .7rem", fontSize: ".85rem" }}
+          placeholder="🔍 खोज…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+      </div>
+
+      <div className="rchips" style={{ margin: ".4rem 0" }}>
+        {FILTER_TABS.map((t) => (
+          <button key={t.k} className={`ghost ${openTab === t.k ? "on" : ""}`} onClick={() => setOpenTab(openTab === t.k ? null : t.k)}>
+            {t.label}{f[t.k].length ? ` (${np(f[t.k].length)})` : ""}
+          </button>
+        ))}
+        {activeCount > 0 && (
+          <button className="bad" onClick={() => setF(EMPTY_F)}>✕ सबै हटाउने</button>
+        )}
+      </div>
+      {openTab && (
+        <div className="rchips" style={{ margin: "0 0 .8rem" }}>
+          {FILTER_TABS.find((t) => t.k === openTab)!.opts.map(([v, l]) => (
+            <button key={v} className={`ghost ${f[openTab].includes(v) ? "on" : ""}`} onClick={() => toggleOpt(openTab, v)}>
+              {l}
+            </button>
+          ))}
+        </div>
+      )}
+      <p className="mut" style={{ margin: "0 0 .6rem" }}>{np(list.length)} सदस्य</p>
+
       <div className="mgrid" id="mg">
         {list.length ? (
           list.map((p) => (
-            <div key={p.id} className="mlc" data-id={p.id} onClick={() => pick(p.id)}>
+            <div key={p.id} className={`mlc ${p.is_living ? "" : "dead"}`} data-id={p.id} onClick={() => pick(p.id)}>
               <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} /></div>
               <div>
                 <b>{dispName(p)}</b>
@@ -226,4 +322,5 @@ export function MemView() {
       </div>
     </>
   );
+}
 }
