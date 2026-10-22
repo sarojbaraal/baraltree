@@ -2,7 +2,7 @@
 // "परिवार" (family) and "सदस्य" (members) tabs — ported from the original app.js famView / memView.
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { famGroups, relMap } from "@/lib/vansh/relations";
-import { ROLE_L } from "@/lib/vansh/graph";
+import { ROLE_L, type Graph } from "@/lib/vansh/graph";
 import { ageN, dispName, match, np, surnameOf, yr } from "@/lib/vansh/text";  
 import type { VPerson } from "@/lib/vansh/types";
 import { useVansh } from "./VanshContext";
@@ -198,107 +198,138 @@ export function FamView() {
   );
 }
 
+// ---------------- सदस्य tab ----------------
 type FKey = "gender" | "age" | "marital" | "surname";
 type Status = "live" | "dead" | "all";
 
-const FILTER_TABS: { k: FKey; label: string; opts: [string, string][] }[] = [
-  { k: "gender", label: "लिङ्ग", opts: [["F", "महिला"], ["M", "पुरुष"]] },
-  { k: "age", label: "उमेर समूह", opts: [["0", "०–२०"], ["20", "२०–४०"], ["40", "४०–६०"], ["60", "६०–८०"], ["80", "८०+"]] },
-  { k: "marital", label: "वैवाहिक अवस्था", opts: [["m", "विवाहित"], ["u", "अविवाहित"]] },
-  { k: "surname", label: "थर परिवर्तन", opts: [["b2o", "बरालबाट अन्य"], ["o2b", "अन्यबाट बराल"]] },
+const KEYS: FKey[] = ["gender", "age", "marital", "surname"];
+const TABS: { k: FKey; label: string; opts: [string, string][] }[] = [
+  { k: "gender", label: "लिङ्ग", opts: [["F", "👩 महिला"], ["M", "👨 पुरुष"]] },
+  { k: "age", label: "उमेर", opts: [["0", "०–२०"], ["20", "२०–४०"], ["40", "४०–६०"], ["60", "६०–८०"], ["80", "८०+"]] },
+  { k: "marital", label: "वैवाहिक", opts: [["m", "विवाहित"], ["u", "अविवाहित"]] },
+  { k: "surname", label: "थर", opts: [["b2o", "बराल → अन्य"], ["o2b", "अन्य → बराल"]] },
 ];
+const STATUS: [Status, string][] = [["all", "सबै"], ["live", "🟢 जीवित"], ["dead", "🕊 दिवंगत"]];
 const BARAL = "बराल";
 const EMPTY_F: Record<FKey, string[]> = { gender: [], age: [], marital: [], surname: [] };
 
+const ageGroupOf = (p: VPerson): string | null => {
+  if (!p.is_living && !p.death_bs) return null;
+  const a = ageN(p.birth_bs, p.is_living ? "" : p.death_bs);
+  return a == null ? null : String(Math.min(80, Math.floor(a / 20) * 20));
+};
+/** b2o = बरालबाट अन्य, o2b = अन्यबाट बराल (विवाहपछि थर बदलिएका महिला मात्र) */
+const surnameChangeOf = (g: Graph, p: VPerson): string | null => {
+  if (p.gender !== "F") return null;
+  const sp = g.spousesOf(p)[0];
+  const maiden = p.maiden_name || surnameOf(p.father_id ? g.byId[p.father_id]?.name : "");
+  const married = p.married_name || (sp ? surnameOf(g.byId[sp]?.name) : "");
+  if (!maiden || !married || maiden === married) return null;
+  if (maiden === BARAL) return "b2o";
+  if (married === BARAL) return "o2b";
+  return null;
+};
+const valueOf = (g: Graph, p: VPerson, k: FKey): string | null =>
+  k === "gender" ? p.gender || null : k === "age" ? ageGroupOf(p) : k === "marital" ? (g.spousesOf(p).length ? "m" : "u") : surnameChangeOf(g, p);
+
 export function MemView() {
   const { g, perms, pick } = useVansh();
-  const [q, setQ] = useState("");
   const [status, setStatus] = useState<Status>("live");
-  const [openTab, setOpenTab] = useState<FKey | null>(null);
+  const [tab, setTab] = useState<FKey>("gender");
+  const [open, setOpen] = useState(true);
   const [f, setF] = useState<Record<FKey, string[]>>(EMPTY_F);
 
-  const toggleOpt = (k: FKey, v: string) =>
+  const toggle = (k: FKey, v: string) =>
     setF((cur) => ({ ...cur, [k]: cur[k].includes(v) ? cur[k].filter((x) => x !== v) : [...cur[k], v] }));
-  const activeCount = Object.values(f).reduce((a, l) => a + l.length, 0);
+  const total = KEYS.reduce((a, k) => a + f[k].length, 0);
 
-  const ageGroup = (p: VPerson): string | null => {
-    if (!p.is_living && !p.death_bs) return null;
-    const a = ageN(p.birth_bs, p.is_living ? "" : p.death_bs);
-    return a == null ? null : String(Math.min(80, Math.floor(a / 20) * 20));
-  };
-  /** b2o = बरालबाट अन्य, o2b = अन्यबाट बराल (विवाहपछि थर बदलिएका महिला मात्र) */
-  const surnameChange = (p: VPerson): string | null => {
-    if (p.gender !== "F") return null;
-    const sp = g.spousesOf(p)[0];
-    const maiden = p.maiden_name || surnameOf(p.father_id ? g.byId[p.father_id]?.name : "");
-    const married = p.married_name || (sp ? surnameOf(g.byId[sp]?.name) : "");
-    if (!maiden || !married || maiden === married) return null;
-    if (maiden === BARAL) return "b2o";
-    if (married === BARAL) return "o2b";
-    return null;
-  };
+  const { list, counts } = useMemo(() => {
+    const base = g.people.filter((p) => perms.can(p.id) && (status === "all" || (status === "live") === p.is_living));
+    // एउटै tab भित्र OR, फरक tab बीच AND. `skip` = त्यो tab को आफ्नै छनोट नगनिने (badge को सङ्ख्याका लागि)
+    const ok = (p: VPerson, skip?: FKey) =>
+      KEYS.every((k) => {
+        if (k === skip || !f[k].length) return true;
+        const v = valueOf(g, p, k);
+        return !!v && f[k].includes(v);
+      });
+    const list = base.filter((p) => ok(p)).sort(g.byBirth);
+    const counts: Record<string, number> = {};
+    TABS.forEach((t) => {
+      const pool = base.filter((p) => ok(p, t.k));
+      t.opts.forEach(([v]) => (counts[`${t.k}:${v}`] = pool.filter((p) => valueOf(g, p, t.k) === v).length));
+    });
+    return { list, counts };
+  }, [g, perms, status, f]);
 
-  const ql = q.trim().toLowerCase();
-  const list = useMemo(
-    () =>
-      g.people
-        .filter((p) => {
-          if (!perms.can(p.id)) return false;
-          if (ql && !match(p.name, ql)) return false;
-          if (status === "live" && !p.is_living) return false;
-          if (status === "dead" && p.is_living) return false;
-          if (f.gender.length && !f.gender.includes(p.gender || "")) return false;
-          if (f.age.length) {
-            const a = ageGroup(p);
-            if (!a || !f.age.includes(a)) return false;
-          }
-          if (f.marital.length && !f.marital.includes(g.spousesOf(p).length ? "m" : "u")) return false;
-          if (f.surname.length) {
-            const s = surnameChange(p);
-            if (!s || !f.surname.includes(s)) return false;
-          }
-          return true;
-        })
-        .sort(g.byBirth),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [g, perms, ql, status, f]
-  );
+  const cur = TABS.find((t) => t.k === tab)!;
+  const big = tab !== "age";
 
   return (
     <>
-      <div className="row" style={{ margin: "0 0 .7rem" }}>
-        <button className={`ghost ${status === "all" ? "on" : ""}`} onClick={() => setStatus("all")}>सबै</button>
-        <button className={`ghost ${status === "live" ? "on" : ""}`} onClick={() => setStatus("live")}>🟢 जीवित</button>
-        <button className={`ghost ${status === "dead" ? "on" : ""}`} onClick={() => setStatus("dead")}>🕊 दिवंगत</button>
-        <input
-          className="msearch"
-          style={{ width: 170, marginBottom: 0, marginLeft: "auto", padding: ".4rem .7rem", fontSize: ".85rem" }}
-          placeholder="🔍 खोज…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-      </div>
-
-      <div className="rchips" style={{ margin: ".4rem 0" }}>
-        {FILTER_TABS.map((t) => (
-          <button key={t.k} className={`ghost ${openTab === t.k ? "on" : ""}`} onClick={() => setOpenTab(openTab === t.k ? null : t.k)}>
-            {t.label}{f[t.k].length ? ` (${np(f[t.k].length)})` : ""}
-          </button>
-        ))}
-        {activeCount > 0 && (
-          <button className="bad" onClick={() => setF(EMPTY_F)}>✕ सबै हटाउने</button>
-        )}
-      </div>
-      {openTab && (
-        <div className="rchips" style={{ margin: "0 0 .8rem" }}>
-          {FILTER_TABS.find((t) => t.k === openTab)!.opts.map(([v, l]) => (
-            <button key={v} className={`ghost ${f[openTab].includes(v) ? "on" : ""}`} onClick={() => toggleOpt(openTab, v)}>
+      <section className="mf">
+        {/* १. जीवित / दिवंगत segmented control */}
+        <div className="mf-seg" role="tablist" aria-label="अवस्था">
+          <span className="mf-ind" style={{ transform: `translateX(${STATUS.findIndex(([s]) => s === status) * 100}%)` }} />
+          {STATUS.map(([s, l]) => (
+            <button key={s} role="tab" aria-selected={status === s} className={status === s ? "on" : ""} onClick={() => setStatus(s)}>
               {l}
             </button>
           ))}
         </div>
-      )}
-      <p className="mut" style={{ margin: "0 0 .6rem" }}>{np(list.length)} सदस्य</p>
+
+        {/* फिल्टर खोल्ने / बन्द गर्ने */}
+        <div className="mf-head">
+          <button className="mf-fold" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+            ⚙ फिल्टर {total > 0 && <em>{np(total)}</em>}
+            <i className={open ? "up" : ""} />
+          </button>
+          {total > 0 && (
+            <button className="mf-clear" onClick={() => setF(EMPTY_F)}>सबै फिल्टर हटाउनुहोस्</button>
+          )}
+        </div>
+
+        <div className={`mf-body ${open ? "" : "shut"}`}>
+          <div>
+            {/* २. tab */}
+            <div className="mf-tabs" role="tablist">
+              {TABS.map((t) => (
+                <button key={t.k} role="tab" aria-selected={tab === t.k} className={tab === t.k ? "on" : ""} onClick={() => setTab(t.k)}>
+                  {t.label}
+                  {f[t.k].length > 0 && <em>{np(f[t.k].length)}</em>}
+                </button>
+              ))}
+            </div>
+
+            {/* ३. विकल्प */}
+            <div className={big ? "mf-grid" : "mf-scroll"}>
+              {cur.opts.map(([v, l]) => {
+                const on = f[tab].includes(v);
+                return (
+                  <button key={v} className={`mf-opt ${big ? "big" : "pill"} ${on ? "on" : ""}`} aria-pressed={on} onClick={() => toggle(tab, v)}>
+                    {l}
+                    <em>{np(counts[`${tab}:${v}`] ?? 0)}</em>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* चयन गरिएका फिल्टरका removable chip */}
+            {total > 0 && (
+              <div className="mf-chips">
+                {TABS.flatMap((t) =>
+                  f[t.k].map((v) => (
+                    <button key={t.k + v} className="mf-chip" onClick={() => toggle(t.k, v)} aria-label="हटाउनुहोस्">
+                      {t.opts.find(([x]) => x === v)?.[1]} ✕
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <p className="mf-count"><b>{np(list.length)}</b> सदस्यहरू देखाइएको</p>
+      </section>
 
       <div className="mgrid" id="mg">
         {list.length ? (
@@ -315,7 +346,11 @@ export function MemView() {
             </div>
           ))
         ) : (
-          <div className="card">कोही भेटिएन।</div>
+          <div className="card mf-empty">
+            <b>कुनै सदस्य भेटिएन</b>
+            <p className="mut">फिल्टर हटाएर पुनः प्रयास गर्नुहोस्।</p>
+            {total > 0 && <button onClick={() => setF(EMPTY_F)}>सबै फिल्टर हटाउनुहोस्</button>}
+          </div>
         )}
       </div>
     </>
