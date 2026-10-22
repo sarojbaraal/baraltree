@@ -198,8 +198,6 @@ export function FamView() {
   );
 }
 
-export function MemView() {
-  // ---------------- सदस्य tab ----------------
 type FKey = "gender" | "age" | "marital" | "surname";
 type Status = "live" | "dead" | "all";
 
@@ -322,5 +320,4 @@ export function MemView() {
       </div>
     </>
   );
-}
 }
