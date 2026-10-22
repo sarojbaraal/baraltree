@@ -657,3 +657,17 @@ dialog::backdrop { background: rgba(4, 7, 22, .42); backdrop-filter: blur(3px); 
 .pc-ring { position: absolute; inset: 0; pointer-events: none; border-radius: 50%; box-shadow: 0 0 0 999px rgba(0,0,0,.5); outline: 2px solid rgba(255,255,255,.85); outline-offset: -1px; }
 .pc-box input[type=range] { width: 100%; padding: 0; }
 .pc-err { color: var(--bad, #ef4444); font-size: .85rem; line-height: 1.4; }
+
+/* ---------- phase 4: chart button + kinship path ---------- */
+.chartbtn { display: block; width: calc(100% - 2.2rem); margin: 0 1.1rem .75rem; padding: .7rem 1rem; font-weight: 700; font-size: 1rem; }
+.kpath { list-style: none; margin: 0 1.1rem .4rem; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .2rem; }
+.kpath li { display: inline-flex; flex-direction: column; padding: .3rem .6rem; border-radius: 12px; background: var(--surface); border: 1px dashed var(--line-2); line-height: 1.25; }
+.kpath li + li::before { content: "→"; position: relative; margin: 0 .3rem 0 -.1rem; color: var(--cy); align-self: center; }
+.kpath li { position: relative; }
+.kpath li:not(:first-child) { margin-left: .9rem; }
+.kpath li:not(:first-child)::before { position: absolute; left: -1rem; top: 50%; transform: translateY(-50%); margin: 0; }
+.kp-rel { font-size: .72rem; color: var(--ink-2); }
+.kp-name { font-weight: 600; font-size: .88rem; color: var(--ink); }
+.kpath li.kp-end { background: color-mix(in srgb, var(--cy) 18%, transparent); border: 1px solid var(--cy); }
+.kp-sum { margin: .2rem 1.1rem .6rem; font-size: .85rem; color: var(--ink-2); }
+.kp-sum b { color: var(--cy); }

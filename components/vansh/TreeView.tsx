@@ -1,6 +1,7 @@
 "use client";
 // Interactive family chart: pan / pinch / wheel zoom, fold / unfold branches, search, downloads.
 // Ported from the original app.js treeView(), draw(), zoom helpers and export hooks.
+import { chartGoto } from "@/lib/vansh/chartGoto";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   CH, CW, GEN, compactCollapsed, computeLayout, initialCollapsed, openUp,
@@ -214,6 +215,11 @@ export default function TreeView() {
   useEffect(() => {
     home();
     goMe(true);
+    if (chartGoto.id && byId[chartGoto.id]) {
+      const id = chartGoto.id;
+      chartGoto.id = null;
+      setTimeout(() => reveal(id), 60);
+    }
     const ch = chartRef.current!;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();

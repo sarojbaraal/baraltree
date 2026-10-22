@@ -508,3 +508,32 @@ export function unresolvedCohorts(g: Pick<Graph, "people">): { parent: VPerson |
   });
   return out;
 }
+
+// ---------------------------------------------------------------- path display
+
+export interface KinHop {
+  person: VPerson;
+  /** How this person relates to the previous one in the chain ("" for the first). */
+  step: Step | "";
+}
+const STEP_WORD: Record<Step, string> = { f: "बुबा", m: "आमा", s: "छोरा", d: "छोरी", h: "पति", w: "पत्नी" };
+export const stepWord = (s: Step) => STEP_WORD[s];
+
+/** The chain of people from the signed-in user to `targetId` (e.g. तपाईं → बुबा → बुबा → काका), plus the final term. */
+export function kinChain(
+  people: VPerson[],
+  me: (Pick<VProfile, "position_person_id" | "position_parent_id"> & { custom_anchor?: CustomAnchor | null }) | null,
+  targetId: string
+): { chain: KinHop[]; term: string | null } | null {
+  if (!me) return null;
+  const { people: list, anchorId } = withAnchor(people, me);
+  if (!anchorId) return null;
+  const net = buildNet(list);
+  const r = search(net, anchorId)[targetId];
+  if (!r) return null;
+  const steps = r.path.split("") as Step[];
+  const chain: KinHop[] = r.nodes.map((id, i) => ({ person: net.byId[id], step: i === 0 ? "" : steps[i - 1] }));
+  const sc: SpouseCount = (p) => net.spouses[p.id]?.length || 0;
+  const term = r.path === "" ? "तपाईं" : termForPath(r.path, r.nodes.map((n) => net.byId[n]), sc);
+  return { chain, term };
+}
