@@ -218,12 +218,8 @@ const valueOf = (g: Graph, p: VPerson, k: FKey): string | null =>
   k === "gender" ? p.gender || null : k === "age" ? ageGroupOf(p) : k === "marital" ? (g.spousesOf(p).length ? "m" : "u") : surnameChangeOf(g, p);
 
 export function MemView() {
-<<<<<<< HEAD
-  const { g, perms, pick } = useVansh();
-=======
   const { g, me, perms, pick } = useVansh();
   const [q, setQ] = useState("");
->>>>>>> 5cebe2a77a1f9e7d6df5c8460b267f82e4c7d93d
   const [status, setStatus] = useState<Status>("live");
   const [tab, setTab] = useState<FKey>("gender");
   const [open, setOpen] = useState(true);
@@ -251,19 +247,6 @@ export function MemView() {
     return { list, counts };
   }, [g, perms, status, f]);
 
-<<<<<<< HEAD
-  const cur = TABS.find((t) => t.k === tab)!;
-  const big = tab !== "age";
-
-  return (
-    <>
-      <section className="mf">
-        {/* १. जीवित / दिवंगत segmented control */}
-        <div className="mf-seg" role="tablist" aria-label="अवस्था">
-          <span className="mf-ind" style={{ transform: `translateX(${STATUS.findIndex(([s]) => s === status) * 100}%)` }} />
-          {STATUS.map(([s, l]) => (
-            <button key={s} role="tab" aria-selected={status === s} className={status === s ? "on" : ""} onClick={() => setStatus(s)}>
-=======
   const ql = q.trim().toLowerCase();
   const R = useMemo(() => relMap(g, me).R, [g, me]);
   const visiblePeople = useMemo(() => g.people.filter((p) => perms.can(p.id)), [g.people, perms]);
@@ -315,7 +298,6 @@ export function MemView() {
         <div className="rchips" style={{ margin: "0 0 .8rem" }}>
           {FILTER_TABS.find((t) => t.k === openTab)!.opts.map(([v, l]) => (
             <button key={v} className={`ghost ${f[openTab].includes(v) ? "on" : ""}`} onClick={() => toggleOpt(openTab, v)}>
->>>>>>> 5cebe2a77a1f9e7d6df5c8460b267f82e4c7d93d
               {l}
             </button>
           ))}
