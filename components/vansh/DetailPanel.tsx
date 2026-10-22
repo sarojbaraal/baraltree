@@ -169,7 +169,7 @@ export default function DetailPanel({
             {isAdm && (
               <button
                 disabled={busyAi}
-                style={{ marginLeft: "0.5rem", background: "linear-gradient(135deg, #8B5CF6, #EC4899)", color: "white", border: "none" }}
+                className="ghost"
                 onClick={aiSummary}
               >
                 <i>✨</i> AI Summary

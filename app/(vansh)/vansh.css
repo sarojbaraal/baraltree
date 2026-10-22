@@ -603,8 +603,8 @@ dialog.ed { width: min(960px, 96vw); padding: 0; overflow: hidden; }
 .kc .f { color: var(--female); background: color-mix(in srgb, var(--female) 15%, transparent); }
 
 /* resizable drawer (desktop) */
-#det { width: min(var(--det-w, 372px), calc(100% - 24px)); }
-.det-grip { position: fixed; z-index: 91; left: calc(12px + min(var(--det-w, 372px), 100% - 24px) - 5px); top: 84px; bottom: 12px; width: 10px; cursor: col-resize; touch-action: none; }
+#det { width: min(var(--det-w, 400px), calc(100% - 24px)); }
+.det-grip { position: fixed; z-index: 91; left: calc(12px + min(var(--det-w, 400px), 100% - 24px) - 5px); top: 84px; bottom: 12px; width: 10px; cursor: col-resize; touch-action: none; }
 .det-grip::after { content: ""; position: absolute; left: 4px; top: 50%; width: 3px; height: 44px; margin-top: -22px; border-radius: 3px; background: var(--line-2); transition: background .2s, height .2s; }
 .det-grip:hover::after { background: var(--cy); height: 72px; }
 .sheet-handle { display: none; }
@@ -630,3 +630,20 @@ dialog.ed { width: min(960px, 96vw); padding: 0; overflow: hidden; }
 /* children counts on family-tab cards and rows */
 .mc .kc { justify-content: center; margin-top: .4rem; }
 .mlc .kc { margin-left: auto; }
+
+/* ---------- phase 2: clearer glass (header, side panels, dialogs) ---------- */
+:root { --glass-hdr: 56%; --glass-pan: 64%; --glass-dlg: 76%; --glass-blur: 28px; }
+header {
+  background: color-mix(in srgb, var(--solid) var(--glass-hdr), transparent);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+}
+#det, aside {
+  background: color-mix(in srgb, var(--solid) var(--glass-pan), transparent);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+}
+#det .pp-fix { background: color-mix(in srgb, var(--solid) 55%, transparent); }
+dialog {
+  background: color-mix(in srgb, var(--solid) var(--glass-dlg), transparent);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+}
+dialog::backdrop { background: rgba(4, 7, 22, .42); backdrop-filter: blur(3px); }
