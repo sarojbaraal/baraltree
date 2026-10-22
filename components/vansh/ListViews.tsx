@@ -229,6 +229,10 @@ export function MemView() {
     setF((cur) => ({ ...cur, [k]: cur[k].includes(v) ? cur[k].filter((x) => x !== v) : [...cur[k], v] }));
   const total = KEYS.reduce((a, k) => a + f[k].length, 0);
 
+  const R = useMemo(() => relMap(g, me).R, [g, me]);
+  const visiblePeople = useMemo(() => g.people.filter((p) => perms.can(p.id)), [g.people, perms]);
+  const ql = q.trim().toLowerCase();
+
   const { list, counts } = useMemo(() => {
     const base = g.people.filter((p) => perms.can(p.id) && (status === "all" || (status === "live") === p.is_living));
     // एउटै tab भित्र OR, फरक tab बीच AND. `skip` = त्यो tab को आफ्नै छनोट नगनिने (badge को सङ्ख्याका लागि)
@@ -238,66 +242,27 @@ export function MemView() {
         const v = valueOf(g, p, k);
         return !!v && f[k].includes(v);
       });
-    const list = base.filter((p) => ok(p)).sort(g.byBirth);
+    const list = base.filter((p) => ok(p) && (!ql || match(p.name, ql) || (R[p.id] || "").includes(ql))).sort(g.byBirth);
     const counts: Record<string, number> = {};
     TABS.forEach((t) => {
       const pool = base.filter((p) => ok(p, t.k));
       t.opts.forEach(([v]) => (counts[`${t.k}:${v}`] = pool.filter((p) => valueOf(g, p, t.k) === v).length));
     });
     return { list, counts };
-  }, [g, perms, status, f]);
+  }, [g, perms, status, f, ql, R]);
 
-  const ql = q.trim().toLowerCase();
-  const R = useMemo(() => relMap(g, me).R, [g, me]);
-  const visiblePeople = useMemo(() => g.people.filter((p) => perms.can(p.id)), [g.people, perms]);
-  const list = useMemo(
-    () =>
-      g.people
-        .filter((p) => {
-          if (!perms.can(p.id)) return false;
-          if (ql && !match(p.name, ql) && !(R[p.id] || "").includes(ql)) return false;
-          if (status === "live" && !p.is_living) return false;
-          if (status === "dead" && p.is_living) return false;
-          if (f.gender.length && !f.gender.includes(p.gender || "")) return false;
-          if (f.age.length) {
-            const a = ageGroup(p);
-            if (!a || !f.age.includes(a)) return false;
-          }
-          if (f.marital.length && !f.marital.includes(g.spousesOf(p).length ? "m" : "u")) return false;
-          if (f.surname.length) {
-            const s = surnameChange(p);
-            if (!s || !f.surname.includes(s)) return false;
-          }
-          return true;
-        })
-        .sort(g.byBirth),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [g, perms, ql, status, f, R]
-  );
+  const cur = TABS.find((t) => t.k === tab)!;
+  const big = tab !== "age";
 
   return (
     <>
-      <div className="row" style={{ margin: "0 0 .7rem" }}>
-        <button className={`ghost ${status === "all" ? "on" : ""}`} onClick={() => setStatus("all")}>सबै</button>
-        <button className={`ghost ${status === "live" ? "on" : ""}`} onClick={() => setStatus("live")}>🟢 जीवित</button>
-        <button className={`ghost ${status === "dead" ? "on" : ""}`} onClick={() => setStatus("dead")}>🕊 दिवंगत</button>
-        <PersonSearch id="mq" className="msw memq" value={q} people={visiblePeople} rel={R} placeholder="🔍 सदस्य वा साइनो…" onChange={setQ} onChoose={(id) => pick(id)} />
-      </div>
-
-      <div className="rchips" style={{ margin: ".4rem 0" }}>
-        {FILTER_TABS.map((t) => (
-          <button key={t.k} className={`ghost ${openTab === t.k ? "on" : ""}`} onClick={() => setOpenTab(openTab === t.k ? null : t.k)}>
-            {t.label}{f[t.k].length ? ` (${np(f[t.k].length)})` : ""}
-          </button>
-        ))}
-        {activeCount > 0 && (
-          <button className="bad" onClick={() => setF(EMPTY_F)}>✕ सबै हटाउने</button>
-        )}
-      </div>
-      {openTab && (
-        <div className="rchips" style={{ margin: "0 0 .8rem" }}>
-          {FILTER_TABS.find((t) => t.k === openTab)!.opts.map(([v, l]) => (
-            <button key={v} className={`ghost ${f[openTab].includes(v) ? "on" : ""}`} onClick={() => toggleOpt(openTab, v)}>
+      <PersonSearch id="mq" className="msw mq-top" value={q} people={visiblePeople} rel={R} placeholder="🔍 सदस्य वा साइनो खोज्नुहोस्…" onChange={setQ} onChoose={(id) => pick(id)} />
+      <section className="mf">
+        {/* १. जीवित / दिवंगत segmented control */}
+        <div className="mf-seg" role="tablist" aria-label="अवस्था">
+          <span className="mf-ind" style={{ transform: `translateX(${STATUS.findIndex(([s]) => s === status) * 100}%)` }} />
+          {STATUS.map(([s, l]) => (
+            <button key={s} role="tab" aria-selected={status === s} className={status === s ? "on" : ""} onClick={() => setStatus(s)}>
               {l}
             </button>
           ))}

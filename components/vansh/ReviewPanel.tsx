@@ -41,6 +41,7 @@ export default function ReviewPanel() {
 
   return (
     <>
+      <p className="mut rv-intro">यहाँ तपाईंको वंशावलीका ती डेटा-गल्ती देखिन्छन् जसले नाताका शब्द (दाजु/भाइ, काका, मामा, जेठो/कान्छो …) गलत वा खाली बनाउँछन्। हरेक कार्डमा समस्या, असर र सच्याउने तरिका छ — ❗ चिह्न भएको सदस्यबाट सुरु गर्नुहोस्।</p>
       <div className="rv-sum">
         <div className={errors ? "bad" : "ok"}><b>{np(errors)}</b><span>गल्ती (नाता गलत आउँछ)</span></div>
         <div className={warns ? "warn" : "ok"}><b>{np(warns)}</b><span>शंकास्पद</span></div>
@@ -64,34 +65,54 @@ export default function ReviewPanel() {
       ) : (
         <div className="rv-list">
           {shown.map((i) => {
-            const many = i.ids.length > 6 && !openAll[i.key];
-            const ids = many ? i.ids.slice(0, 6) : i.ids;
-            const first = g.byId[i.ids[0]];
+            const lim = 8;
+            const rows = i.rows.length > lim && !openAll[i.key] ? i.rows.slice(0, lim) : i.rows;
+            const lvl = i.level === "error" ? "गल्ती — नाता गलत आउँछ" : i.level === "warn" ? "शंकास्पद — जाँच्नुहोस्" : "सूचना — डेटा अधुरो";
             return (
-              <div key={i.key} className={`card rv ${i.level}`}>
-                <div className="rv-h">
+              <details key={i.key} className={`card rv ${i.level}`} open={i.level !== "info"}>
+                <summary>
+                  <span className={`rv-lv ${i.level}`}>{lvl}</span>
                   <span className="rv-k">{KIND_LABEL[i.kind]}</span>
-                  <span className={`rv-lv ${i.level}`}>{i.level === "error" ? "गल्ती" : i.level === "warn" ? "शंका" : "सूचना"}</span>
-                </div>
-                <b>{i.title}</b>
-                <p className="mut">{i.detail}</p>
-                <div className="rv-people">
-                  {ids.map((id) => g.byId[id] && (
-                    <button key={id} className="ghost" onClick={() => pick(id)}>{dispName(g.byId[id], true)}{g.byId[id].birth_bs ? ` · ${g.byId[id].birth_bs}` : ""}</button>
-                  ))}
-                  {many && <button className="ghost" onClick={() => setOpenAll((o) => ({ ...o, [i.key]: true }))}>+{np(i.ids.length - 6)} थप</button>}
-                </div>
-                <div className="row">
-                  {first && i.kind !== "nodate" && (
-                    <button onClick={() => openDialog(<PersonForm action="update" p={first} />, true)}>✏ {dispName(first, true)} सच्याउने</button>
+                  <b>{i.title}</b>
+                </summary>
+                <div className="rv-body">
+                  <div className="rv-blk"><h5>समस्या</h5><p>{i.detail}</p></div>
+                  <div className="rv-blk"><h5>किन फरक पर्छ</h5><p>{i.impact}</p></div>
+                  <div className="rv-blk">
+                    <h5>कसरी सच्याउने</h5>
+                    <ol>{i.steps.map((st, n) => <li key={n}>{st}</li>)}</ol>
+                  </div>
+                  <table className="rv-tbl">
+                    <thead><tr><th>सदस्य</th><th>भूमिका</th><th>अहिले</th><th /></tr></thead>
+                    <tbody>
+                      {rows.map((r) => {
+                        const pp = g.byId[r.id];
+                        if (!pp) return null;
+                        return (
+                          <tr key={r.id} className={r.fix ? "fx" : ""}>
+                            <td><button className="rv-nm" onClick={() => pick(r.id)}>{dispName(pp, true)}</button></td>
+                            <td className="mut">{r.role}</td>
+                            <td>{r.fix && <span className="rv-flag">❗</span>} {r.note}</td>
+                            <td><button className={r.fix ? "" : "ghost"} onClick={() => openDialog(<PersonForm action="update" p={pp} />, true)}>✏ सच्याउने</button></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {i.rows.length > lim && !openAll[i.key] && (
+                    <button className="ghost rv-more" onClick={() => setOpenAll((o) => ({ ...o, [i.key]: true }))}>
+                      बाँकी {np(i.rows.length - lim)} जना देखाउने
+                    </button>
                   )}
-                  {showIgnored ? (
-                    <button className="ghost" onClick={() => save(ignored.filter((k) => k !== i.key))}>↩ फेरि देखाउने</button>
-                  ) : (
-                    <button className="ghost" onClick={() => save([...ignored, i.key])}>यो ठीक छ, बेवास्ता</button>
-                  )}
+                  <div className="rv-foot">
+                    {showIgnored ? (
+                      <button className="ghost" onClick={() => save(ignored.filter((k) => k !== i.key))}>↩ फेरि देखाउने</button>
+                    ) : (
+                      <button className="ghost" onClick={() => save([...ignored, i.key])}>यो ठीक छ — बेवास्ता गर्ने</button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </details>
             );
           })}
         </div>

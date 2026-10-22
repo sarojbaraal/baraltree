@@ -10,10 +10,11 @@ import { useVansh } from "./VanshContext";
 /** photo_url (when set) overrides the default avatar everywhere. */
 export function Avatar({ g, photo }: { g?: string | null; photo?: string | null }) {
   const site = useSyncExternalStore(subscribeSiteAvatars, getSiteAvatars, () => ({}) as ReturnType<typeof getSiteAvatars>);
-  const url = photo || (g === "F" ? site.F : site.M);
+  const [broken, setBroken] = useState<string | null>(null);
+  const url = (photo && photo !== broken ? photo : null) || (g === "F" ? site.F : site.M);
   if (url)
     // eslint-disable-next-line @next/next/no-img-element
-    return <img className="avimg" src={url} alt="" draggable={false} />;
+    return <img className="avimg" src={url} alt="" draggable={false} onError={() => photo && setBroken(photo)} />;
   return (
     <svg aria-hidden="true">
       <use href={`#${g === "F" ? "avF" : "avM"}`} width="100%" height="100%" />

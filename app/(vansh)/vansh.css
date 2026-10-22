@@ -218,8 +218,7 @@ main#app.wide { max-width: none; padding: 1rem 12px 1.4rem; }
   position: relative; z-index: 5; display: grid; gap: 1.2rem; margin-bottom: 1.4rem;
   padding: 1.7rem 1.9rem; border-radius: 26px;
   background:
-    radial-gradient(circle at 92% 8%, color-mix(in srgb, var(--mg) 16%, transparent) 0 70px, transparent 71px),
-    radial-gradient(circle at 92% 8%, color-mix(in srgb, var(--mg) 7%, transparent) 0 130px, transparent 131px),
+    radial-gradient(circle at 96% 0%, color-mix(in srgb, var(--mg) 15%, transparent), transparent 46%),
     linear-gradient(135deg, color-mix(in srgb, var(--in) 18%, var(--surface)), var(--surface) 60%);
   border: 1px solid var(--line-2); box-shadow: var(--shadow);
 }
@@ -724,3 +723,29 @@ details.menu > div { max-width: calc(100vw - 2rem); z-index: 60; }
 .kpt .kl:hover { color: var(--ink); }
 .kpt .ka { margin: 0 .35rem; color: var(--mut); }
 .kpt .ke { color: var(--ink); font-weight: 700; }
+.mq-top { margin-bottom: .8rem; }
+
+/* सम्बन्ध समीक्षा — correction cards */
+.rv-intro { margin: 0 0 .8rem; font-size: .88rem; line-height: 1.5; max-width: 70ch; }
+details.rv { padding: 0; overflow: hidden; }
+details.rv > summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .6rem; padding: .85rem 1rem; }
+details.rv > summary::-webkit-details-marker { display: none; }
+details.rv > summary b { flex: 1 1 100%; font-size: 1rem; line-height: 1.35; }
+details.rv > summary::after { content: "▾"; margin-left: auto; color: var(--mut); transition: transform .2s; }
+details.rv[open] > summary::after { transform: rotate(180deg); }
+.rv-body { padding: 0 1rem 1rem; display: grid; gap: .7rem; border-top: 1px solid var(--line); padding-top: .8rem; }
+.rv-blk h5 { margin: 0 0 .15rem; font-size: .74rem; letter-spacing: 0; color: var(--mg); font-weight: 700; }
+.rv-blk p, .rv-blk li { margin: 0; font-size: .9rem; line-height: 1.5; }
+.rv-blk ol { margin: 0; padding-left: 1.2rem; display: grid; gap: .15rem; }
+.rv-tbl { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.rv-tbl th { text-align: left; font-size: .72rem; color: var(--mut); font-weight: 600; padding: .3rem .4rem; border-bottom: 1px solid var(--line-2); }
+.rv-tbl td { padding: .4rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.rv-tbl tr.fx td { background: color-mix(in srgb, #ef4444 8%, transparent); }
+.rv-tbl td:last-child { text-align: right; white-space: nowrap; }
+.rv-tbl td button { min-height: 32px; padding: .2rem .65rem; font-size: .8rem; }
+.rv-nm { all: unset; cursor: pointer; font-weight: 600; color: var(--cy); text-decoration: underline; text-underline-offset: 3px; }
+.rv-flag { font-size: .8rem; }
+.rv-foot { display: flex; justify-content: flex-end; }
+.rv-more { justify-self: start; }
+@media (max-width: 560px) { .rv-tbl thead { display: none; } .rv-tbl td { display: block; border: 0; padding: .1rem .4rem; } .rv-tbl tr { display: block; padding: .4rem 0; border-bottom: 1px solid var(--line); } .rv-tbl td:last-child { text-align: left; padding-top: .3rem; } }
+.hero2:has(details.menu[open]) { z-index: 70; }
