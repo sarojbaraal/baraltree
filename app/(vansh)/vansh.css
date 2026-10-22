@@ -215,16 +215,13 @@ main#app.wide { max-width: none; padding: 1rem 12px 1.4rem; }
 
 /* ---------- family home ---------- */
 .hero2 {
-  position: relative; overflow: hidden; display: grid; gap: 1.2rem; margin-bottom: 1.4rem;
+  position: relative; z-index: 5; display: grid; gap: 1.2rem; margin-bottom: 1.4rem;
   padding: 1.7rem 1.9rem; border-radius: 26px;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--in) 18%, var(--surface)), var(--surface) 60%);
+  background:
+    radial-gradient(circle at 92% 8%, color-mix(in srgb, var(--mg) 16%, transparent) 0 70px, transparent 71px),
+    radial-gradient(circle at 92% 8%, color-mix(in srgb, var(--mg) 7%, transparent) 0 130px, transparent 131px),
+    linear-gradient(135deg, color-mix(in srgb, var(--in) 18%, var(--surface)), var(--surface) 60%);
   border: 1px solid var(--line-2); box-shadow: var(--shadow);
-}
-.hero2::before {
-  content: ""; position: absolute; right: -50px; top: -50px; width: 260px; height: 260px; border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--mg) 45%, transparent);
-  box-shadow: 0 0 0 26px color-mix(in srgb, var(--mg) 6%, transparent), 0 0 0 54px color-mix(in srgb, var(--mg) 3.5%, transparent);
-  pointer-events: none;
 }
 .hero2 > * { position: relative; }
 .hchip { display: inline-block; padding: .12rem .75rem; margin-bottom: .5rem; border-radius: 99px; font-size: .8rem; font-weight: 700; color: var(--mg); border: 1px solid color-mix(in srgb, var(--mg) 45%, transparent); background: var(--mg-glow); }
@@ -375,7 +372,7 @@ button.tg:hover:not(:disabled) { transform: translateX(-50%) scale(1.12); box-sh
 
 /* ---------- detail panel ---------- */
 #det {
-  position: fixed; z-index: 90; left: 12px; bottom: 12px; top: 84px; width: min(372px, calc(100% - 24px));
+  position: fixed; z-index: 90; left: 12px; bottom: 12px; top: 84px; width: min(460px, calc(100% - 24px));
   overflow-y: auto; overscroll-behavior: contain; padding: 0 0 1.5rem;
   background: var(--surface-2); border: 1px solid var(--line-2); border-radius: 24px;
   backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%); box-shadow: var(--shadow-lg);
@@ -603,8 +600,8 @@ dialog.ed { width: min(960px, 96vw); padding: 0; overflow: hidden; }
 .kc .f { color: var(--female); background: color-mix(in srgb, var(--female) 15%, transparent); }
 
 /* resizable drawer (desktop) */
-#det { width: min(var(--det-w, 400px), calc(100% - 24px)); }
-.det-grip { position: fixed; z-index: 91; left: calc(12px + min(var(--det-w, 400px), 100% - 24px) - 5px); top: 84px; bottom: 12px; width: 10px; cursor: col-resize; touch-action: none; }
+#det { width: min(var(--det-w, 460px), calc(100% - 24px)); }
+.det-grip { position: fixed; z-index: 91; left: calc(12px + min(var(--det-w, 460px), 100% - 24px) - 5px); top: 84px; bottom: 12px; width: 10px; cursor: col-resize; touch-action: none; }
 .det-grip::after { content: ""; position: absolute; left: 4px; top: 50%; width: 3px; height: 44px; margin-top: -22px; border-radius: 3px; background: var(--line-2); transition: background .2s, height .2s; }
 .det-grip:hover::after { background: var(--cy); height: 72px; }
 .sheet-handle { display: none; }
@@ -632,7 +629,7 @@ dialog.ed { width: min(960px, 96vw); padding: 0; overflow: hidden; }
 .mlc .kc { margin-left: auto; }
 
 /* ---------- phase 2: clearer glass (header, side panels, dialogs) ---------- */
-:root { --glass-hdr: 56%; --glass-pan: 64%; --glass-dlg: 76%; --glass-blur: 28px; }
+:root { --glass-hdr: 93%; --glass-pan: 95%; --glass-dlg: 97%; --glass-blur: 18px; }
 header {
   background: color-mix(in srgb, var(--solid) var(--glass-hdr), transparent);
   backdrop-filter: blur(var(--glass-blur)) saturate(180%); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
@@ -641,12 +638,12 @@ header {
   background: color-mix(in srgb, var(--solid) var(--glass-pan), transparent);
   backdrop-filter: blur(var(--glass-blur)) saturate(180%); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
 }
-#det .pp-fix { background: color-mix(in srgb, var(--solid) 55%, transparent); }
+#det .pp-fix { background: color-mix(in srgb, var(--solid) 96%, transparent); }
 dialog {
   background: color-mix(in srgb, var(--solid) var(--glass-dlg), transparent);
   backdrop-filter: blur(var(--glass-blur)) saturate(180%); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
 }
-dialog::backdrop { background: rgba(4, 7, 22, .42); backdrop-filter: blur(3px); }
+dialog::backdrop { background: rgba(4, 7, 22, .55); backdrop-filter: blur(4px); }
 
 /* ---------- phase 3: photo crop ---------- */
 .pcrop { margin-top: .5rem; display: flex; flex-direction: column; gap: .5rem; align-items: flex-start; }
@@ -712,3 +709,18 @@ dialog::backdrop { background: rgba(4, 7, 22, .42); backdrop-filter: blur(3px); 
 .rv-people button { min-height: 32px; padding: .2rem .65rem; font-size: .85rem; }
 @media (max-width: 560px) { .rv-sum { grid-template-columns: 1fr 1fr; } }
 .memq { margin-left: auto; width: 230px; max-width: 100%; }
+
+/* ---------- feedback round 2 ---------- */
+details.menu > div { max-width: calc(100vw - 2rem); z-index: 60; }
+.pp-act { display: grid; grid-template-columns: repeat(auto-fit, minmax(54px, 1fr)); gap: .35rem; margin-top: .8rem; }
+.pp-act button { flex-direction: column; gap: 1px; min-width: 0; width: 100%; height: 48px; min-height: 48px; padding: .2rem .15rem; font-size: .68rem; line-height: 1.1; border-radius: 12px; white-space: nowrap; margin: 0 !important; background: var(--surface); }
+.pp-act button i { font-size: 1rem; }
+.pp-avw { position: relative; flex: none; width: 82px; height: 96px; padding-bottom: 14px; }
+.pp-avw .pp-av { width: 82px; height: 82px; }
+.pp-live { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); display: inline-flex; align-items: center; gap: .3rem; padding: .08rem .55rem; border-radius: 99px; font-size: .68rem; font-weight: 700; white-space: nowrap; background: var(--solid); border: 1px solid var(--line-2); color: var(--ink-2); box-shadow: var(--shadow); }
+.pp-cam { position: absolute; top: -2px; right: -6px; width: 30px; height: 30px; min-height: 30px; padding: 0; border-radius: 50%; font-size: .9rem; line-height: 1; background: var(--solid); border: 1px solid var(--line-2); box-shadow: var(--shadow); }
+.kpt { margin: 0 1.1rem .6rem; font-size: .88rem; line-height: 1.8; color: var(--ink-2); }
+.kpt .kl { all: unset; cursor: pointer; color: var(--cy); text-decoration: underline; text-underline-offset: 3px; font-weight: 600; }
+.kpt .kl:hover { color: var(--ink); }
+.kpt .ka { margin: 0 .35rem; color: var(--mut); }
+.kpt .ke { color: var(--ink); font-weight: 700; }

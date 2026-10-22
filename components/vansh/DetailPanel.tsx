@@ -7,7 +7,7 @@ import { chartGoto } from "@/lib/vansh/chartGoto";
 import { ageN, dispName, fbOk, np, yr } from "@/lib/vansh/text";
 import { useVansh } from "./VanshContext";
 import { Avatar, KidCount } from "./ui";
-import { AddMenu, DeleteDialog, InviteDialog, PersonForm } from "./PersonDialogs";
+import { AddMenu, DeleteDialog, InviteDialog, PersonForm, PhotoDialog } from "./PersonDialogs";
 
 function Box({ c, ic, l, children, mg }: { c: string; ic: string; l: string; children?: React.ReactNode; mg?: boolean }) {
   if (!children) return null;
@@ -95,6 +95,15 @@ export default function DetailPanel({
   RL.splice(RL.filter((x) => x.l === "बुबा" || x.l === "आमा").length, 0, { q: p, l: "यही प्रोफाइल", self: true });
   const age = p.is_living || p.death_bs ? ageN(p.birth_bs, p.is_living ? "" : p.death_bs) : null;
 
+  const showInChart = () => {
+    if (!p) return;
+    if (onGo) onGo(p.id);
+    else {
+      chartGoto.id = p.id;
+      setTab("tree");
+    }
+  };
+
   const aiSummary = async () => {
     setBusyAi(true);
     toast("🤖 AI ले विश्लेषण गर्दैछ...");
@@ -130,64 +139,51 @@ export default function DetailPanel({
         <div className="sheet-handle" />
         <button className="ghost pp-x" id="dx" aria-label="बन्द" onClick={unpick}>×</button>
         <div className="pp-top">
-          <div
-            className={`pp-av g${p.gender || "O"}`}
-          >
-            <Avatar g={p.gender} photo={p.photo_url} />
+          <div className="pp-avw">
+            <div className={`pp-av g${p.gender || "O"}`}>
+              <Avatar g={p.gender} photo={p.photo_url} />
+            </div>
+            {ce && !lim && (
+              <button className="ghost pp-cam" aria-label="फोटो अपलोड" title="फोटो अपलोड" onClick={() => openDialog(<PhotoDialog p={p} />)}>📷</button>
+            )}
+            <span className="pp-live"><i className={`st ${p.is_living ? "live" : "gone"}`} /> {p.is_living ? "जीवित" : "दिवंगत"}</span>
           </div>
           <div className="pp-info">
             <h3>{dispName(p)}</h3>
             {rl && <div className="pp-l">💠 {rl === "तपाईं" ? "तपाईं" : "तपाईंको " + rl}</div>}
             {ord && <div className="pp-l">🔢 {ord} {p.gender === "F" ? "छोरी" : "छोरा"}</div>}
             <div className="pp-l">
-              <i className={`st ${p.is_living ? "live" : "gone"}`} title={p.is_living ? "जीवित" : "दिवंगत"} /> 🧬 Gen {np(genNo(g, p.id, depthOf))}
+              🧬 Gen {np(genNo(g, p.id, depthOf))}
               {age != null ? " · उमेर " + np(age) + " वर्ष" : ""}
-              {p.is_living ? "" : " · दिवंगत"}
             </div>
             {g.addrOf(p) && <div className="pp-l">📍 {g.addrOf(p)}</div>}
           </div>
         </div>
         {!lim && (
-          <button
-            className="chartbtn"
-            onClick={() => {
-              if (onGo) onGo(p.id);
-              else {
-                chartGoto.id = p.id;
-                setTab("tree");
-              }
-            }}
-          >
-            🌳 चार्टमा हेर्नुहोस्
-          </button>
-        )}
-        {!lim && (
           <div className="pp-act">
-            <button onClick={() => document.getElementById("pi")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
-              <i>🪪</i>Profile
+            <button className="ghost" onClick={showInChart} title="चार्टमा हेर्नुहोस्">
+              <i>🌳</i>चार्ट
+            </button>
+            <button className="ghost" onClick={() => document.getElementById("pi")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+              <i>🪪</i>प्रोफाइल
             </button>
             {ce && (
               <>
-                <button onClick={() => openDialog(<PersonForm action="update" p={p} />, true)}>
-                  <i>✏️</i>
-                  {isAdm ? "Edit" : "Edit (अनुरोध)"}
+                <button className="ghost" onClick={() => openDialog(<PersonForm action="update" p={p} />, true)} title={isAdm ? "सच्याउने" : "सच्याउने (अनुरोध)"}>
+                  <i>✏️</i>Edit
                 </button>
-                <button onClick={() => openDialog(<AddMenu p={p} />)}><i>➕</i>Add</button>
-                <button onClick={() => setMore((m) => !m)}><i>⋯</i>More</button>
+                <button className="ghost" onClick={() => openDialog(<AddMenu p={p} />)}><i>➕</i>Add</button>
+                <button className="ghost" onClick={() => setMore((m) => !m)}><i>⋯</i>More</button>
               </>
             )}
-            {onPrint && (
-              <button style={{ marginLeft: "auto", background: "var(--bg-2)" }} onClick={() => onPrint(p.id)}>
-                <i>🖨️</i> शाखा प्रिन्ट
+            {isAdm && (
+              <button className="ghost" disabled={busyAi} onClick={aiSummary} title="AI सारांश">
+                <i>✨</i>AI
               </button>
             )}
-            {isAdm && (
-              <button
-                disabled={busyAi}
-                className="ghost"
-                onClick={aiSummary}
-              >
-                <i>✨</i> AI Summary
+            {onPrint && (
+              <button className="ghost" onClick={() => onPrint(p.id)} title="शाखा प्रिन्ट">
+                <i>🖨️</i>प्रिन्ट
               </button>
             )}
           </div>
@@ -208,18 +204,21 @@ export default function DetailPanel({
           {kc && kc.chain.length > 1 && (
             <>
               <div className="pp-h">नाताको बाटो</div>
-              <ol className="kpath" aria-label="नाताको बाटो">
-                {kc.chain.map((h, i) => {
-                  const last = i === kc.chain.length - 1;
-                  const ok = can(h.person.id);
+              <p className="kpt">
+                {kc.chain.slice(1).map((h, i) => {
+                  const prev = kc.chain[i].person;
+                  const real = prev.id !== "__me__" && can(prev.id);
                   return (
-                    <li key={h.person.id + i} className={last ? "kp-end" : ""}>
-                      <span className="kp-rel">{i === 0 ? "तपाईं" : stepWord(h.step as never)}</span>
-                      <span className="kp-name">{i === 0 ? "" : ok ? dispName(h.person, true) : nm(h.person)}</span>
-                    </li>
+                    <React.Fragment key={h.person.id + i}>
+                      {i > 0 && <span className="ka">→</span>}
+                      {i === 0 ? "तपाईं" : real ? <button className="kl" onClick={() => pick(prev.id)}>{dispName(prev, true)}</button> : nm(prev)}
+                      को {stepWord(h.step as never)}
+                    </React.Fragment>
                   );
                 })}
-              </ol>
+                <span className="ka">→</span>
+                <span className="ke">{dispName(p, true)}</span>
+              </p>
               {kc.term && <div className="kp-sum">∴ {dispName(p, true)} तपाईंको <b>{kc.term}</b> हुनुहुन्छ</div>}
             </>
           )}

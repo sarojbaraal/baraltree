@@ -747,3 +747,38 @@ export function PasswordDialog() {
     </>
   );
 }
+
+/** Change just the profile photo (camera button beside the picture). */
+export function PhotoDialog({ p }: { p: VPerson }) {
+  const { db, send, closeDialog } = useVansh();
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    if (!photo) return;
+    setBusy(true);
+    setErr("📸 फोटो अपलोड हुँदैछ...");
+    try {
+      const fileName = `${p.id}-${Date.now()}.webp`;
+      const { error: upErr } = await db.storage.from("profile-photos").upload(fileName, photo, { contentType: "image/webp" });
+      if (upErr) return setErr("❌ फोटो अपलोड असफल: " + (/row-level|policy/i.test(upErr.message) ? "तपाईंलाई फोटो राख्ने अनुमति छैन। एडमिनलाई भन्नुहोस्" : upErr.message));
+      const url = db.storage.from("profile-photos").getPublicUrl(fileName).data.publicUrl;
+      const e = await send("update", p.id, { photo_url: url }, "प्रोफाइल फोटो परिवर्तन");
+      if (e) setErr(e);
+      else closeDialog();
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="eds">
+      <h3>📷 {p.name} को फोटो</h3>
+      <PhotoCrop onChange={setPhoto} current={p.photo_url} />
+      {err && <p className="mut" role="alert">{err}</p>}
+      <div className="row" style={{ marginTop: ".9rem" }}>
+        <button disabled={!photo || busy} onClick={save}>{busy ? "…" : "सुरक्षित गर्ने"}</button>
+        <button className="ghost" onClick={closeDialog}>रद्द</button>
+      </div>
+    </div>
+  );
+}
