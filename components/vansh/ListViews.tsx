@@ -7,6 +7,7 @@ import { dispName, match, np, yr } from "@/lib/vansh/text";
 import type { VPerson } from "@/lib/vansh/types";
 import { useVansh } from "./VanshContext";
 import { Avatar, KidCount } from "./ui";
+import PersonSearch from "./PersonSearch";
 import { AnchorDialog, PersonForm } from "./PersonDialogs";
 import DownloadMenu from "./DownloadMenu";
 
@@ -37,8 +38,7 @@ export function FamView() {
   const meName = (me?.position_person_id && byId[me.position_person_id]?.name) || me?.full_name || me?.email || "";
 
   const ql = q.trim().toLowerCase();
-  const hits = ql ? people.filter((p) => can(p.id) && (match(p.name, ql) || (R[p.id] || "").includes(ql))).slice(0, 50) : [];
-  const [showHits, setShowHits] = useState(false);
+  const visiblePeople = useMemo(() => people.filter((p) => can(p.id)), [people, can]);
 
   const showCard = (id: string) => {
     const gi = groups.findIndex((gr) => gr.members.some((p) => p.id === id));
@@ -117,41 +117,24 @@ export function FamView() {
       </section>
       <div className="stickybar">
       <button className="locate" disabled={!base} onClick={() => base && showCard(base.id)}>📍 मेरो स्थान</button>
-      <div className="qw msw">
-        <input
-          className="msearch"
-          placeholder="🔍 नाम वा साइनो खोज्नुहोस्…"
-          autoComplete="off"
-          value={q}
-          onChange={(e) => {
-            qText.fam = e.target.value;
-            setQ(e.target.value);
-            setShowHits(true);
-          }}
-        />
-        <button className="ghost qx" hidden={!q} aria-label="खोज मेट्ने" onClick={() => { qText.fam = ""; setQ(""); }}>✕</button>
-        <div className="qr" hidden={!ql || !showHits}>
-          {hits.map((p) => (
-            <div
-              key={p.id}
-              onClick={() => {
-                qText.fam = p.name;
-                setQ(p.name);
-                setShowHits(false);
-                pick(p.id);
-                showCard(p.id);
-              }}
-            >
-              <b>{dispName(p)}</b>
-              <small>
-                {R[p.id] || "साइनो छैन"}
-                {yr(p.birth_bs) ? " · " + yr(p.birth_bs) : ""}
-              </small>
-            </div>
-          ))}
-          {!hits.length && <div className="none">कोही भेटिएन</div>}
-        </div>
-      </div>
+      <PersonSearch
+        id="fq"
+        className="msw"
+        value={q}
+        people={visiblePeople}
+        rel={R}
+        onChange={(t) => {
+          qText.fam = t;
+          setQ(t);
+        }}
+        onChoose={(id) => {
+          const p = byId[id];
+          qText.fam = p?.name || "";
+          setQ(p?.name || "");
+          pick(id);
+          showCard(id);
+        }}
+      />
       </div>
       <div className="rchips">
         <button className={`ghost ${mode === "grid" ? "on" : ""}`} onClick={() => setMode("grid")}>▦ थम्बनेल</button>
@@ -201,13 +184,15 @@ export function FamView() {
 }
 
 export function MemView() {
-  const { g, perms, pick } = useVansh();
+  const { g, me, perms, pick } = useVansh();
   const [q, setQ] = useState("");
   const ql = q.trim().toLowerCase();
-  const list = g.people.filter((p) => perms.can(p.id) && (!ql || match(p.name, ql))).sort(g.byBirth);
+  const R = useMemo(() => relMap(g, me).R, [g, me]);
+  const visiblePeople = useMemo(() => g.people.filter((p) => perms.can(p.id)), [g.people, perms]);
+  const list = visiblePeople.filter((p) => !ql || match(p.name, ql) || (R[p.id] || "").includes(ql)).sort(g.byBirth);
   return (
     <>
-      <input className="msearch" placeholder="🔍 सदस्य खोज्नुहोस्…" value={q} onChange={(e) => setQ(e.target.value)} />
+      <PersonSearch id="mq" className="msw" value={q} people={visiblePeople} rel={R} placeholder="🔍 सदस्य वा साइनो खोज्नुहोस्…" onChange={setQ} onChoose={(id) => pick(id)} />
       <div className="mgrid" id="mg">
         {list.length ? (
           list.map((p) => (

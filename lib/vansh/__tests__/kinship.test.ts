@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { person } from "./fixtures";
 import { createGraph } from "../graph";
-import { kinFor, kinFrom, kinshipBetween, ordinalOf, ordinalWord, olderThan, unresolvedCohorts, withAnchor } from "../kinship";
+import { kinFor, kinFrom, kinshipBetween, ordinalOf, baseTerm, ordinalWord, olderThan, unresolvedCohorts, withAnchor } from "../kinship";
 import type { VPerson } from "../types";
 
 const P = (id: string, g: "M" | "F", birth: string | null, o: Partial<VPerson> = {}) =>
@@ -276,5 +276,14 @@ describe("strict birth-date order", () => {
     expect(ordinalWord(5, 11, true)).toBe("राइली");
     expect(ordinalWord(9, 11, false)).toBe("जन्तरे");
     expect(ordinalWord(2, 12, false)).toBeNull();
+  });
+});
+
+describe("search helpers", () => {
+  it("baseTerm strips birth order and side", () => {
+    expect(baseTerm("माइलो काका")).toBe("काका");
+    expect(baseTerm("पानी मन्तरे फुपू")).toBe("फुपू");
+    expect(baseTerm("हजुरबुबा (मावली)")).toBe("हजुरबुबा");
+    expect(baseTerm("कान्छी फुपू (ससुराली)")).toBe("फुपू");
   });
 });

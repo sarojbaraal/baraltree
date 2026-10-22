@@ -537,3 +537,11 @@ export function kinChain(
   const term = r.path === "" ? "तपाईं" : termForPath(r.path, r.nodes.map((n) => net.byId[n]), sc);
   return { chain, term };
 }
+
+// ---------------------------------------------------------------- search helpers
+
+const ORD_PREFIX = /^(जेठो|जेठी|माइलो|माइली|साइलो|साइली|काइँलो|काइँली|राइलो|राइली|ठाइलो|ठाइली|झाइँलो|झाइँली|अन्तरे|जन्तरे|पानी मन्तरे|कान्छो|कान्छी)\s+/;
+/** "माइलो काका" → "काका"; "हजुरबुबा (मावली)" → "हजुरबुबा". The word people search and group by. */
+export function baseTerm(term: string): string {
+  return term.replace(/\s*\((मावली|ससुराली)\)\s*$/, "").replace(ORD_PREFIX, "").trim();
+}

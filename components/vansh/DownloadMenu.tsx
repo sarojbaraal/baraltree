@@ -14,7 +14,9 @@ export default function DownloadMenu() {
   const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const away = (e: PointerEvent) => {
-      if (!(e.target as HTMLElement).closest?.("details.menu")) setOpen(false);
+      const t = e.target as HTMLElement;
+      if (t.closest?.("#dlg, .popover, .suggestions")) return;
+      if (!t.closest?.("details.menu")) setOpen(false);
     };
     document.addEventListener("pointerdown", away);
     return () => document.removeEventListener("pointerdown", away);

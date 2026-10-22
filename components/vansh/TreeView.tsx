@@ -11,6 +11,7 @@ import { relMap } from "@/lib/vansh/relations";
 import type { VPerson } from "@/lib/vansh/types";
 import { useVansh } from "./VanshContext";
 import { Avatar } from "./ui";
+import PersonSearch from "./PersonSearch";
 import { PersonForm } from "./PersonDialogs";
 import { qText } from "./ListViews";
 
@@ -49,7 +50,6 @@ export default function TreeView() {
   hlRef.current = hlId;
   const hl = useMemo(() => (hlId ? g.branchOf([hlId]) : null), [g, hlId]);
   const [q, setQ] = useState(qText.tree);
-  const [showHits, setShowHits] = useState(false);
 
   const chartRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -303,7 +303,6 @@ export default function TreeView() {
   };
   const onChartClick = (e: React.MouseEvent) => {
     if (moved.current) return;
-    setShowHits(false);
     const target = e.target as HTMLElement;
     const tg = target.closest(".tg") as HTMLElement | null;
     if (tg) {
@@ -327,12 +326,11 @@ export default function TreeView() {
   // ---------- search ----------
   const ql = q.trim().toLowerCase();
   const kin = useMemo(() => relMap(g, me).R, [g, me]);
-  const matches = ql ? people.filter((p) => can(p.id) && (match(p.name, ql) || (kin[p.id] || "").includes(ql))) : [];
+  const visible = useMemo(() => people.filter((p) => can(p.id)), [people, can]);
   const choose = (id: string) => {
     const name = byId[id]?.name || "";
     qText.tree = name;
     setQ(name);
-    setShowHits(false);
     setCollapsed(openUp(g, collapsed, id));
     afterDraw.current = () => {
       glide(id, 1);
@@ -394,40 +392,19 @@ export default function TreeView() {
   return (
     <div className="chartwrap" id="cw" ref={cwRef}>
       <div className="tools">
-        <div className="qw">
-          <span className="qi">
-            <input
-              id="q"
-              placeholder="🔍 नाम खोज्नुहोस्…"
-              aria-label="खोज"
-              autoComplete="off"
-              value={q}
-              onChange={(e) => {
-                qText.tree = e.target.value;
-                setQ(e.target.value);
-                setShowHits(true);
-              }}
-              onKeyDown={(e) => e.key === "Enter" && matches[0] && choose(matches[0].id)}
-            />
-            <button className="ghost qx" id="qx" hidden={!q} aria-label="खोज मेट्ने" onClick={() => { qText.tree = ""; setQ(""); }}>
-              ✕
-            </button>
-          </span>
-          <span id="qc" className="mut">
-            {ql ? (matches.length ? `${np(matches.length)} मिल्यो` : "भेटिएन") : ""}
-          </span>
-          <div id="qr" className="qr" hidden={!ql || !showHits}>
-            {matches.slice(0, 50).map((p: VPerson) => (
-              <div key={p.id} onClick={() => choose(p.id)}>
-                <b>{dispName(p)}</b>
-                <small>
-                  {[p.father_id && byId[p.father_id] && "बुबा: " + byId[p.father_id].name, yr(p.birth_bs)].filter(Boolean).join(" · ")}
-                </small>
-              </div>
-            ))}
-            {!matches.length && <div className="none">कोही भेटिएन</div>}
-          </div>
-        </div>
+        <PersonSearch
+          id="q"
+          value={q}
+          people={visible}
+          rel={kin}
+          placeholder="🔍 नाम वा साइनो खोज्नुहोस्…"
+          onChange={(t) => {
+            qText.tree = t;
+            setQ(t);
+          }}
+          onChoose={choose}
+          summary={(n) => <span id="qc" className="mut">{n ? `${np(n)} मिल्यो` : "भेटिएन"}</span>}
+        />
         <button className="ghost" aria-label="सानो" onClick={() => mid(0.9)}>−</button>
         <input type="number" id="zr" ref={zrRef} min={2} max={250} step={5} inputMode="numeric" aria-label="जुम प्रतिशत" title="जुम % लेखेर Enter थिच्नुहोस्" />
         <span className="mut">%</span>

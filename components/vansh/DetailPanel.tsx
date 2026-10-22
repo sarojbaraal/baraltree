@@ -32,7 +32,7 @@ export default function DetailPanel({
   onGo?: (id: string) => void;
   onPrint?: (id: string) => void;
 }) {
-  const { db, g, me, sel, perms, pick, unpick, openDialog, toast, reload, setTab, tab } = useVansh();
+  const { db, g, me, sel, perms, pick, unpick, openDialog, toast, reload, setTab } = useVansh();
   const [more, setMore] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
 
