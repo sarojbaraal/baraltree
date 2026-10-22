@@ -130,9 +130,8 @@ export default function DetailPanel({
         <div className="pp-top">
           <div
             className={`pp-av g${p.gender || "O"}`}
-            style={p.photo_url ? { backgroundImage: `url('${p.photo_url}')`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
           >
-            {!p.photo_url && <Avatar g={p.gender} />}
+            <Avatar g={p.gender} photo={p.photo_url} />
           </div>
           <div className="pp-info">
             <h3>{dispName(p)}</h3>

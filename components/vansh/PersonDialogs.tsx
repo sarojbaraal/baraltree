@@ -1,6 +1,7 @@
 "use client";
 // Dialogs for adding / editing / deleting people and relations (ported from the original app.js: form, kidsForm,
 // spouseForm, parentForm, addMenu, inviteForm).
+import PhotoCrop from "./PhotoCrop";
 import React, { useEffect, useRef, useState } from "react";
 import type { VPerson, NewRequest } from "@/lib/vansh/types";
 import { ORDER, ROLE_L } from "@/lib/vansh/graph";
@@ -172,10 +173,9 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
       let photoUrl: string | undefined;
       if (photo) {
         setErr("📸 फोटो अपलोड हुँदैछ...");
-        const ext = photo.name.split(".").pop();
-        const fileName = `${p?.id || "new"}-${Date.now()}.${ext}`;
+        const fileName = `${p?.id || "new"}-${Date.now()}.webp`;
         const { error: upErr } = await db.storage.from("profile-photos").upload(fileName, photo, { contentType: photo.type || undefined });
-        if (upErr) return setErr("❌ फोटो अपलोड असफल: " + upErr.message);
+        if (upErr) return setErr(`❌ फोटो अपलोड असफल: ${/row-level|policy/i.test(upErr.message) ? "तपाईंलाई फोटो राख्ने अनुमति छैन। एडमिनलाई भन्नुहोस्" : /size|large|payload/i.test(upErr.message) ? "फोटो धेरै ठूलो छ" : /network|fetch/i.test(upErr.message) ? "इन्टरनेट जडान जाँच्नुहोस्" : upErr.message}`);
         photoUrl = db.storage.from("profile-photos").getPublicUrl(fileName).data.publicUrl;
         setErr("");
       }
@@ -252,11 +252,7 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
           </label>
           <label>
             प्रोफाइल फोटो
-            <input type="file" accept="image/*" style={{ marginTop: "0.5rem" }} onChange={(e) => setPhoto(e.target.files?.[0] || null)} />
-            {v.photo_url && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={v.photo_url} alt="" style={{ width: 60, height: 60, borderRadius: "50%", objectFit: "cover", marginTop: "0.5rem", border: "2px solid var(--line)", display: "block" }} />
-            )}
+            <PhotoCrop onChange={setPhoto} current={v.photo_url} />
           </label>
           <div className="edg mnl" hidden={!(gender === "F" && married)}>
             <label>

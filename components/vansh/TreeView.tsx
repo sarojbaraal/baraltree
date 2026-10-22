@@ -518,7 +518,7 @@ export default function TreeView() {
                 data-id={p.id}
                 style={{ left: x, top: y, width: CW, height: CH, ["--gc" as string]: GEN[d % GEN.length] }}
               >
-                <div className="av">{ok ? <Avatar g={p.gender} /> : "🔒"}</div>
+                <div className="av">{ok ? <Avatar g={p.gender} photo={p.photo_url} /> : "🔒"}</div>
                 <div className="tx">
                   <small className="gn"><i className={`st ${p.is_living ? "live" : "gone"}`} title={p.is_living ? "जीवित" : "दिवंगत"} /> Gen {d + 1}</small>
                   <b>{ok ? dispName(p, true) : nm(p)}</b>

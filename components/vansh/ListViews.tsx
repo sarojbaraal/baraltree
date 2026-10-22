@@ -63,7 +63,7 @@ export function FamView() {
         onClick={() => pick(p.id)}
         onKeyDown={(e) => e.key === "Enter" && pick(p.id)}
       >
-        <div className="mav2"><Avatar g={p.gender} /></div>
+        <div className="mav2"><Avatar g={p.gender} photo={p.photo_url} /></div>
         <div className="mn">{dispName(p, true)}</div>
         <div className="my"><i className={`st ${p.is_living ? "live" : "gone"}`} title={p.is_living ? "जीवित" : "दिवंगत"} />{R[p.id] || "साइनो स्पष्ट छैन"}</div>
         <KidCount kids={kidsOf(p)} />
@@ -73,7 +73,7 @@ export function FamView() {
   };
   const lrow = (p: VPerson) => (
     <div key={p.id} className={`mlc ${p.is_living ? "" : "dead"} ${flashId === p.id ? "flash" : ""}`} data-id={p.id} onClick={() => pick(p.id)}>
-      <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} /></div>
+      <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} photo={p.photo_url} /></div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <b>{dispName(p)}</b>
         <br />
@@ -210,7 +210,7 @@ export function MemView() {
         {list.length ? (
           list.map((p) => (
             <div key={p.id} className="mlc" data-id={p.id} onClick={() => pick(p.id)}>
-              <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} /></div>
+              <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} photo={p.photo_url} /></div>
               <div>
                 <b>{dispName(p)}</b>
                 <br />

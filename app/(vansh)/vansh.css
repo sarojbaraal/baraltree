@@ -647,3 +647,13 @@ dialog {
   backdrop-filter: blur(var(--glass-blur)) saturate(180%); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
 }
 dialog::backdrop { background: rgba(4, 7, 22, .42); backdrop-filter: blur(3px); }
+
+/* ---------- phase 3: photo crop ---------- */
+.pcrop { margin-top: .5rem; display: flex; flex-direction: column; gap: .5rem; align-items: flex-start; }
+.pc-prev { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 2px solid var(--line); }
+.pc-box { display: flex; flex-direction: column; gap: .55rem; align-items: center; width: 100%; }
+.pc-view { position: relative; overflow: hidden; border-radius: 16px; background: #000; touch-action: none; cursor: grab; max-width: 100%; }
+.pc-view img { position: absolute; left: 0; top: 0; max-width: none; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+.pc-ring { position: absolute; inset: 0; pointer-events: none; border-radius: 50%; box-shadow: 0 0 0 999px rgba(0,0,0,.5); outline: 2px solid rgba(255,255,255,.85); outline-offset: -1px; }
+.pc-box input[type=range] { width: 100%; padding: 0; }
+.pc-err { color: var(--bad, #ef4444); font-size: .85rem; line-height: 1.4; }

@@ -7,9 +7,10 @@ import type { VPerson } from "@/lib/vansh/types";
 import type { Graph, Perms } from "@/lib/vansh/graph";
 import { useVansh } from "./VanshContext";
 
-export function Avatar({ g }: { g?: string | null }) {
+/** photo_url (when set) overrides the default avatar everywhere. */
+export function Avatar({ g, photo }: { g?: string | null; photo?: string | null }) {
   const site = useSyncExternalStore(subscribeSiteAvatars, getSiteAvatars, () => ({}) as ReturnType<typeof getSiteAvatars>);
-  const url = g === "F" ? site.F : site.M;
+  const url = photo || (g === "F" ? site.F : site.M);
   if (url)
     // eslint-disable-next-line @next/next/no-img-element
     return <img className="avimg" src={url} alt="" draggable={false} />;
