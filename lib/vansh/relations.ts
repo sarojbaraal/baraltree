@@ -2,6 +2,7 @@
 import type { VPerson, VProfile } from "./types";
 import type { Graph, Perms } from "./graph";
 import { kinFor, kinFrom } from "./kinship";
+import { surnameOf } from "./text";
 
 /**
  * Relationship of everyone to the signed-in user ("तपाईं"), as Nepali kinship terms (see ./kinship.ts).
@@ -45,80 +46,113 @@ export interface FamGroup {
   members: VPerson[];
 }
 
-/** Grouping used on the "परिवार" tab. */
-export function famGroups(g: Graph, me: VProfile, perms: Perms, RM: Record<string, string>): FamGroup[] {
-  const { people, byId, spousesOf, kidsOf, byBirth, branchOf, downSet, sibsOf } = g;
+export const GROUP_MAIN = "मुख्य परिवार";
+export const GROUP_EXTRA = "एकाघरका थप परिवार";
+export const GROUP_DAUGHTERS = "छोरी-चेली तथा भान्जा-भान्जीहरु";
+export const GROUP_MAWALI = "मावली पट्टीका आफन्तहरु";
+export const GROUP_13 = ["१३ दिने बुबा पुस्ता", "१३ दिने दाजू-भाई पुस्ता", "१३ दिने छोरा-नाति पुस्ता"] as const;
+const BARAL = "बराल";
+
+/**
+ * Grouping used on the "परिवार" tab. A person belongs to exactly one group (first match wins):
+ *  1. मुख्य परिवार            — the household of A (A = the user; for a married woman, her husband's household)
+ *  2. एकाघरका थप परिवार        — the rest of the grandfather's household (his sons/wives, other grandsons and their families)
+ *  3. छोरी-चेली तथा भान्जा-भान्जी — married daughters of groups 1–2, their husbands and children (with spouses)
+ *  4. मावली पट्टीका आफन्तहरु     — everyone connected through A's mother's parents
+ *  5–7. १३ दिने पुस्ता          — remaining men with surname बराल, by generation (father / brother / son-grandson)
+ */
+export function famGroups(g: Graph, me: VProfile, perms: Perms, _RM?: Record<string, string>): FamGroup[] {
+  const { people, byId, spousesOf, kidsOf, byBirth, sibsOf, downSet } = g;
   const { can } = perms;
   const pos = (id?: string | null) => (id ? byId[id] : undefined);
-  const a = pos(me.position_person_id) || pos(me.position_parent_id) || pos(me.position_grand_id);
+  const a0 = pos(me.position_person_id) || pos(me.position_parent_id) || pos(me.position_grand_id);
   const used = new Set<string>();
   const take = (arr: (VPerson | undefined)[]): VPerson[] =>
     arr.filter((p): p is VPerson => !!p && can(p.id) && !used.has(p.id) && !!used.add(p.id));
-  const sp = (p: VPerson) => spousesOf(p).map((i) => byId[i]);
+  const sp = (p: VPerson) => spousesOf(p).map((i) => byId[i]).filter(Boolean) as VPerson[];
+  const sort = (l: VPerson[]) => [...l].sort(byBirth);
+  const kids = (p: VPerson) => sort(kidsOf(p));
+  const sons = (p: VPerson) => kids(p).filter((k) => k.gender !== "F");
+  const daus = (p: VPerson) => kids(p).filter((k) => k.gender === "F");
+  const unmarried = (p: VPerson) => !spousesOf(p).length;
+  const married = (p: VPerson) => spousesOf(p).length > 0;
   const G: FamGroup[] = [];
-  const sibs = (x: VPerson) => sibsOf(x).sort(byBirth);
-  const fam = (x: VPerson) => [x, ...sp(x), ...kidsOf(x).sort(byBirth)];
-  const marF = (x: VPerson) => x.gender === "F" && spousesOf(x).length > 0;
+  if (!a0) return [{ title: "👥 सबै सदस्य", members: people.filter((p) => can(p.id)).sort(byBirth) }];
 
-  if (a) {
-    const f = pos(a.father_id);
-    const m = pos(a.mother_id);
-    const ks = kidsOf(a).sort(byBirth);
-    const sons = ks.filter((k) => k.gender !== "F");
-    const ds = ks.filter((k) => k.gender === "F");
-    const ud = ds.filter((k) => !spousesOf(k).length);
-    const gk = sons.flatMap((x) => kidsOf(x).sort(byBirth));
+  // a married woman's family is her husband's
+  const husband = a0.gender === "F" ? sp(a0).find((h) => h.gender !== "F") : undefined;
+  const X = husband || a0;
+  const f = pos(X.father_id);
+  const m = pos(X.mother_id);
+  const gf = pos(f?.father_id);
+  const gm = pos(f?.mother_id);
+
+  // ---- 1. मुख्य परिवार
+  const gsons = sons(X).flatMap(sons);
+  const gkids = sons(X).flatMap(kids);
+  G.push({
+    title: GROUP_MAIN,
+    members: take([
+      gf, gm, f, m, X, ...sp(X), a0,
+      ...sons(X), ...sons(X).flatMap(sp),
+      ...daus(X).filter(unmarried),
+      ...sort(sibsOf(X)).filter(unmarried),
+      ...gsons, ...gsons.flatMap(sp),
+      ...gkids.filter((k) => k.gender === "F" && unmarried(k)),
+    ]),
+  });
+
+  // ---- 2. एकाघरका थप परिवार: the grandfather's other sons, other grandsons and their families
+  const root = gf;
+  if (root) {
+    const uncles = sons(root);
+    const grandsons = uncles.flatMap(sons).filter((b) => b.id !== X.id);
+    const grandDaus = uncles.flatMap(daus).filter((d) => unmarried(d) && d.id !== X.id);
+    const fam = (b: VPerson) => [
+      b, ...sp(b),
+      ...sons(b), ...sons(b).flatMap(sp),
+      ...daus(b).filter(unmarried),
+      ...sons(b).flatMap(sons), ...sons(b).flatMap(sons).flatMap(sp),
+      ...sons(b).flatMap(daus).filter(unmarried),
+    ];
     G.push({
-      title: "🏠अहिलेको परिवार",
+      title: GROUP_EXTRA,
       members: take([
-        pos(f?.father_id), pos(f?.mother_id), f, m, a, ...sp(a), ...sons, ...sons.flatMap(sp), ...ud,
-        ...gk.filter((k) => k.gender !== "F"),
-        ...gk.filter((k) => k.gender === "F" && !spousesOf(k).length),
+        ...uncles, ...uncles.flatMap(sp),
+        ...daus(root).filter(unmarried),
+        ...sort(grandsons).flatMap(fam),
+        ...sort(grandDaus),
       ]),
     });
-    const unc = f ? sibs(f).filter((y) => y.gender !== "F") : [];
-    const bro = sibs(a).filter((y) => !marF(y));
-    G.push({
-      title: "💞 विवाहित छोरी-ज्वाइँ र भान्जा-भान्जी",
-      members: take(
-        [
-          ...ds.filter(marF),
-          ...gk.filter(marF),
-          ...sibs(a).filter(marF),
-          ...unc.flatMap((u) => kidsOf(u).filter(marF)),
-        ].flatMap(fam)
-      ),
-    });
-    const inl = a.gender === "F" ? sp(a).flatMap((h) => (h ? sibs(h).flatMap(fam) : [])) : [];
-    G.push({
-      title: "👬 दाजुभाइ, काका-काकी र भतिजा-भतिजी",
-      members: take([
-        ...bro.flatMap(fam),
-        ...unc.flatMap((u) => [u, ...sp(u), ...kidsOf(u).sort(byBirth).flatMap((k) => (marF(k) ? [] : fam(k)))]),
-        ...inl,
-      ]),
-    });
-    const rest = people.filter((p) => can(p.id) && !used.has(p.id)).sort(byBirth);
-    const side = (r?: VPerson) => {
-      const s = new Set<string>();
-      if (!r) return s;
-      branchOf([r.id]).forEach((i) => s.add(i));
-      const gp = pos(r.father_id) || pos(r.mother_id);
-      if (gp) downSet(gp.id).forEach((i) => s.add(i));
-      return s;
-    };
-    const P = side(f);
-    const M = side(m);
-    const bk = (p: VPerson) => (P.has(p.id) ? 0 : M.has(p.id) ? 1 : RM[p.id] ? 2 : p.is_living ? 3 : 4);
-    [
-      "🌿 बाबुपट्टिका आफन्त",
-      "🌸 आमापट्टिका आफन्त (मामाली)",
-      "🔗 स्पष्ट साइनो भएका अन्य सदस्य",
-      "❔ साइनो स्पष्ट नभएका सदस्य",
-      "🕊 साइनो स्पष्ट नभएका दिवंगत सदस्य",
-    ].forEach((title, k) => G.push({ title, members: rest.filter((p) => bk(p) === k) }));
-  } else {
-    G.push({ title: "👥 सबै सदस्य", members: people.filter((p) => can(p.id)).sort(byBirth) });
-  }
+  } else G.push({ title: GROUP_EXTRA, members: [] });
+
+  // ---- 3. छोरी-चेली तथा भान्जा-भान्जीहरु
+  const inside = [...G[0].members, ...G[1].members];
+  const mdaus = inside.flatMap(daus).filter((d, i, l) => married(d) && l.indexOf(d) === i);
+  const fam3 = (d: VPerson) => [
+    d, ...sp(d),
+    ...kids(d).flatMap((k) => [k, ...sp(k)]),
+  ];
+  G.push({ title: GROUP_DAUGHTERS, members: take(mdaus.flatMap(fam3)) });
+
+  // ---- 4. मावली पट्टीका आफन्तहरु
+  const kin = kinFrom(people, X.id);
+  const mw = new Set<string>();
+  Object.entries(kin.paths).forEach(([id, p]) => /^m[fm]/.test(p) && mw.add(id));
+  [pos(m?.father_id), pos(m?.mother_id)].forEach((r) => r && downSet(r.id).forEach((i) => mw.add(i)));
+  G.push({ title: GROUP_MAWALI, members: take(sort(people.filter((p) => mw.has(p.id)))) });
+
+  // ---- 5–7. १३ दिने पुस्ता (बराल थर भएका पुरुष)
+  const gen = (id: string): number | null => {
+    const p = kin.paths[id];
+    if (p === undefined) return null;
+    let d = 0;
+    for (const c of p) d += c === "s" || c === "d" ? 1 : c === "f" || c === "m" ? -1 : 0;
+    return d;
+  };
+  const baral = sort(people.filter((p) => p.gender === "M" && surnameOf(p.name) === BARAL));
+  G.push({ title: GROUP_13[0], members: take(baral.filter((p) => gen(p.id) === -1)) });
+  G.push({ title: GROUP_13[1], members: take(baral.filter((p) => gen(p.id) === 0)) });
+  G.push({ title: GROUP_13[2], members: take(baral.filter((p) => (gen(p.id) ?? 0) >= 1)) });
   return G;
 }

@@ -568,7 +568,7 @@ dialog.ed { width: min(960px, 96vw); padding: 0; overflow: hidden; }
 /* status dot: living = glowing green, demised = dim brown */
 .st { display: inline-block; width: 9px; height: 9px; margin-right: .35rem; border-radius: 50%; vertical-align: middle; flex: none; }
 .st.live { background: var(--live); box-shadow: 0 0 0 2px color-mix(in srgb, var(--live) 25%, transparent), 0 0 9px var(--live); }
-.st.gone { background: #8a6a4a; box-shadow: none; opacity: .8; }
+.st.gone { background: #8b909a; box-shadow: none; }
 
 /* sticky "my place" + search on the family tab */
 .stickybar {
@@ -749,3 +749,36 @@ details.rv[open] > summary::after { transform: rotate(180deg); }
 .rv-more { justify-self: start; }
 @media (max-width: 560px) { .rv-tbl thead { display: none; } .rv-tbl td { display: block; border: 0; padding: .1rem .4rem; } .rv-tbl tr { display: block; padding: .4rem 0; border-bottom: 1px solid var(--line); } .rv-tbl td:last-child { text-align: left; padding-top: .3rem; } }
 .hero2:has(details.menu[open]) { z-index: 70; }
+
+/* status dot stuck to the edge of every photo: green = जीवित, grey = दिवंगत */
+.mav2, .av, .pp-av { overflow: visible !important; }
+.mav2 > svg, .mav2 > img, .av > svg, .av > img, .pp-av > svg, .pp-av > img { border-radius: inherit; }
+.fdot { position: absolute; right: 2%; bottom: 2%; z-index: 3; width: 14px; height: 14px; border-radius: 50%; border: 2.5px solid var(--solid); }
+.fdot.live { background: var(--live); box-shadow: 0 0 6px var(--live); }
+.fdot.gone { background: #8b909a; }
+.mav2.sm .fdot, .av .fdot { width: 12px; height: 12px; border-width: 2px; right: -2px; bottom: -2px; }
+.pp-av .fdot { width: 18px; height: 18px; right: 3%; bottom: 3%; border-width: 3px; }
+.pp-avw { height: 82px; padding-bottom: 0; }
+.kpt .ke { color: var(--cy); }
+
+/* सदस्य tab: search + dropdown filters */
+.mbar { position: relative; z-index: 30; display: grid; gap: .55rem; margin-bottom: .6rem; }
+.mbar-q { width: 100%; }
+.mbar-f { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; }
+.dd { position: relative; }
+.dd-btn { min-height: 38px; padding: .3rem .8rem; font-size: .86rem; gap: .35rem; }
+.dd-btn.on { border-color: var(--cy); color: var(--ink); background: var(--cy-glow); }
+.dd-btn em { font-style: normal; min-width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 99px; font-size: .72rem; font-weight: 700; color: var(--cy-ink); background: var(--cy); }
+.dd-btn b { font-weight: 600; }
+.dd-ch { font-size: .7rem; opacity: .7; }
+.dd-menu { position: absolute; left: 0; top: calc(100% + 6px); z-index: 80; min-width: 190px; display: grid; gap: 2px; padding: .35rem; border-radius: 14px; background: var(--solid); border: 1px solid var(--line-2); box-shadow: var(--shadow-lg); }
+.dd-menu button { display: flex; align-items: center; gap: .55rem; justify-content: flex-start; width: 100%; min-height: 38px; padding: .3rem .6rem; border: 0; border-radius: 10px; background: none; color: var(--ink-2); font-weight: 500; font-size: .88rem; box-shadow: none; }
+.dd-menu button:hover:not(:disabled) { background: var(--cy-glow); color: var(--ink); transform: none; }
+.dd-menu button .dd-l { flex: 1; text-align: left; }
+.dd-menu button em { font-style: normal; font-size: .75rem; color: var(--mut); }
+.dd-box { flex: none; width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--line-2); display: inline-block; position: relative; }
+.dd-box.rad { border-radius: 50%; }
+.dd-menu button.on .dd-box { background: var(--cy); border-color: var(--cy); }
+.dd-menu button.on .dd-box::after { content: ""; position: absolute; inset: 3px; border-radius: inherit; background: var(--cy-ink, #fff); }
+.mbar-x { min-height: 38px; font-size: .84rem; }
+@media (max-width: 560px) { .dd-menu { position: fixed; left: 12px; right: 12px; top: auto; bottom: 12px; } }

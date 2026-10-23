@@ -64,9 +64,9 @@ export function FamView() {
         onClick={() => pick(p.id)}
         onKeyDown={(e) => e.key === "Enter" && pick(p.id)}
       >
-        <div className="mav2"><Avatar g={p.gender} photo={p.photo_url} /></div>
+        <div className="mav2"><Avatar g={p.gender} photo={p.photo_url} live={p.is_living} /></div>
         <div className="mn">{dispName(p, true)}</div>
-        <div className="my"><i className={`st ${p.is_living ? "live" : "gone"}`} title={p.is_living ? "जीवित" : "दिवंगत"} />{R[p.id] || "साइनो स्पष्ट छैन"}</div>
+        <div className="my">{R[p.id] || "साइनो स्पष्ट छैन"}</div>
         <KidCount kids={kidsOf(p)} />
         {mine ? <span className="me">तपाईं</span> : null}
       </div>
@@ -74,7 +74,7 @@ export function FamView() {
   };
   const lrow = (p: VPerson) => (
     <div key={p.id} className={`mlc ${p.is_living ? "" : "dead"} ${flashId === p.id ? "flash" : ""}`} data-id={p.id} onClick={() => pick(p.id)}>
-      <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} photo={p.photo_url} /></div>
+      <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} photo={p.photo_url} live={p.is_living} /></div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <b>{dispName(p)}</b>
         <br />
@@ -100,7 +100,7 @@ export function FamView() {
           <p>{msg}</p>
         </div>
         <div className="stats">
-          <div><b>{np(ic)}</b><span>अहिलेको परिवार</span></div>
+          <div><b>{np(ic)}</b><span>मुख्य परिवार</span></div>
           <div><b>{np(access.acc ? access.acc.size : people.length)}</b><span>खुला सदस्य</span></div>
           <div><b>{np(people.length)}</b><span>कुल सदस्य</span></div>
         </div>
@@ -221,8 +221,6 @@ export function MemView() {
   const { g, me, perms, pick } = useVansh();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<Status>("live");
-  const [tab, setTab] = useState<FKey>("gender");
-  const [open, setOpen] = useState(true);
   const [f, setF] = useState<Record<FKey, string[]>>(EMPTY_F);
 
   const toggle = (k: FKey, v: string) =>
@@ -251,82 +249,54 @@ export function MemView() {
     return { list, counts };
   }, [g, perms, status, f, ql, R]);
 
-  const cur = TABS.find((t) => t.k === tab)!;
-  const big = tab !== "age";
+  const statusLabel = STATUS.find(([k]) => k === status)![1];
 
   return (
     <>
-      <PersonSearch id="mq" className="msw mq-top" value={q} people={visiblePeople} rel={R} placeholder="🔍 सदस्य वा साइनो खोज्नुहोस्…" onChange={setQ} onChoose={(id) => pick(id)} />
-      <section className="mf">
-        {/* १. जीवित / दिवंगत segmented control */}
-        <div className="mf-seg" role="tablist" aria-label="अवस्था">
-          <span className="mf-ind" style={{ transform: `translateX(${STATUS.findIndex(([s]) => s === status) * 100}%)` }} />
-          {STATUS.map(([s, l]) => (
-            <button key={s} role="tab" aria-selected={status === s} className={status === s ? "on" : ""} onClick={() => setStatus(s)}>
-              {l}
-            </button>
-          ))}
-        </div>
-
-        {/* फिल्टर खोल्ने / बन्द गर्ने */}
-        <div className="mf-head">
-          <button className="mf-fold" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-            ⚙ फिल्टर {total > 0 && <em>{np(total)}</em>}
-            <i className={open ? "up" : ""} />
-          </button>
-          {total > 0 && (
-            <button className="mf-clear" onClick={() => setF(EMPTY_F)}>सबै फिल्टर हटाउनुहोस्</button>
-          )}
-        </div>
-
-        <div className={`mf-body ${open ? "" : "shut"}`}>
-          <div>
-            {/* २. tab */}
-            <div className="mf-tabs" role="tablist">
-              {TABS.map((t) => (
-                <button key={t.k} role="tab" aria-selected={tab === t.k} className={tab === t.k ? "on" : ""} onClick={() => setTab(t.k)}>
-                  {t.label}
-                  {f[t.k].length > 0 && <em>{np(f[t.k].length)}</em>}
-                </button>
-              ))}
-            </div>
-
-            {/* ३. विकल्प */}
-            <div className={big ? "mf-grid" : "mf-scroll"}>
-              {cur.opts.map(([v, l]) => {
-                const on = f[tab].includes(v);
+      <div className="mbar">
+        <PersonSearch id="mq" className="msw mbar-q" value={q} people={visiblePeople} rel={R} placeholder="🔍 सदस्य वा साइनो खोज्नुहोस्…" onChange={setQ} onChoose={(id) => pick(id)} />
+        <div className="mbar-f">
+          <DropFilter label="अवस्था" shown={status === "all" ? "" : statusLabel} single>
+            {STATUS.map(([k, l]) => (
+              <button key={k} role="menuitemradio" aria-checked={status === k} className={status === k ? "on" : ""} onClick={() => setStatus(k)}>
+                <span className="dd-box rad" /> {l}
+              </button>
+            ))}
+          </DropFilter>
+          {TABS.map((t) => (
+            <DropFilter key={t.k} label={t.label} count={f[t.k].length}>
+              {t.opts.map(([v, l]) => {
+                const on = f[t.k].includes(v);
                 return (
-                  <button key={v} className={`mf-opt ${big ? "big" : "pill"} ${on ? "on" : ""}`} aria-pressed={on} onClick={() => toggle(tab, v)}>
-                    {l}
-                    <em>{np(counts[`${tab}:${v}`] ?? 0)}</em>
+                  <button key={v} role="menuitemcheckbox" aria-checked={on} className={on ? "on" : ""} onClick={() => toggle(t.k, v)}>
+                    <span className="dd-box" /> <span className="dd-l">{l}</span>
+                    <em>{np(counts[`${t.k}:${v}`] ?? 0)}</em>
                   </button>
                 );
               })}
-            </div>
-
-            {/* चयन गरिएका फिल्टरका removable chip */}
-            {total > 0 && (
-              <div className="mf-chips">
-                {TABS.flatMap((t) =>
-                  f[t.k].map((v) => (
-                    <button key={t.k + v} className="mf-chip" onClick={() => toggle(t.k, v)} aria-label="हटाउनुहोस्">
-                      {t.opts.find(([x]) => x === v)?.[1]} ✕
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
+            </DropFilter>
+          ))}
+          {total > 0 && <button className="ghost mbar-x" onClick={() => setF(EMPTY_F)}>✕ हटाउनुहोस्</button>}
         </div>
-
-        <p className="mf-count"><b>{np(list.length)}</b> सदस्यहरू देखाइएको</p>
-      </section>
+      </div>
+      {total > 0 && (
+        <div className="mf-chips">
+          {TABS.flatMap((t) =>
+            f[t.k].map((v) => (
+              <button key={t.k + v} className="mf-chip" onClick={() => toggle(t.k, v)} aria-label="हटाउनुहोस्">
+                {t.label}: {t.opts.find(([x]) => x === v)?.[1]} ✕
+              </button>
+            ))
+          )}
+        </div>
+      )}
+      <p className="mf-count"><b>{np(list.length)}</b> सदस्य देखाइएको</p>
 
       <div className="mgrid" id="mg">
         {list.length ? (
           list.map((p) => (
             <div key={p.id} className={`mlc ${p.is_living ? "" : "dead"}`} data-id={p.id} onClick={() => pick(p.id)}>
-              <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} photo={p.photo_url} /></div>
+              <div className={`mav2 sm g${p.gender || "O"}`}><Avatar g={p.gender} photo={p.photo_url} live={p.is_living} /></div>
               <div>
                 <b>{dispName(p)}</b>
                 <br />
@@ -339,11 +309,46 @@ export function MemView() {
         ) : (
           <div className="card mf-empty">
             <b>कुनै सदस्य भेटिएन</b>
-            <p className="mut">फिल्टर हटाएर पुनः प्रयास गर्नुहोस्।</p>
+            <p className="mut">खोज वा फिल्टर बदलेर हेर्नुहोस्।</p>
             {total > 0 && <button onClick={() => setF(EMPTY_F)}>सबै फिल्टर हटाउनुहोस्</button>}
           </div>
         )}
       </div>
     </>
+  );
+}
+
+/** A compact dropdown button with a checkbox / radio list. */
+function DropFilter({ label, count = 0, shown, single, children }: { label: string; count?: number; shown?: string; single?: boolean; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("pointerdown", away);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("pointerdown", away);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [open]);
+  const active = count > 0 || !!shown;
+  return (
+    <div className="dd" ref={ref}>
+      <button className={`ghost dd-btn ${active ? "on" : ""}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        {label}
+        {shown ? <b>: {shown}</b> : null}
+        {count > 0 && <em>{np(count)}</em>}
+        <span className="dd-ch">▾</span>
+      </button>
+      {open && (
+        <div className="dd-menu popover" role="menu" onClick={() => single && setOpen(false)}>
+          {children}
+        </div>
+      )}
+    </div>
   );
 }

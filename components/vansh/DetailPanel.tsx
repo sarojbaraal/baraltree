@@ -2,7 +2,8 @@
 // Profile side panel (FamilySearch-style) — ported from the original app.js detail().
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { relMap, relsOf, genNo } from "@/lib/vansh/relations";
-import { kinChain, ordinalOf, stepWord } from "@/lib/vansh/kinship";
+import { ordinalOf } from "@/lib/vansh/kinship";
+import type { VPerson } from "@/lib/vansh/types";
 import { chartGoto } from "@/lib/vansh/chartGoto";
 import { ageN, dispName, fbOk, np, yr } from "@/lib/vansh/text";
 import { useVansh } from "./VanshContext";
@@ -82,7 +83,19 @@ export default function DetailPanel({
     else el.style.transform = "";
   };
   const [busyAi, setBusyAi] = useState(false);
-  const kc = useMemo(() => (sel && me ? kinChain(g.people, me, sel) : null), [g.people, me, sel]);
+  // root ancestor → … → this person, following the father (the mother when no father is recorded)
+  const lineage = useMemo(() => {
+    const out: VPerson[] = [];
+    let cur = sel ? g.byId[sel] : undefined;
+    const seen = new Set<string>();
+    while (cur && !seen.has(cur.id)) {
+      seen.add(cur.id);
+      out.unshift(cur);
+      const nxt: string | null | undefined = cur.father_id || cur.mother_id;
+      cur = nxt ? g.byId[nxt] : undefined;
+    }
+    return out;
+  }, [g.byId, sel]);
   const p = sel ? g.byId[sel] : undefined;
   if (!p) return null;
 
@@ -141,12 +154,11 @@ export default function DetailPanel({
         <div className="pp-top">
           <div className="pp-avw">
             <div className={`pp-av g${p.gender || "O"}`}>
-              <Avatar g={p.gender} photo={p.photo_url} />
+              <Avatar g={p.gender} photo={p.photo_url} live={p.is_living} />
             </div>
             {ce && !lim && (
               <button className="ghost pp-cam" aria-label="फोटो अपलोड" title="फोटो अपलोड" onClick={() => openDialog(<PhotoDialog p={p} />)}>📷</button>
             )}
-            <span className="pp-live"><i className={`st ${p.is_living ? "live" : "gone"}`} /> {p.is_living ? "जीवित" : "दिवंगत"}</span>
           </div>
           <div className="pp-info">
             <h3>{dispName(p)}</h3>
@@ -201,25 +213,21 @@ export default function DetailPanel({
         <p className="mut" style={{ marginTop: "1rem" }}>यो शाखाको नाम मात्र हेर्न मिल्छ।</p>
       ) : (
         <>
-          {kc && kc.chain.length > 1 && (
+          {lineage.length > 1 && (
             <>
-              <div className="pp-h">नाताको बाटो</div>
+              <div className="pp-h">वंश परम्परा</div>
               <p className="kpt">
-                {kc.chain.slice(1).map((h, i) => {
-                  const prev = kc.chain[i].person;
-                  const real = prev.id !== "__me__" && can(prev.id);
-                  return (
-                    <React.Fragment key={h.person.id + i}>
-                      {i > 0 && <span className="ka">→</span>}
-                      {i === 0 ? "तपाईं" : real ? <button className="kl" onClick={() => pick(prev.id)}>{dispName(prev, true)}</button> : nm(prev)}
-                      को {stepWord(h.step as never)}
-                    </React.Fragment>
-                  );
-                })}
-                <span className="ka">→</span>
-                <span className="ke">{dispName(p, true)}</span>
+                {lineage.map((x, i) => (
+                  <React.Fragment key={x.id}>
+                    {i > 0 && <span className="ka">→</span>}
+                    {can(x.id) ? (
+                      <button className={`kl ${x.id === p.id ? "ke" : ""}`} onClick={() => x.id !== p.id && pick(x.id)}>{dispName(x, true)}</button>
+                    ) : (
+                      <span>{nm(x)}</span>
+                    )}
+                  </React.Fragment>
+                ))}
               </p>
-              {kc.term && <div className="kp-sum">∴ {dispName(p, true)} तपाईंको <b>{kc.term}</b> हुनुहुन्छ</div>}
             </>
           )}
           <div className="pp-h">परिवार</div>

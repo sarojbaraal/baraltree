@@ -8,17 +8,23 @@ import type { Graph, Perms } from "@/lib/vansh/graph";
 import { useVansh } from "./VanshContext";
 
 /** photo_url (when set) overrides the default avatar everywhere. */
-export function Avatar({ g, photo }: { g?: string | null; photo?: string | null }) {
+export function Avatar({ g, photo, live }: { g?: string | null; photo?: string | null; live?: boolean | null }) {
   const site = useSyncExternalStore(subscribeSiteAvatars, getSiteAvatars, () => ({}) as ReturnType<typeof getSiteAvatars>);
   const [broken, setBroken] = useState<string | null>(null);
   const url = (photo && photo !== broken ? photo : null) || (g === "F" ? site.F : site.M);
-  if (url)
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img className="avimg" src={url} alt="" draggable={false} onError={() => photo && setBroken(photo)} />;
+  const dot = live == null ? null : <i className={`fdot ${live ? "live" : "gone"}`} title={live ? "जीवित" : "दिवंगत"} />;
   return (
-    <svg aria-hidden="true">
-      <use href={`#${g === "F" ? "avF" : "avM"}`} width="100%" height="100%" />
-    </svg>
+    <>
+      {url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="avimg" src={url} alt="" draggable={false} onError={() => photo && setBroken(photo)} />
+      ) : (
+        <svg aria-hidden="true">
+          <use href={`#${g === "F" ? "avF" : "avM"}`} width="100%" height="100%" />
+        </svg>
+      )}
+      {dot}
+    </>
   );
 }
 
