@@ -10,6 +10,7 @@ import {
 } from "@/lib/vansh/requests";
 import { ageN, fbOk, np, surnameOf, wifeNames, yr } from "@/lib/vansh/text";
 import { genNo, relMap } from "@/lib/vansh/relations";
+import { BRANCH_LEVELS, branchPdf } from "@/lib/vansh/branchPrint";
 import { useVansh } from "./VanshContext";
 import { Avatar, DateField, PasswordField, Sx, SXMSG, personOptions, useSx } from "./ui";
 
@@ -777,5 +778,50 @@ export function PasswordDialog() {
         <button className="ghost" onClick={closeDialog}>रद्द</button>
       </div>
     </>
+  );
+}
+
+/** शाखा प्रिन्ट: explains the 7-generation A3 PDF, then downloads it or points to the main download window. */
+export function BranchPrintDialog({ p }: { p: VPerson }) {
+  const { g, perms, closeDialog, toast } = useVansh();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const run = async () => {
+    setBusy(true);
+    setErr("");
+    try {
+      const { blob, info } = await branchPdf(g, p.id, perms.can, perms.nm);
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `vanshavali-${p.name.replace(/\s+/g, "-")}-shakha-A3.pdf`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      toast(info.pages > 1 ? `PDF डाउनलोड भयो — शाखा फराकिलो भएकाले ${np(info.pages)} A3 पृष्ठ` : "PDF डाउनलोड भयो");
+      closeDialog();
+    } catch (e) {
+      setErr((e as Error).message || "PDF बनाउन सकिएन");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div>
+      <h3>🖨 शाखा प्रिन्ट — {p.name}</h3>
+      <p>यहाँ बाट तपाईले आफ्नो सबै भन्दा तल बाट {np(BRANCH_LEVELS)} पुस्ता माथि सम्म मात्र प्रिन्ट गर्न सक्नुहुन्छ। A3 पेपर साईजमा pdf फाइल डाउलोड हुनेछ।</p>
+      {err && <p className="mut" role="alert">{err}</p>}
+      <div className="row" style={{ marginTop: ".9rem" }}>
+        <button disabled={busy} onClick={run}>{busy ? "बन्दैछ…" : "⬇ डाउनलोड गर्ने"}</button>
+        <button
+          className="ghost"
+          disabled={busy}
+          onClick={() => {
+            closeDialog();
+            setTimeout(() => window.dispatchEvent(new Event("vv-open-download")), 50);
+          }}
+        >
+          मुख्य डाउनलोड मेनुमा जाने
+        </button>
+      </div>
+    </div>
   );
 }

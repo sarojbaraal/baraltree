@@ -11,6 +11,11 @@ export default function DownloadMenu() {
   const { db, g, people, perms, openDialog, closeDialog, reload } = useVansh();
   const { can, nm, isAdm } = perms;
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const h = () => setOpen(true);
+    window.addEventListener("vv-open-download", h);
+    return () => window.removeEventListener("vv-open-download", h);
+  }, []);
   const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const away = (e: PointerEvent) => {

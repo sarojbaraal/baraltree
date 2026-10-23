@@ -1,6 +1,7 @@
 "use client";
 // Interactive family chart: pan / pinch / wheel zoom, fold / unfold branches, search, downloads.
 // Ported from the original app.js treeView(), draw(), zoom helpers and export hooks.
+import { BranchPrintDialog } from "./PersonDialogs";
 import { chartGoto } from "@/lib/vansh/chartGoto";
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
@@ -357,26 +358,7 @@ export default function TreeView() {
   };
   const printBranch = (id: string) => {
     const p = byId[id];
-    const stage = stageRef.current;
-    if (!p || !stage) return;
-    const w = window.open("", "_blank", "width=1200,height=800");
-    if (!w) return toast("प्रिन्ट विन्डो खुलेन — पप-अप अनुमति दिनुहोस्");
-    const styles = [...document.querySelectorAll("style,link[rel=stylesheet]")].map((n) => n.outerHTML).join("");
-    const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
-    const sprite = document.getElementById("vv-sprite")?.outerHTML || "";
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>वंशावली: ${esc(p.name)} को शाखा</title>${styles}
-      <style>@page{size:A3 landscape;margin:1cm}body{background:#fff;color:#000;display:block}
-      .print-header{text-align:center;margin-bottom:20px;border-bottom:2px solid #333;padding-bottom:10px}
-      .print-header h1{margin:0;font-size:24px}.print-header p{margin:5px 0 0;color:#666}
-      #pstage{position:relative;transform:none!important}.cd.dim{opacity:.15;filter:grayscale(100%)}
-      .cd.sel,.cd.hl{opacity:1;filter:none;border:2px solid #000}.ln{stroke:#eee;stroke-width:1px}.ln.on{stroke:#000;stroke-width:2px}</style></head>
-      <body>${sprite}<div class="print-header"><h1>🌳 ${esc(p.name)} को वंशावली शाखा</h1>
-      <p>मुद्रित मिति: ${new Date().toLocaleDateString("ne-NP")} | हाम्रो वंशावली</p></div>
-      <div id="pstage" style="width:${layoutRef.current.W}px;height:${layoutRef.current.H}px">${stage.innerHTML}</div>
-      <h2 style="margin-top:24px;page-break-before:always">सदस्य विवरण</h2>
-      <table class="ptable" border="1" cellpadding="4" style="border-collapse:collapse;width:100%;font-size:12px"><thead><tr>${["नाम","जन्म (BS)","जन्म स्थान","मृत्यु (BS)","मृत्यु स्थान","शिक्षा","पेशा","विवाह (BS)"].map((h) => `<th style="text-align:left;background:#f4f4f4">${h}</th>`).join("")}</tr></thead><tbody>${[...g.branchOf([id])].map((x) => byId[x]).filter((x) => x && can(x.id) && !x.name_only).sort(g.byBirth).map((x) => `<tr>${[dispName(x), x.birth_bs, x.birth_place, x.is_living ? "" : x.death_bs, x.is_living ? "" : x.death_place, x.education, x.occupation, x.marriage_bs].map((c) => `<td>${esc(String(c || ""))}</td>`).join("")}</tr>`).join("")}</tbody></table>
-      <script>window.onload=function(){setTimeout(function(){window.print();window.close()},400)}<\/script></body></html>`);
-    w.document.close();
+    if (p) openDialog(<BranchPrintDialog p={p} />);
   };
 
   useEffect(() => {
