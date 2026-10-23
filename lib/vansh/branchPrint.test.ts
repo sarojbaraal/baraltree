@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createGraph } from "./graph";
-import { branchSubset } from "./branchPrint";
+import { branchSubset, cascadeRows } from "./branchPrint";
 import type { VPerson } from "./types";
 
 const P = (id: string, father?: string, extra: Partial<VPerson> = {}) =>
@@ -21,9 +21,13 @@ describe("branchSubset", () => {
     const ids = r.people.map((p) => p.id).sort();
     expect(ids).toEqual(["a3", "a4", "a5", "a6", "a7", "a8", "a9", "b3", "w9"]);
   });
-  it("cuts parent links leaving the set", () => {
-    const top = branchSubset(g, "a0").people.find((p) => p.id === "a3")!;
-    expect(top.father_id).toBeNull();
+  it("cascades depth-first, spouse on the same row", () => {
+    const rows = cascadeRows(g, "a0");
+    expect(rows.map((r) => r.p.id)).toEqual(["a3", "a4", "a5", "a6", "a7", "a8", "a9", "b3"]);
+    expect(rows.map((r) => r.lvl)).toEqual([0, 1, 2, 3, 4, 5, 6, 0]);
+    expect(rows[1].parent).toBe(0);
+    expect(rows[6].spouses.map((x) => x.id)).toEqual(["w9"]);
+    expect(rows[7].parent).toBeNull();
   });
   it("short branch prints everything", () => {
     const r = branchSubset(g, "a7");
