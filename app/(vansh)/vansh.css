@@ -799,3 +799,11 @@ details.rv[open] > summary::after { transform: rotate(180deg); }
   .eds-pm { left: 0; transform: none; }
   .edw { grid-template-rows: auto minmax(0, 1fr); }
 }
+
+/* sign-up contact fields + privacy FAQ */
+.ctf { display: grid; gap: .1rem; }
+.ctf.hint { padding: .6rem .7rem .2rem; margin-top: .4rem; border-radius: 14px; background: color-mix(in srgb, var(--mg) 14%, transparent); outline: 1px solid color-mix(in srgb, var(--mg) 55%, transparent); }
+.auth-faq { margin-top: 1rem; font-size: .85rem; border-top: 1px solid var(--line); padding-top: .8rem; }
+.auth-faq summary { cursor: pointer; color: var(--mut); }
+.auth-faq dt { font-weight: 600; margin-top: .7rem; }
+.auth-faq dd { margin: .15rem 0 0; color: var(--mut); line-height: 1.5; }

@@ -120,6 +120,25 @@ function UserCard({ u, isNew, onSave, onAnchor }: { u: VProfile; isNew: boolean;
         <p className="mut">
           {c ? <>स्थान: {c.name}<br /></> : q ? <>स्थान: {q.name} को सन्तान<br /></> : gr ? <>स्थान: {gr.name} को वंश<br /></> : null}
           दिएको परिचय — बुबा: <b>{u.claim_father || "—"}</b> · हजुरबुबा: <b>{u.claim_grand || "—"}</b>
+          {(u.birth_bs || u.phone || u.location) && (
+            <>
+              <br />
+              जन्म मिति: <b>{u.birth_bs || "—"}</b> · फोन: <b>{u.phone || "—"}</b> · ठेगाना: <b>{u.location || "—"}</b>
+              {sx.value && g.byId[sx.value] && (() => {
+                const t = g.byId[sx.value];
+                const d: string[] = [];
+                if (u.birth_bs && t.birth_bs && t.birth_bs !== u.birth_bs) d.push(`जन्म मिति (अहिले: ${t.birth_bs})`);
+                if (u.phone && t.phone && t.phone !== u.phone) d.push(`फोन (अहिले: ${t.phone})`);
+                if (u.location && t.address && t.address !== u.location) d.push(`ठेगाना (अहिले: ${t.address})`);
+                return (
+                  <>
+                    <br />
+                    <span className="mut">स्वीकृत गर्दा {t.name} का खाली फिल्डमा मात्र भरिन्छ।{d.length ? " फरक परेका (नबदलिने): " + d.join(", ") : ""}</span>
+                  </>
+                );
+              })()}
+            </>
+          )}
         </p>
       )}
       <RoleBoxes roles={roles} onChange={setRoles} />

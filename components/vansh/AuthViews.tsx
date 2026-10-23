@@ -2,7 +2,7 @@
 // Login / signup / forgot password, new-password, identity (position) request and "waiting for approval" screens.
 import React, { useEffect, useState } from "react";
 import { useVansh } from "./VanshContext";
-import { PasswordField } from "./ui";
+import { DateField, PasswordField } from "./ui";
 
 type Mode = "login" | "signup" | "forgot";
 const TITLE: Record<Mode, string> = { login: "स्वागतम् !", signup: "खाता बनाउनुहोस्", forgot: "पासवर्ड रिसेट" };
@@ -12,6 +12,27 @@ const SUBTITLE: Record<Mode, string> = {
   forgot: "चिन्ता नगर्नुहोस्, हामी मद्दत गर्छौं",
 };
 const BTN: Record<Mode, string> = { login: "लगइन गर्नुहोस्", signup: "खाता बनाउनुहोस्", forgot: "रिसेट लिंक पठाउनुहोस्" };
+
+/** Optional contact details asked at sign-up (stored on the profile, copied to the person on approval). */
+function ContactFields({ v, set, hint }: { v: { bd: string; ph: string; loc: string }; set: (k: "bd" | "ph" | "loc", x: string) => void; hint?: boolean }) {
+  return (
+    <div className={hint ? "ctf hint" : "ctf"}>
+      <label>
+        जन्म मिति (वि.सं.)
+        <DateField value={v.bd} onChange={(x) => set("bd", x)} />
+      </label>
+      <label>
+        फोन नम्बर
+        <input type="tel" inputMode="tel" value={v.ph} onChange={(e) => set("ph", e.target.value)} autoComplete="tel" placeholder="९८XXXXXXXX" />
+      </label>
+      <label>
+        हाल बसोबास गरेको ठाउँ
+        <input value={v.loc} onChange={(e) => set("loc", e.target.value)} autoComplete="address-level2" placeholder="जस्तै: काठमाडौं, कोटेश्वर" />
+      </label>
+    </div>
+  );
+}
+const NUDGE = "कम्तिमा जन्म मिति र फोन नम्बर राखिदिनुहोस् — एडमिनलाई तपाईंलाई वंशावलीमा सही व्यक्तिसँग जोड्न सजिलो हुन्छ। नराख्ने हो भने फेरि थिच्नुहोस्, यसबिना पनि पठाइनेछ।";
 
 const siteUrl = () => `${location.origin}${location.pathname}`;
 
@@ -35,6 +56,9 @@ export function AuthView() {
   const [fn, setFn] = useState("");
   const [cf, setCf] = useState("");
   const [cg, setCg] = useState("");
+  const [ct, setCt] = useState({ bd: "", ph: "", loc: "" });
+  const setC = (k: "bd" | "ph" | "loc", x: string) => setCt((o) => ({ ...o, [k]: x }));
+  const [nudged, setNudged] = useState(false);
   const [msg, setMsg] = useState<{ t: string; ok?: boolean } | null>(null);
   const [inv, setInv] = useState<{ name: string | null; checked: boolean }>({ name: null, checked: false });
   const [busy, setBusy] = useState(false);
@@ -65,11 +89,15 @@ export function AuthView() {
         if (!name) return say("पूरा नाम लेख्नुहोस्।");
         if (pw.length < 8) return say("पासवर्ड कम्तिमा ८ अक्षरको हुनुपर्छ ल!");
         if (!token && (!cf.trim() || !cg.trim())) return say("बुबा र हजुरबुबाको नाम लेख्नुहोस् (थाहा नभए 'थाहा छैन' लेख्नुहोस्)।");
+        if (!nudged && !ct.bd.trim() && !ct.ph.trim()) {
+          setNudged(true);
+          return say(NUDGE);
+        }
         const { error } = await db.auth.signUp({
           email: e,
           password: pw,
           options: {
-            data: { full_name: name, claim_father: cf.trim() || null, claim_grand: cg.trim() || null, invite: token || null },
+            data: { full_name: name, claim_father: cf.trim() || null, claim_grand: cg.trim() || null, invite: token || null, birth_bs: ct.bd.trim() || null, phone: ct.ph.trim() || null, location: ct.loc.trim() || null },
           },
         });
         say(
@@ -191,6 +219,7 @@ export function AuthView() {
                   </label>
                 </>
               )}
+              <ContactFields v={ct} set={setC} hint={nudged} />
             </>
           )}
           <label>
@@ -259,6 +288,21 @@ export function AuthView() {
               </p>
             )}
           </div>
+          <details className="auth-faq">
+            <summary>यो साइट के हो र मेरो डाटा कति सुरक्षित छ?</summary>
+            <dl>
+              <dt>यो साइट के हो?</dt>
+              <dd>बराल परिवारको वंशावली — को कसको छोरा/छोरी, को कुन पुस्ता र कसको कुन नाता हो भन्ने निजी परिवार-रेकर्ड। सार्वजनिक वेबसाइट होइन।</dd>
+              <dt>को के हेर्न सक्छ?</dt>
+              <dd>खाता बनाएपछि एडमिनले स्वीकृत गरेमा मात्र पहुँच खुल्छ। साधारण सदस्यले आफ्नो शाखा बाहेकका व्यक्तिको पूरा विवरण देख्दैनन्; ती शाखा बन्द (locked) रहन्छन्।</dd>
+              <dt>इमेल र फोन कसले देख्छ?</dt>
+              <dd>इमेल र फोन नम्बर एडमिन/मोडरेटर र सम्बन्धित व्यक्ति आफैँले मात्र देख्न सक्छन्।</dd>
+              <dt>पासवर्ड र लगइन?</dt>
+              <dd>पासवर्ड Supabase Auth ले hash गरेर राख्छ — हामीले पढ्न सक्दैनौं। Google बाट पनि लगइन गर्न मिल्छ।</dd>
+              <dt>जो कसैले जे पनि बदल्न सक्छ?</dt>
+              <dd>सदस्यले गरेको सुझाव/परिवर्तन एडमिनले स्वीकृत गरेपछि मात्र वंशावलीमा लागू हुन्छ। डाटाबेसमै पहुँच नियम (RLS) लागू छ, त्यसैले ब्राउजरबाट बाइपास गर्न मिल्दैन।</dd>
+            </dl>
+          </details>
           {mode === "signup" && (
             <p className="mut" style={{ textAlign: "center", marginTop: "1rem", fontSize: "0.82rem" }}>
               खाता बनेपछि एडमिनले स्वीकृत गर्नेछन्।
@@ -321,10 +365,16 @@ export function PosView() {
   const [n, setN] = useState(me?.full_name || "");
   const [f, setF] = useState("");
   const [gr, setGr] = useState("");
+  const [ct, setCt] = useState({ bd: "", ph: "", loc: "" });
+  const [nudged, setNudged] = useState(false);
   const [msg, setMsg] = useState<{ t: string; ok?: boolean } | null>(null);
   const go = async () => {
     if (!n.trim() || !f.trim() || !gr.trim()) return setMsg({ t: "नाम, बुबा र हजुरबुबाको नाम लेख्नुहोस् (थाहा नभए 'थाहा छैन' लेख्नुहोस्)।" });
-    const { error } = await db.rpc("submit_identity", { p_name: n.trim(), p_father: f.trim(), p_grand: gr.trim() });
+    if (!nudged && !ct.bd.trim() && !ct.ph.trim()) {
+      setNudged(true);
+      return setMsg({ t: NUDGE });
+    }
+    const { error } = await db.rpc("submit_identity", { p_name: n.trim(), p_father: f.trim(), p_grand: gr.trim(), p_birth: ct.bd.trim(), p_phone: ct.ph.trim(), p_location: ct.loc.trim() });
     if (error) return setMsg({ t: error.message });
     boot();
   };
@@ -344,6 +394,7 @@ export function PosView() {
         तपाईंको हजुरबुबाको नाम के हो?
         <input value={gr} onChange={(e) => setGr(e.target.value)} />
       </label>
+      <ContactFields v={ct} set={(k, x) => setCt((o) => ({ ...o, [k]: x }))} hint={nudged} />
       <Say m={msg} />
       <div className="row">
         <button id="go" onClick={go}>पठाउने</button>

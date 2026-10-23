@@ -46,6 +46,9 @@ export interface VProfile {
   position_grand_id?: string | null;
   claim_father?: string | null;
   claim_grand?: string | null;
+  birth_bs?: string | null;
+  phone?: string | null;
+  location?: string | null;
   custom_anchor?: { target_id: string; relation_type: string } | null;
 }
 
