@@ -1,14 +1,15 @@
 "use client";
 // Dialogs for adding / editing / deleting people and relations (ported from the original app.js: form, kidsForm,
 // spouseForm, parentForm, addMenu, inviteForm).
-import PhotoCrop from "./PhotoCrop";
+import PhotoCrop, { type PhotoCropHandle } from "./PhotoCrop";
 import React, { useEffect, useRef, useState } from "react";
 import type { VPerson, NewRequest } from "@/lib/vansh/types";
 import { ORDER, ROLE_L } from "@/lib/vansh/graph";
 import {
   GOT, buildKidRequests, buildPersonPayload, makeRequest, type KidDraft,
 } from "@/lib/vansh/requests";
-import { fbOk, surnameOf, wifeNames, yr } from "@/lib/vansh/text";
+import { ageN, fbOk, np, surnameOf, wifeNames, yr } from "@/lib/vansh/text";
+import { genNo, relMap } from "@/lib/vansh/relations";
 import { useVansh } from "./VanshContext";
 import { Avatar, DateField, PasswordField, Sx, SXMSG, personOptions, useSx } from "./ui";
 
@@ -107,6 +108,15 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
   const [notes, setNotes] = useState(v.notes || "");
   const [nt, setNt] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
+  const cropRef = useRef<PhotoCropHandle>(null);
+  const [pickMenu, setPickMenu] = useState(false);
+  const [prevUrl, setPrevUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!photo) return setPrevUrl(null);
+    const u = URL.createObjectURL(photo);
+    setPrevUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [photo]);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const lm = useRef((v.married_name || "").trim());
@@ -233,11 +243,34 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
   return (
     <div className="edw">
       <aside className="eds">
-        <div className={`pp-av g${gender || "O"}`} id="eds-a">
-          <Avatar g={gender} />
+        <div className="eds-pw">
+          <div className={`pp-av g${gender || "O"}`} id="eds-a">
+            <Avatar g={gender} photo={prevUrl || v.photo_url} live={living} />
+          </div>
+          <button type="button" className="ghost pp-cam" aria-label="फोटो अपलोड" title="फोटो अपलोड" onClick={() => setPickMenu((x) => !x)}>📷</button>
+          {pickMenu && (
+            <div className="eds-pm" role="menu">
+              <button type="button" role="menuitem" className="ghost" onClick={() => { setPickMenu(false); cropRef.current?.openCamera(); }}>📷 क्यामेरा बाट</button>
+              <button type="button" role="menuitem" className="ghost" onClick={() => { setPickMenu(false); cropRef.current?.openGallery(); }}>🖼 ग्यालरी बाट</button>
+            </div>
+          )}
         </div>
         <b id="eds-n">{name || "नयाँ व्यक्ति"}</b>
-        <span id="eds-y">{yr(birth)}</span>
+        {p && (
+          <div className="eds-i">
+            {(() => {
+              const rl = relMap(g, me).R[p.id];
+              const age = ageN(birth, living ? "" : death);
+              return (
+                <>
+                  {rl && <span>💠 {rl === "तपाईं" ? "तपाईं" : "तपाईंको " + rl}</span>}
+                  <span>🧬 Gen {np(genNo(g, p.id))}{age != null ? " · उमेर " + np(age) + " वर्ष" : ""}</span>
+                  {address && <span>📍 {address}</span>}
+                </>
+              );
+            })()}
+          </div>
+        )}
       </aside>
       <div className="edm">
         <button type="button" className="ghost pp-x" aria-label="बन्द" onClick={closeDialog}>×</button>
@@ -255,10 +288,9 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
             नाम
             <input value={name} onChange={(e) => setName(e.target.value)} />
           </label>
-          <label>
-            प्रोफाइल फोटो
-            <PhotoCrop onChange={setPhoto} current={v.photo_url} />
-          </label>
+          <div className="pcw">
+            <PhotoCrop ref={cropRef} bare onChange={setPhoto} current={v.photo_url} />
+          </div>
           <div className="edg mnl" hidden={!(gender === "F" && married)}>
             <label>
               विवाहपछिको थर (पतिको थरबाट स्वतः, नामको अन्त्यमा जोडिन्छ)
@@ -745,40 +777,5 @@ export function PasswordDialog() {
         <button className="ghost" onClick={closeDialog}>रद्द</button>
       </div>
     </>
-  );
-}
-
-/** Change just the profile photo (camera button beside the picture). */
-export function PhotoDialog({ p }: { p: VPerson }) {
-  const { db, send, closeDialog } = useVansh();
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false);
-  const save = async () => {
-    if (!photo) return;
-    setBusy(true);
-    setErr("📸 फोटो अपलोड हुँदैछ...");
-    try {
-      const fileName = `${p.id}-${Date.now()}.webp`;
-      const { error: upErr } = await db.storage.from("profile-photos").upload(fileName, photo, { contentType: "image/webp" });
-      if (upErr) return setErr("❌ फोटो अपलोड असफल: " + (/row-level|policy/i.test(upErr.message) ? "तपाईंलाई फोटो राख्ने अनुमति छैन। एडमिनलाई भन्नुहोस्" : upErr.message));
-      const url = db.storage.from("profile-photos").getPublicUrl(fileName).data.publicUrl;
-      const e = await send("update", p.id, { photo_url: url }, "प्रोफाइल फोटो परिवर्तन");
-      if (e) setErr(e);
-      else closeDialog();
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <div className="eds">
-      <h3>📷 {p.name} को फोटो</h3>
-      <PhotoCrop onChange={setPhoto} current={p.photo_url} />
-      {err && <p className="mut" role="alert">{err}</p>}
-      <div className="row" style={{ marginTop: ".9rem" }}>
-        <button disabled={!photo || busy} onClick={save}>{busy ? "…" : "सुरक्षित गर्ने"}</button>
-        <button className="ghost" onClick={closeDialog}>रद्द</button>
-      </div>
-    </div>
   );
 }

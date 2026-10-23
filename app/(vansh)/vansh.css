@@ -782,3 +782,20 @@ details.rv[open] > summary::after { transform: rotate(180deg); }
 .dd-menu button.on .dd-box::after { content: ""; position: absolute; inset: 3px; border-radius: inherit; background: var(--cy-ink, #fff); }
 .mbar-x { min-height: 38px; font-size: .84rem; }
 @media (max-width: 560px) { .dd-menu { position: fixed; left: 12px; right: 12px; top: auto; bottom: 12px; } }
+
+/* profile-edit aside: photo, upload menu, quick facts */
+.eds-pw { position: relative; width: 108px; margin: 0 auto .9rem; }
+.eds-pw .pp-av { margin: 0; }
+.eds-pw .pp-cam { top: auto; bottom: 0; right: -4px; }
+.eds-pm { position: absolute; z-index: 5; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); display: flex; flex-direction: column; gap: 2px; padding: 6px; min-width: 160px; background: var(--solid); border: 1px solid var(--line-2); border-radius: 14px; box-shadow: var(--shadow-lg); }
+.eds-pm button { text-align: left; white-space: nowrap; }
+.eds-i { display: flex; flex-direction: column; gap: .3rem; margin-top: .6rem; font-size: .88rem; }
+.eds-i span { overflow-wrap: anywhere; }
+.pcw:empty { display: none; }
+@media (max-width: 640px) {
+  .eds { display: flex; align-items: center; gap: .9rem; padding: .8rem 1rem; text-align: left; border-right: 0; border-bottom: 1px solid var(--line); }
+  .eds-pw { width: 64px; margin: 0; flex: none; }
+  .eds-pw .pp-av { width: 64px; height: 64px; }
+  .eds-pm { left: 0; transform: none; }
+  .edw { grid-template-rows: auto minmax(0, 1fr); }
+}

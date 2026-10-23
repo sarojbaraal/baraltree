@@ -8,7 +8,7 @@ import { chartGoto } from "@/lib/vansh/chartGoto";
 import { ageN, dispName, fbOk, np, yr } from "@/lib/vansh/text";
 import { useVansh } from "./VanshContext";
 import { Avatar, KidCount } from "./ui";
-import { AddMenu, DeleteDialog, InviteDialog, PersonForm, PhotoDialog } from "./PersonDialogs";
+import { AddMenu, DeleteDialog, InviteDialog, PersonForm } from "./PersonDialogs";
 
 function Box({ c, ic, l, children, mg }: { c: string; ic: string; l: string; children?: React.ReactNode; mg?: boolean }) {
   if (!children) return null;
@@ -156,9 +156,6 @@ export default function DetailPanel({
             <div className={`pp-av g${p.gender || "O"}`}>
               <Avatar g={p.gender} photo={p.photo_url} live={p.is_living} />
             </div>
-            {ce && !lim && (
-              <button className="ghost pp-cam" aria-label="फोटो अपलोड" title="फोटो अपलोड" onClick={() => openDialog(<PhotoDialog p={p} />)}>📷</button>
-            )}
           </div>
           <div className="pp-info">
             <h3>{dispName(p)}</h3>
