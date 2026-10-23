@@ -1,6 +1,6 @@
 "use client";
 // Profile photo picker: choose → crop to a square (drag, wheel, pinch, slider) → compress to WebP ≤ 512 KB.
-import React, { useEffect, useRef, useState } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 
 const V = 280; // crop viewport (px)
 const OUT = 640; // first output size (px)
@@ -34,9 +34,60 @@ async function compress(img: HTMLImageElement, sx: number, sy: number, sw: numbe
   throw new Error("फोटो ५१२KB भित्र सानो बनाउन सकिएन — अर्को फोटो छान्नुहोस्");
 }
 
-export default function PhotoCrop({
-  onChange, current,
-}: { onChange: (f: File | null) => void; current?: string | null }) {
+export interface PhotoCropHandle {
+  openGallery: () => void;
+  /** Phones open the camera app; computers open the webcam in the page. */
+  openCamera: () => void;
+}
+
+const PhotoCrop = forwardRef<PhotoCropHandle, { onChange: (f: File | null) => void; current?: string | null; bare?: boolean }>(function PhotoCrop(
+  { onChange, current, bare },
+  handle
+) {
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [cam, setCam] = useState(false);
+  const stopCam = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setCam(false);
+  };
+  useEffect(() => () => streamRef.current?.getTracks().forEach((t) => t.stop()), []);
+  useImperativeHandle(handle, () => ({
+    openGallery: () => galleryRef.current?.click(),
+    openCamera: async () => {
+      const touch = typeof navigator !== "undefined" && navigator.maxTouchPoints > 0;
+      if (touch || !navigator.mediaDevices?.getUserMedia) return cameraRef.current?.click();
+      try {
+        const st = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 } } });
+        streamRef.current = st;
+        setCam(true);
+        setTimeout(() => {
+          if (videoRef.current) {
+            videoRef.current.srcObject = st;
+            videoRef.current.play().catch(() => {});
+          }
+        }, 30);
+      } catch {
+        setErr("क्यामेरा खोल्न सकिएन। ब्राउजरमा क्यामेरा अनुमति दिनुहोस्, वा 'ग्यालरी बाट' प्रयोग गर्नुहोस्।");
+      }
+    },
+  }));
+  const snap = () => {
+    const v = videoRef.current;
+    if (!v || !v.videoWidth) return;
+    const c = document.createElement("canvas");
+    c.width = v.videoWidth;
+    c.height = v.videoHeight;
+    c.getContext("2d")?.drawImage(v, 0, 0);
+    c.toBlob((b) => {
+      if (!b) return;
+      stopCam();
+      load(new File([b], "camera.jpg", { type: "image/jpeg" }));
+    }, "image/jpeg", 0.92);
+  };
   const [src, setSrc] = useState<string | null>(null);
   const [img, setImg] = useState<HTMLImageElement | null>(null);
   const [z, setZ] = useState(1);
@@ -69,8 +120,10 @@ export default function PhotoCrop({
   const pick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     e.target.value = "";
+    if (f) load(f);
+  };
+  const load = (f: File) => {
     setErr("");
-    if (!f) return;
     if (!f.type.startsWith("image/")) return setErr("यो फाइल फोटो होइन। JPG, PNG वा WebP फोटो छान्नुहोस्।");
     if (f.size > MAX_INPUT) return setErr(`फोटो धेरै ठूलो छ (${(f.size / 1048576).toFixed(1)} MB)। २५ MB भन्दा सानो फोटो छान्नुहोस्।`);
     const url = URL.createObjectURL(f);
@@ -150,13 +203,26 @@ export default function PhotoCrop({
 
   return (
     <div className="pcrop">
-      <label className="filebtn">
-        <input type="file" accept="image/*" hidden onChange={pick} />
-        📷 {preview || current ? "फोटो फेर्ने" : "फोटो छान्ने"}
-      </label>
-      {(preview || current) && !img && (
+      <input ref={galleryRef} type="file" accept="image/*" hidden onChange={pick} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="user" hidden onChange={pick} />
+      {!bare && (
+        <label className="filebtn">
+          <input type="file" accept="image/*" hidden onChange={pick} />
+          📷 {preview || current ? "फोटो फेर्ने" : "फोटो छान्ने"}
+        </label>
+      )}
+      {!bare && (preview || current) && !img && (
         // eslint-disable-next-line @next/next/no-img-element
         <img className="pc-prev" src={preview || current!} alt="" />
+      )}
+      {cam && (
+        <div className="pc-box">
+          <video ref={videoRef} className="pc-video" playsInline muted />
+          <div className="row">
+            <button type="button" onClick={snap}>📸 फोटो खिच्ने</button>
+            <button type="button" className="ghost" onClick={stopCam}>रद्द</button>
+          </div>
+        </div>
       )}
       {info && !img && <small className="mut"> {info} <button type="button" className="ghost" onClick={clear}>हटाउने</button></small>}
       {img && src && (
@@ -194,4 +260,6 @@ export default function PhotoCrop({
       {err && <div className="pc-err" role="alert">{err}</div>}
     </div>
   );
-}
+});
+
+export default PhotoCrop;

@@ -122,15 +122,32 @@ describe("kinship labels", () => {
     expect(genNo(g, "gita")).toBe(2);
     expect(genNo(g, "kiran", () => 7)).toBe(8);
   });
-  it("groups the family tab without duplicates", () => {
+  it("groups the family tab: one group per person, new rules", () => {
     const me = meAt("ram");
     const perms = makePerms("general", computeAccess(g, me, "general"));
-    const { R } = relMap(g, me);
-    const groups = famGroups(g, me, perms, R);
+    const groups = famGroups(g, me, perms, relMap(g, me).R);
     const ids = groups.flatMap((x) => x.members.map((p) => p.id));
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids.length).toBe(g.people.length);
-    expect(groups[0].members.map((p) => p.id)).toContain("ram");
+    const by = (t: string) => (groups.find((x) => x.title === t)?.members || []).map((p) => p.id);
+    expect(by("मुख्य परिवार")).toEqual(expect.arrayContaining(["gopal", "laxmi", "hari", "gita", "ram", "sita", "kiran", "shyam"]));
+    expect(by("मुख्य परिवार")).not.toContain("mina"); // married daughter
+    expect(by("छोरी-चेली तथा भान्जा-भान्जीहरु")).toEqual(expect.arrayContaining(["mina", "bikash", "anil"]));
+    expect(by("एकाघरका थप परिवार")).toEqual(expect.arrayContaining(["dev", "pooja"]));
+  });
+  it("a married woman's main family is her husband's", () => {
+    const me = meAt("sita");
+    const perms = makePerms("general", computeAccess(g, me, "general"));
+    const groups = famGroups(g, me, perms, relMap(g, me).R);
+    const main = groups[0].members.map((p) => p.id);
+    expect(groups[0].title).toBe("मुख्य परिवार");
+    expect(main).toEqual(expect.arrayContaining(["sita", "ram", "hari", "gita", "gopal"]));
+  });
+  it("13-din groups hold only बराल men of that generation", () => {
+    const me = meAt("kiran");
+    const perms = makePerms("general", computeAccess(g, me, "general"));
+    const groups = famGroups(g, me, perms, relMap(g, me).R);
+    const all13 = groups.filter((x) => x.title.startsWith("१३ दिने")).flatMap((x) => x.members);
+    expect(all13.every((p) => p.gender === "M" && p.name.endsWith("बराल"))).toBe(true);
   });
 });
 

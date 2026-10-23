@@ -189,7 +189,7 @@ function Shell() {
           ⓘ
         </span>
       </header>
-      <main id="app" className={inApp && eff === "tree" ? "wide" : ""} style={pushed ? { marginLeft: "calc(var(--det-w, 400px) + 18px)", marginRight: 0 } : undefined}>
+      <main id="app" className={inApp && eff === "tree" ? "wide" : ""} style={pushed ? { marginLeft: "calc(var(--det-w, 460px) + 18px)", marginRight: 0 } : undefined}>
         {phase === "loading" ? null : body}
       </main>
       {panelOpen && (

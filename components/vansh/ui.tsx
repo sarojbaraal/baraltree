@@ -8,16 +8,23 @@ import type { Graph, Perms } from "@/lib/vansh/graph";
 import { useVansh } from "./VanshContext";
 
 /** photo_url (when set) overrides the default avatar everywhere. */
-export function Avatar({ g, photo }: { g?: string | null; photo?: string | null }) {
+export function Avatar({ g, photo, live }: { g?: string | null; photo?: string | null; live?: boolean | null }) {
   const site = useSyncExternalStore(subscribeSiteAvatars, getSiteAvatars, () => ({}) as ReturnType<typeof getSiteAvatars>);
-  const url = photo || (g === "F" ? site.F : site.M);
-  if (url)
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img className="avimg" src={url} alt="" draggable={false} />;
+  const [broken, setBroken] = useState<string | null>(null);
+  const url = (photo && photo !== broken ? photo : null) || (g === "F" ? site.F : site.M);
+  const dot = live == null ? null : <i className={`fdot ${live ? "live" : "gone"}`} title={live ? "जीवित" : "दिवंगत"} />;
   return (
-    <svg aria-hidden="true">
-      <use href={`#${g === "F" ? "avF" : "avM"}`} width="100%" height="100%" />
-    </svg>
+    <>
+      {url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="avimg" src={url} alt="" draggable={false} onError={() => photo && setBroken(photo)} />
+      ) : (
+        <svg aria-hidden="true">
+          <use href={`#${g === "F" ? "avF" : "avM"}`} width="100%" height="100%" />
+        </svg>
+      )}
+      {dot}
+    </>
   );
 }
 
@@ -200,8 +207,8 @@ export function DateField({ value, onChange }: { value: string; onChange: (v: st
   const plain = na(text);
   const [y, m = "", d = ""] = plain.split("-");
   const bad =
-    (m.length === 2 && (+m < 1 || +m > 12) ? "महिना ०१ देखि १२ सम्म हुनुपर्छ" : "") ||
-    (d.length === 2 && (+d < 1 || +d > 32) ? "गते ०१ देखि ३२ सम्म हुनुपर्छ" : "");
+    (m.length === 2 && +m > 12 ? "महिना ०० (थाहा छैन) वा ०१ देखि १२ सम्म हुनुपर्छ" : "") ||
+    (d.length === 2 && +d > 32 ? "गते ०० (थाहा छैन) वा ०१ देखि ३२ सम्म हुनुपर्छ" : "");
   const change = (raw: string) => {
     let digits = na(raw).replace(/\D/g, "").slice(0, 8);
     // a backspace over an auto-inserted hyphen must still delete a digit
@@ -210,6 +217,7 @@ export function DateField({ value, onChange }: { value: string; onChange: (v: st
     setText(np(f));
     const [yy, mm, dd] = f.split("-");
     onChange(composeDate(yy || "", mm && +mm >= 1 && +mm <= 12 ? mm : "", dd && +dd >= 1 && +dd <= 32 ? dd : ""));
+    // "2050-00-00" is a valid "only the year is known" date — keep it as typed
   };
   return (
     <div className="dtr1">
@@ -224,6 +232,7 @@ export function DateField({ value, onChange }: { value: string; onChange: (v: st
         value={text}
         onChange={(e) => change(e.target.value)}
       />
+      {y.length === 4 && m.length === 2 && +m === 0 && !bad && <small className="mut">{np(y)} साल (महिना/गते थाहा छैन)</small>}
       {m.length === 2 && +m >= 1 && +m <= 12 && !bad && <small className="mut">{MONTHS_NE[+m - 1]}{d.length === 2 ? ` ${np(+d)} गते` : ""}, {np(y)}</small>}
       {bad && <small className="dterr">{bad}</small>}
     </div>

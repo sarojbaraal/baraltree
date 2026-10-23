@@ -2,7 +2,8 @@
 // Profile side panel (FamilySearch-style) — ported from the original app.js detail().
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { relMap, relsOf, genNo } from "@/lib/vansh/relations";
-import { kinChain, ordinalOf, stepWord } from "@/lib/vansh/kinship";
+import { ordinalOf } from "@/lib/vansh/kinship";
+import type { VPerson } from "@/lib/vansh/types";
 import { chartGoto } from "@/lib/vansh/chartGoto";
 import { ageN, dispName, fbOk, np, yr } from "@/lib/vansh/text";
 import { useVansh } from "./VanshContext";
@@ -82,7 +83,19 @@ export default function DetailPanel({
     else el.style.transform = "";
   };
   const [busyAi, setBusyAi] = useState(false);
-  const kc = useMemo(() => (sel && me ? kinChain(g.people, me, sel) : null), [g.people, me, sel]);
+  // root ancestor → … → this person, following the father (the mother when no father is recorded)
+  const lineage = useMemo(() => {
+    const out: VPerson[] = [];
+    let cur = sel ? g.byId[sel] : undefined;
+    const seen = new Set<string>();
+    while (cur && !seen.has(cur.id)) {
+      seen.add(cur.id);
+      out.unshift(cur);
+      const nxt: string | null | undefined = cur.father_id || cur.mother_id;
+      cur = nxt ? g.byId[nxt] : undefined;
+    }
+    return out;
+  }, [g.byId, sel]);
   const p = sel ? g.byId[sel] : undefined;
   if (!p) return null;
 
@@ -94,6 +107,15 @@ export default function DetailPanel({
   const RL: { q: typeof p; l: string; self?: boolean }[] = relsOf(g, p);
   RL.splice(RL.filter((x) => x.l === "बुबा" || x.l === "आमा").length, 0, { q: p, l: "यही प्रोफाइल", self: true });
   const age = p.is_living || p.death_bs ? ageN(p.birth_bs, p.is_living ? "" : p.death_bs) : null;
+
+  const showInChart = () => {
+    if (!p) return;
+    if (onGo) onGo(p.id);
+    else {
+      chartGoto.id = p.id;
+      setTab("tree");
+    }
+  };
 
   const aiSummary = async () => {
     setBusyAi(true);
@@ -130,64 +152,47 @@ export default function DetailPanel({
         <div className="sheet-handle" />
         <button className="ghost pp-x" id="dx" aria-label="बन्द" onClick={unpick}>×</button>
         <div className="pp-top">
-          <div
-            className={`pp-av g${p.gender || "O"}`}
-          >
-            <Avatar g={p.gender} photo={p.photo_url} />
+          <div className="pp-avw">
+            <div className={`pp-av g${p.gender || "O"}`}>
+              <Avatar g={p.gender} photo={p.photo_url} live={p.is_living} />
+            </div>
           </div>
           <div className="pp-info">
             <h3>{dispName(p)}</h3>
             {rl && <div className="pp-l">💠 {rl === "तपाईं" ? "तपाईं" : "तपाईंको " + rl}</div>}
             {ord && <div className="pp-l">🔢 {ord} {p.gender === "F" ? "छोरी" : "छोरा"}</div>}
             <div className="pp-l">
-              <i className={`st ${p.is_living ? "live" : "gone"}`} title={p.is_living ? "जीवित" : "दिवंगत"} /> 🧬 Gen {np(genNo(g, p.id, depthOf))}
+              🧬 Gen {np(genNo(g, p.id, depthOf))}
               {age != null ? " · उमेर " + np(age) + " वर्ष" : ""}
-              {p.is_living ? "" : " · दिवंगत"}
             </div>
             {g.addrOf(p) && <div className="pp-l">📍 {g.addrOf(p)}</div>}
           </div>
         </div>
         {!lim && (
-          <button
-            className="chartbtn"
-            onClick={() => {
-              if (onGo) onGo(p.id);
-              else {
-                chartGoto.id = p.id;
-                setTab("tree");
-              }
-            }}
-          >
-            🌳 चार्टमा हेर्नुहोस्
-          </button>
-        )}
-        {!lim && (
           <div className="pp-act">
-            <button onClick={() => document.getElementById("pi")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
-              <i>🪪</i>Profile
+            <button className="ghost" onClick={showInChart} title="चार्टमा हेर्नुहोस्">
+              <i>🌳</i>चार्ट
+            </button>
+            <button className="ghost" onClick={() => document.getElementById("pi")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+              <i>🪪</i>प्रोफाइल
             </button>
             {ce && (
               <>
-                <button onClick={() => openDialog(<PersonForm action="update" p={p} />, true)}>
-                  <i>✏️</i>
-                  {isAdm ? "Edit" : "Edit (अनुरोध)"}
+                <button className="ghost" onClick={() => openDialog(<PersonForm action="update" p={p} />, true)} title={isAdm ? "सच्याउने" : "सच्याउने (अनुरोध)"}>
+                  <i>✏️</i>Edit
                 </button>
-                <button onClick={() => openDialog(<AddMenu p={p} />)}><i>➕</i>Add</button>
-                <button onClick={() => setMore((m) => !m)}><i>⋯</i>More</button>
+                <button className="ghost" onClick={() => openDialog(<AddMenu p={p} />)}><i>➕</i>Add</button>
+                <button className="ghost" onClick={() => setMore((m) => !m)}><i>⋯</i>More</button>
               </>
             )}
-            {onPrint && (
-              <button style={{ marginLeft: "auto", background: "var(--bg-2)" }} onClick={() => onPrint(p.id)}>
-                <i>🖨️</i> शाखा प्रिन्ट
+            {isAdm && (
+              <button className="ghost" disabled={busyAi} onClick={aiSummary} title="AI सारांश">
+                <i>✨</i>AI
               </button>
             )}
-            {isAdm && (
-              <button
-                disabled={busyAi}
-                className="ghost"
-                onClick={aiSummary}
-              >
-                <i>✨</i> AI Summary
+            {onPrint && (
+              <button className="ghost" onClick={() => onPrint(p.id)} title="शाखा प्रिन्ट">
+                <i>🖨️</i>प्रिन्ट
               </button>
             )}
           </div>
@@ -205,22 +210,21 @@ export default function DetailPanel({
         <p className="mut" style={{ marginTop: "1rem" }}>यो शाखाको नाम मात्र हेर्न मिल्छ।</p>
       ) : (
         <>
-          {kc && kc.chain.length > 1 && (
+          {lineage.length > 1 && (
             <>
-              <div className="pp-h">नाताको बाटो</div>
-              <ol className="kpath" aria-label="नाताको बाटो">
-                {kc.chain.map((h, i) => {
-                  const last = i === kc.chain.length - 1;
-                  const ok = can(h.person.id);
-                  return (
-                    <li key={h.person.id + i} className={last ? "kp-end" : ""}>
-                      <span className="kp-rel">{i === 0 ? "तपाईं" : stepWord(h.step as never)}</span>
-                      <span className="kp-name">{i === 0 ? "" : ok ? dispName(h.person, true) : nm(h.person)}</span>
-                    </li>
-                  );
-                })}
-              </ol>
-              {kc.term && <div className="kp-sum">∴ {dispName(p, true)} तपाईंको <b>{kc.term}</b> हुनुहुन्छ</div>}
+              <div className="pp-h">वंश परम्परा</div>
+              <p className="kpt">
+                {lineage.map((x, i) => (
+                  <React.Fragment key={x.id}>
+                    {i > 0 && <span className="ka">→</span>}
+                    {can(x.id) ? (
+                      <button className={`kl ${x.id === p.id ? "ke" : ""}`} onClick={() => x.id !== p.id && pick(x.id)}>{dispName(x, true)}</button>
+                    ) : (
+                      <span>{nm(x)}</span>
+                    )}
+                  </React.Fragment>
+                ))}
+              </p>
             </>
           )}
           <div className="pp-h">परिवार</div>
