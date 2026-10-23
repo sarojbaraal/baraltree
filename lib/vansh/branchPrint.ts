@@ -68,10 +68,13 @@ export function cascadeRows(g: Graph, rootId: string, levels = BRANCH_LEVELS): C
   return rows;
 }
 
-const A3 = { w: 420, h: 297 }; // mm, landscape
-const DPI = 300;
+export type Paper = "a4" | "a3" | "a2";
+const PAPER: Record<Paper, { w: number; h: number; dpi: number }> = {
+  a4: { w: 297, h: 210, dpi: 300 },
+  a3: { w: 420, h: 297, dpi: 300 },
+  a2: { w: 594, h: 420, dpi: 200 },
+};
 const MIN_FS = 2.8; // mm (≈ 8 pt): smallest text we accept on a page
-const mm = (v: number) => (v / 25.4) * DPI;
 
 interface Placed { row: number; col: number; slot: number; ctx?: boolean }
 
@@ -91,10 +94,47 @@ function planPage(n: number, maxW1: number, maxLvl: number, aw: number, ah: numb
 }
 
 export async function branchPdf(
-  g: Graph, rootId: string, can: (id: string) => boolean, nm: (p: VPerson) => string
+  g: Graph, rootId: string, can: (id: string) => boolean, nm: (p: VPerson) => string, paper: Paper = "a3"
 ): Promise<{ blob: Blob; info: ReturnType<typeof branchSubset> & { pages: number } }> {
   const info = branchSubset(g, rootId);
   const rows = cascadeRows(g, rootId);
+  const root = g.byId[rootId];
+  const out = await cascadePdf({
+    rows, can, nm, paper, firstLvl: info.from,
+    title: `${can(root.id) ? nm(root) : "🔒"} को वंशावली शाखा`,
+    sub: `तल्लो पुस्ताबाट माथि ${info.levels} पुस्ता · ${info.shown} जना`,
+  });
+  return { blob: out.blob, info: { ...info, pages: out.pages } };
+}
+
+/** Whole accessible tree (every root, every generation) as a cascade. */
+export async function allPdf(g: Graph, can: (id: string) => boolean, nm: (p: VPerson) => string, paper: Paper) {
+  const rows: CascadeRow[] = [];
+  const seen = new Set<string>();
+  const visit = (id: string, lvl: number, parent: number | null) => {
+    const p = g.byId[id];
+    if (!p || seen.has(id)) return;
+    seen.add(id);
+    const spouses = g.spousesOf(p).map((x) => g.byId[x]).filter((x) => x && !seen.has(x.id));
+    spouses.forEach((x) => seen.add(x.id));
+    rows.push({ p, spouses, lvl, parent });
+    const me = rows.length - 1;
+    for (const k of g.kidsOf(p).sort(g.byBirth)) visit(k.id, lvl + 1, me);
+  };
+  for (const p of g.people.filter((x) => !g.hasParents(x) && !g.isMarriedIn(x)).sort(g.byBirth)) visit(p.id, 0, null);
+  for (const p of g.people) visit(p.id, 0, null); // anything left over (cycles / orphans)
+  return cascadePdf({ rows, can, nm, paper, firstLvl: 0, title: "वंशावली", sub: `${g.people.length} जना` });
+}
+
+interface CascadeOpts {
+  rows: CascadeRow[]; can: (id: string) => boolean; nm: (p: VPerson) => string; paper: Paper;
+  title: string; sub: string; firstLvl: number;
+}
+
+async function cascadePdf({ rows, can, nm, paper, title, sub, firstLvl }: CascadeOpts): Promise<{ blob: Blob; pages: number }> {
+  const A3 = PAPER[paper];
+  const DPI = A3.dpi;
+  const mm = (v: number) => (v / 25.4) * DPI;
   if ("fonts" in document) await (document as Document).fonts.ready.catch(() => {});
 
   const W = Math.round(mm(A3.w)), H = Math.round(mm(A3.h));
@@ -127,18 +167,17 @@ export async function branchPdf(
   const perCol = Math.ceil(per / plan.cols);
 
   const { jsPDF } = await import("jspdf");
-  const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a3", compress: true });
+  const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: paper, compress: true });
   const date = new Date().toISOString().slice(0, 10);
-  const root = g.byId[rootId];
   const P = mm;
 
   for (let pg = 0; pg < pages; pg++) {
     c.fillStyle = "#fff"; c.fillRect(0, 0, W, H);
     c.textBaseline = "alphabetic"; c.textAlign = "left";
     c.fillStyle = "#1B2A2F"; c.font = `600 ${P(8)}px ${F}`;
-    c.fillText(`${can(root.id) ? nm(root) : "🔒"} को वंशावली शाखा`, P(M), P(M + 8));
+    c.fillText(title, P(M), P(M + 8));
     c.fillStyle = "#5C6C70"; c.font = `${P(4.2)}px ${F}`;
-    c.fillText(`तल्लो पुस्ताबाट माथि ${info.levels} पुस्ता · ${info.shown} जना · हाम्रो वंशावली · ${date}`, P(M), P(M + 15));
+    c.fillText(`${sub} · हाम्रो वंशावली · ${date}`, P(M), P(M + 15));
     if (pages > 1) { c.textAlign = "right"; c.fillText(`पृष्ठ ${pg + 1} / ${pages}`, P(A3.w - M), P(M + 8)); c.textAlign = "left"; }
 
     const start = pg * per, end = Math.min(rows.length, start + per);
@@ -175,7 +214,7 @@ export async function branchPdf(
       const r = rows[i], l = labels[i], me = pos.get(i)!;
       const x = me.x + r.lvl * indent, cy = me.y + rowH / 2;
       const dot = r.p.gender === "M" ? "#4A78A8" : r.p.gender === "F" ? "#C0587A" : "#7A8C8F";
-      c.fillStyle = GEN[(r.lvl + info.from) % GEN.length];
+      c.fillStyle = GEN[(r.lvl + firstLvl) % GEN.length];
       c.fillRect(P(x), P(me.y + rowH * 0.12), P(fs * 0.16), P(rowH * 0.76));
       c.fillStyle = dot; c.beginPath(); c.arc(P(x + fs * 0.62), P(cy), P(fs * 0.3), 0, Math.PI * 2); c.fill();
       let tx = x + fs * 1.1;
@@ -196,8 +235,8 @@ export async function branchPdf(
     }
     c.textBaseline = "middle"; c.fillStyle = "#7A8C8F"; c.font = `italic ${P(fs * 0.85)}px ${F}`;
     for (const k of cont) c.fillText(k.text, P(M + k.col * (colW + gap) + k.lvl * indent), P(M + HEAD + rowH / 2));
-    if (pg > 0) pdf.addPage("a3", "landscape");
+    if (pg > 0) pdf.addPage(paper, "landscape");
     pdf.addImage(cv.toDataURL("image/jpeg", 0.9), "JPEG", 0, 0, A3.w, A3.h);
   }
-  return { blob: pdf.output("blob"), info: { ...info, pages } };
+  return { blob: pdf.output("blob"), pages };
 }
