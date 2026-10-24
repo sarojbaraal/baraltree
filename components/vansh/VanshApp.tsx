@@ -1,6 +1,7 @@
 "use client";
 // App shell: header (tabs, user, theme), the active view, profile panel, dialogs, toast, PWA install button.
 import React, { useEffect, useState } from "react";
+import { DownloadDialog } from "./DownloadMenu";
 import Image from "next/image";
 import { ROLE_L } from "@/lib/vansh/graph";
 import type { Role, TabKey } from "@/lib/vansh/types";
@@ -76,6 +77,13 @@ function Shell() {
     addEventListener("resize", f);
     return () => removeEventListener("resize", f);
   }, [phase]);
+
+  // "मुख्य डाउनलोड मेनुमा जाने" (शाखा प्रिन्ट) works from any tab
+  useEffect(() => {
+    const h = () => openDialog(<DownloadDialog />);
+    window.addEventListener("vv-open-download", h);
+    return () => window.removeEventListener("vv-open-download", h);
+  }, [openDialog]);
 
   // register the service worker (offline shell)
   useEffect(() => {

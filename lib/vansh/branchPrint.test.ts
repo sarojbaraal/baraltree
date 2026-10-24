@@ -35,3 +35,15 @@ describe("branchSubset", () => {
     expect(r.levels).toBe(3);
   });
 });
+
+import { flowColumns } from "./branchPrint";
+describe("flowColumns", () => {
+  it("adds a continuation line once per column for a parent in another column", () => {
+    const rows = [{ parent: null }, { parent: 0 }, { parent: 0 }, { parent: 0 }, { parent: 0 }];
+    const cols = flowColumns(rows, 3);
+    expect(cols[0]).toEqual([{ kind: "row", i: 0 }, { kind: "row", i: 1 }, { kind: "row", i: 2 }]);
+    expect(cols[1][0]).toEqual({ kind: "ctx", parent: 0 });
+    expect(cols[1].filter((l) => l.kind === "ctx")).toHaveLength(1);
+    expect(cols.flat().filter((l) => l.kind === "row")).toHaveLength(5);
+  });
+});

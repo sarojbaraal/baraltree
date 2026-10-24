@@ -10,7 +10,9 @@ import {
 } from "@/lib/vansh/requests";
 import { ageN, fbOk, np, surnameOf, wifeNames, yr } from "@/lib/vansh/text";
 import { genNo, relMap } from "@/lib/vansh/relations";
-import { BRANCH_LEVELS, branchPdf } from "@/lib/vansh/branchPrint";
+import { BRANCH_LEVELS, branchPrint } from "@/lib/vansh/branchPrint";
+import { loadPhotos } from "@/lib/vansh/exporters";
+import { DownloadPreview, useStampMaker } from "./DownloadPreview";
 import { useVansh } from "./VanshContext";
 import { Avatar, DateField, PasswordField, Sx, SXMSG, personOptions, useSx } from "./ui";
 
@@ -783,21 +785,27 @@ export function PasswordDialog() {
 
 /** शाखा प्रिन्ट: explains the 7-generation A3 PDF, then downloads it or points to the main download window. */
 export function BranchPrintDialog({ p }: { p: VPerson }) {
-  const { g, perms, closeDialog, toast } = useVansh();
+  const { g, perms, openDialog, closeDialog } = useVansh();
+  const mkStamp = useStampMaker();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const run = async () => {
     setBusy(true);
     setErr("");
     try {
-      const { blob, info } = await branchPdf(g, p.id, perms.can, perms.nm);
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `vanshavali-${p.name.replace(/\s+/g, "-")}-shakha-A3.pdf`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-      toast(info.pages > 1 ? `PDF डाउनलोड भयो — शाखा फराकिलो भएकाले ${np(info.pages)} A3 पृष्ठ` : "PDF डाउनलोड भयो");
-      closeDialog();
+      const st = await mkStamp(`branch|${p.id}`);
+      const out = await branchPrint(g, p.id, { can: perms.can, nm: perms.nm }, "a3", st, (ps) => loadPhotos(ps, perms.can));
+      openDialog(
+        <DownloadPreview
+          data={{
+            blob: out.blob,
+            fileName: `baral-banshabrikshya-${p.name.replace(/\s+/g, "-")}-shakha-A3.pdf`,
+            images: out.pages.map((x) => ({ src: x.thumb, label: x.label })),
+            note: `${np(out.cascadePages)} झरना पृष्ठ + ${np(out.chartPages)} चार्ट पृष्ठ · हस्ताक्षर ID ${st.id}`,
+          }}
+          onCancel={() => openDialog(<BranchPrintDialog p={p} />)}
+        />
+      );
     } catch (e) {
       setErr((e as Error).message || "PDF बनाउन सकिएन");
     } finally {
@@ -807,10 +815,10 @@ export function BranchPrintDialog({ p }: { p: VPerson }) {
   return (
     <div>
       <h3>🖨 शाखा प्रिन्ट — {p.name}</h3>
-      <p>यहाँ बाट तपाईले आफ्नो सबै भन्दा तल बाट {np(BRANCH_LEVELS)} पुस्ता माथि सम्म मात्र प्रिन्ट गर्न सक्नुहुन्छ। A3 पेपर साईजमा pdf फाइल डाउलोड हुनेछ।</p>
+      <p>यहाँ बाट तपाईले आफ्नो सबै भन्दा तल बाट {np(BRANCH_LEVELS)} पुस्ता माथि सम्म मात्र प्रिन्ट गर्न सक्नुहुन्छ। A3 पेपरमा ठाडो (portrait) झरना ढाँचाका पृष्ठ र त्यसपछि चार्टका पृष्ठ भएको PDF बन्छ — डाउनलोड अघि हेर्न पाइन्छ।</p>
       {err && <p className="mut" role="alert">{err}</p>}
       <div className="row" style={{ marginTop: ".9rem" }}>
-        <button disabled={busy} onClick={run}>{busy ? "बन्दैछ…" : "⬇ डाउनलोड गर्ने"}</button>
+        <button disabled={busy} onClick={run}>{busy ? "बन्दैछ…" : "👁 हेर्ने / डाउनलोड"}</button>
         <button
           className="ghost"
           disabled={busy}

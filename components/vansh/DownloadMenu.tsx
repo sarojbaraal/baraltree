@@ -1,16 +1,18 @@
 "use client";
 // Download / import entry (shown in the Family section). The button opens one window that explains every option.
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { computeLayout } from "@/lib/vansh/layout";
-import { exportJPG, exportJSON, exportCSV, exportSVG, exportXLSX, loadPhotos, svgText } from "@/lib/vansh/exporters";
-import { exportMainXLSX, nearGraph } from "@/lib/vansh/exportMain";
-import { allPdf, type Paper } from "@/lib/vansh/branchPrint";
+import { exportJSON, exportCSV, exportXLSX, footerHeight, jpgBlob, loadPhotos, svgBlob, svgText } from "@/lib/vansh/exporters";
+import { mainXlsxBlob, nearGraph } from "@/lib/vansh/exportMain";
+import { allPrint, type Paper } from "@/lib/vansh/branchPrint";
+import { DownloadPreview, useStampMaker, type Prepared } from "./DownloadPreview";
+import { BRAND } from "@/lib/vansh/notice";
 import { diffImport, parseImportRows, readImportFile } from "@/lib/vansh/importer";
 import { useVansh } from "./VanshContext";
 import { ImportPreview } from "./AdminDialogs";
 import { np } from "@/lib/vansh/text";
 import { buildTemplate, parseTemplate, templateName, type NewPersonDraft, type TemplateParse } from "@/lib/vansh/template";
-import { download } from "@/lib/vansh/exporters";
+import { download, stamp } from "@/lib/vansh/exporters";
 import { guardRequest, makeRequest } from "@/lib/vansh/requests";
 
 function Opt({ icon, title, info, children, disabled }: { icon: string; title: string; info: React.ReactNode; children: React.ReactNode; disabled?: boolean }) {
@@ -39,6 +41,12 @@ export function DownloadDialog() {
       setBusy("");
     }
   };
+  const mkStamp = useStampMaker();
+  const prep = (key: string, fn: () => Promise<Prepared>) =>
+    run(key, async () => {
+      const data = await fn();
+      openDialog(<DownloadPreview data={data} onCancel={() => openDialog(<DownloadDialog />)} />);
+    });
   const full = () => computeLayout(g, new Set());
   const near = () => {
     if (!myPosId || !g.byId[myPosId]) throw new Error("तपाईंको स्थान वंशावलीमा तोकिएको छैन — एडमिनले स्थान तोकेपछि यो चल्छ।");
@@ -51,11 +59,23 @@ export function DownloadDialog() {
       <p className="mut">तपाईंले हेर्न पाउने व्यक्तिहरूको मात्र डाटा आउँछ। बन्द (locked) शाखा समावेश हुँदैन।</p>
 
       <Opt icon="📷" title="फोटो (JPG)" info={<>चार्ट ठूलो हुँदा फोटोको गुणस्तर स्पष्ट नहुने भएकाले यसमा तपाईंको स्थानभन्दा ७ पुस्ता माथि (सिधा पुर्खा) र ७ पुस्ता तल (सन्तान), पति/पत्नीसहित आउँछ। प्रोफाइल फोटो भएकाको फोटो नै देखिन्छ। फोन/कम्प्युटरको ग्यालरीमा हेर्न मिल्छ।</>}>
-        <button disabled={!!busy} onClick={() => run("jpg", async () => { const l = near(); const ph = await loadPhotos(l.cards.map((c) => c.p), can); return exportJPG(svgText(l, can, nm, ph), l.W, l.H); })}>{busy === "jpg" ? "बन्दैछ…" : "फोटो डाउनलोड"}</button>
+        <button disabled={!!busy} onClick={() => prep("jpg", async () => {
+          const l = near();
+          const ph = await loadPhotos(l.cards.map((c) => c.p), can);
+          const st = await mkStamp(`jpg|${l.cards.length}`);
+          const blob = await jpgBlob(svgText(l, can, nm, ph, st), l.W, l.H, footerHeight(st, l.W + 40));
+          return { blob, fileName: `baral-banshabrikshya-${stamp()}.jpg`, images: [{ src: URL.createObjectURL(blob) }], note: `${np(l.cards.length)} जना · हस्ताक्षर ID ${st.id}` };
+        })}>{busy === "jpg" ? "बन्दैछ…" : "फोटो हेर्ने / डाउनलोड"}</button>
       </Opt>
 
       <Opt icon="🖼" title="SVG चित्र" info={<>उच्च गुणस्तरको चित्र, जतिसुकै ठूलो गर्दा पनि स्पष्ट रहन्छ। प्रोफाइल फोटो भएकाको फोटो नै देखिन्छ (नभए नामको पहिलो अक्षर)। Chrome/Safari वा कुनै SVG viewer एपमा खोल्नुहोस्। तपाईंले हेर्न पाउने सबै व्यक्ति समावेश हुन्छन्।</>}>
-        <button disabled={!!busy} onClick={() => run("svg", async () => { const l = full(); const ph = await loadPhotos(l.cards.map((c) => c.p), can); return exportSVG(svgText(l, can, nm, ph)); })}>SVG डाउनलोड</button>
+        <button disabled={!!busy} onClick={() => prep("svg", async () => {
+          const l = full();
+          const ph = await loadPhotos(l.cards.map((c) => c.p), can);
+          const st = await mkStamp(`svg|${l.cards.length}`);
+          const blob = svgBlob(svgText(l, can, nm, ph, st));
+          return { blob, fileName: `baral-banshabrikshya-${stamp()}.svg`, images: [{ src: URL.createObjectURL(blob) }], note: `${np(l.cards.length)} जना · हस्ताक्षर ID ${st.id}` };
+        })}>{busy === "svg" ? "बन्दैछ…" : "SVG हेर्ने / डाउनलोड"}</button>
       </Opt>
 
       <Opt icon="📄" title="PDF" info={<>तपाईंले हेर्न पाउने सबै व्यक्ति पुस्ता-तहमा मिलाएर (ठाडो झरना ढाँचा) कागज साइज अनुसार स्तम्भमा बाँडिन्छ। धेरै जना भए पृष्ठ बढ्छ।</>}>
@@ -64,19 +84,19 @@ export function DownloadDialog() {
           <option value="a3">A3</option>
           <option value="a2">A2</option>
         </select>
-        <button disabled={!!busy} onClick={() => run("pdf", async () => {
-          const out = await allPdf(g, can, nm, paper);
-          const a = document.createElement("a");
-          a.href = URL.createObjectURL(out.blob);
-          a.download = `vanshavali-${paper.toUpperCase()}.pdf`;
-          a.click();
-          setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-          return out.pages;
-        }, "PDF तयार भयो")}>{busy === "pdf" ? "बन्दैछ…" : "PDF डाउनलोड"}</button>
+        <button disabled={!!busy} onClick={() => prep("pdf", async () => {
+          const st = await mkStamp(`pdf|${g.people.length}|${paper}`);
+          const out = await allPrint(g, { can, nm }, paper, st);
+          return { blob: out.blob, fileName: `baral-banshabrikshya-${paper.toUpperCase()}.pdf`, images: out.pages.map((x) => ({ src: x.thumb, label: x.label })), note: `${np(out.cascadePages)} पृष्ठ · हस्ताक्षर ID ${st.id}` };
+        })}>{busy === "pdf" ? "बन्दैछ…" : "PDF हेर्ने / डाउनलोड"}</button>
       </Opt>
 
       <Opt icon="📊" title="Excel (.xlsx)" info={<>स्तम्भ: नाम, हजुरबुबा, बुबा, आमा, जन्म मिति, जन्म स्थान, ठेगाना, शिक्षा, पेशा, वैवाहिक अवस्था, पति/पत्नी, सम्पर्क नम्बर, email, facebook link, टिप्पणी। {isStaff ? "तपाईं एडमिन/मोडरेटर हुनुहुन्छ — सबैको फोन/इमेल आउँछ।" : "फोन/इमेल तपाईंको आफ्नो पङ्क्तिमा मात्र आउँछ।"} (वैवाहिक अवस्था पति/पत्नीको विवरणबाट निकालिन्छ।)</>}>
-        <button disabled={!!busy} onClick={() => run("xlsx", () => exportMainXLSX(g, { can, isStaff, myPosId }).then((n) => toast(`${np(n)} जनाको Excel तयार भयो`)))}>Excel डाउनलोड</button>
+        <button disabled={!!busy} onClick={() => prep("xlsx", async () => {
+          const st = await mkStamp(`xlsx|${g.people.length}`);
+          const x = await mainXlsxBlob(g, { can, isStaff, myPosId }, st);
+          return { blob: x.blob, fileName: `baral-banshabrikshya-${stamp()}.xlsx`, table: { head: x.head, rows: x.rows.map((r) => r.map(String)) }, note: `${np(x.rows.length)} जना · हस्ताक्षर ID ${st.id}` };
+        })}>{busy === "xlsx" ? "बन्दैछ…" : "Excel हेर्ने / डाउनलोड"}</button>
       </Opt>
 
       <Opt icon="🔁" title="आयात / निर्यात" info={isAdm ? "Excel टेम्प्लेट डाउनलोड, भरेर अपलोड (नयाँ व्यक्ति थप्न), तथा पूर्ण ब्याकअप।" : "Excel टेम्प्लेट डाउनलोड गरी नयाँ व्यक्ति भरेर अपलोड गर्ने — एडमिनको स्वीकृतिका लागि अनुरोध बन्छ।"}>
@@ -139,10 +159,13 @@ export function ImportExportDialog() {
   const [busy, setBusy] = useState(false);
   const mayRequest = isStaff || perms.act === "premium";
 
+  const mkStamp = useStampMaker();
   const getTemplate = async () => {
     setBusy(true);
     try {
-      download(templateName(), await buildTemplate(g, { can, isStaff, myPosId }), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      const st = await mkStamp(`template|${g.people.length}`);
+      const blob = await buildTemplate(g, { can, isStaff, myPosId }, st.line);
+      openDialog(<DownloadPreview data={{ blob, fileName: templateName(), note: <>{BRAND} Excel टेम्प्लेट — तपाईंले हेर्न पाउने {np(g.people.filter((x) => can(x.id)).length)} जना अघिल्लै भरिएका र नयाँ व्यक्तिका लागि खाली पङ्क्ति। हस्ताक्षर ID {st.id}</> }} onCancel={() => openDialog(<ImportExportDialog />)} />);
     } catch (e) {
       alert((e as Error).message || String(e));
     } finally {
@@ -238,12 +261,6 @@ export function ImportExportDialog() {
 export default function DownloadMenu() {
   const { perms, openDialog } = useVansh();
   const open = () => openDialog(<DownloadDialog />);
-  useEffect(() => {
-    const h = () => open();
-    window.addEventListener("vv-open-download", h);
-    return () => window.removeEventListener("vv-open-download", h);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   return (
     <details className="menu">
       <summary onClick={(e) => { e.preventDefault(); open(); }}>{perms.isAdm ? "⇩ डाउनलोड" : "⇩ बंशावली डाउनलोड"}</summary>

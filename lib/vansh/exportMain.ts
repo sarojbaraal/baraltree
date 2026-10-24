@@ -1,4 +1,5 @@
 // Data behind the main download window: role-limited Excel rows and the "me ± 2 generations" photo subset.
+import { BRAND, NOTICE, type Stamp } from "./notice";
 import type { VPerson } from "./types";
 import { createGraph, type Graph } from "./graph";
 import { loadXLSX, stamp } from "./exporters";
@@ -47,10 +48,11 @@ export function mainRows(g: Graph, ctx: MainCtx): string[][] {
     });
 }
 
-export async function exportMainXLSX(g: Graph, ctx: MainCtx) {
+/** Builds the Excel file (data sheet + usage notice sheet, signature in the last rows and file properties). */
+export async function mainXlsxBlob(g: Graph, ctx: MainCtx, st: Stamp) {
   const XLSX = await loadXLSX();
   const rows = mainRows(g, ctx);
-  const ws = XLSX.utils.aoa_to_sheet([[...MAIN_COLS], ...rows]);
+  const ws = XLSX.utils.aoa_to_sheet([[...MAIN_COLS], ...rows, [], [NOTICE], [st.line]]);
   const textCols = [4, 11]; // date and phone stay text
   for (let r = 1; r <= rows.length; r++)
     for (const c of textCols) {
@@ -59,10 +61,14 @@ export async function exportMainXLSX(g: Graph, ctx: MainCtx) {
     }
   ws["!cols"] = MAIN_COLS.map((k) => ({ wch: k === "टिप्पणी" || k === "ठेगाना" || k === "facebook link" ? 30 : 18 }));
   ws["!freeze"] = { xSplit: 1, ySplit: 1 };
+  const notice = XLSX.utils.aoa_to_sheet([[BRAND], [NOTICE], [st.line]]);
+  notice["!cols"] = [{ wch: 120 }];
   const wb = XLSX.utils.book_new();
+  wb.Props = { Title: `${BRAND} — वंशावली`, Author: st.who, Company: BRAND, Comments: `${st.line} · ${NOTICE}` };
   XLSX.utils.book_append_sheet(wb, ws, "वंशावली");
-  XLSX.writeFile(wb, `vanshavali-${stamp()}.xlsx`);
-  return rows.length;
+  XLSX.utils.book_append_sheet(wb, notice, "सूचना");
+  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  return { blob: new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), head: [...MAIN_COLS] as string[], rows };
 }
 
 /** Me, my direct ancestors up to `up` generations (default 7), my descendants down to `down`, and their spouses. */

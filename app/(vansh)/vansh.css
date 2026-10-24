@@ -480,14 +480,14 @@ dialog.ed { width: min(960px, 96vw); padding: 0; overflow: hidden; }
     radial-gradient(ellipse 90% 70% at 0% 0%, rgba(79, 216, 235, .2), transparent 60%),
     linear-gradient(160deg, #101a42, #0a0f1f 70%);
 }
-.auth-visual-content { position: relative; max-width: 30rem; }
+.auth-visual-content { position: relative; width: 100%; max-width: 31rem; display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
 .auth-mandala { width: 74px; height: 74px; margin-bottom: 1.6rem; display: grid; place-items: center; border-radius: 50%; border: 1px dashed rgba(244, 181, 71, .6); }
 .auth-mandala-core { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(145deg, #22b8d0, #7c8cff); box-shadow: 0 0 0 1.5px #f4b547, 0 8px 24px rgba(79, 216, 235, .3); }
 .auth-mandala-core svg { width: 26px; height: 26px; fill: #fff; stroke: #fff; stroke-width: 1.6; stroke-linecap: round; }
-.auth-visual h2 { font-size: clamp(2.1rem, 4.4vw, 3.3rem); line-height: 1.2; }
-.auth-visual p { margin: 1rem 0 1.8rem; color: #b7c0df; font-size: 1.05rem; max-width: 34ch; }
-.auth-features { display: grid; gap: .8rem; }
-.auth-feature { display: flex; align-items: center; gap: .8rem; color: #d3daf1; }
+.auth-visual h2 { margin: 0; font-size: clamp(2rem, 3.8vw, 3rem); line-height: 1.25; font-weight: 700; letter-spacing: -.01em; color: #fff; padding-bottom: 1rem; border-bottom: 2px solid rgba(244, 181, 71, .55); width: fit-content; }
+.auth-visual p { margin: 1.2rem 0 1.8rem; color: #c3cbe6; font-size: 1rem; line-height: 1.85; max-width: 38ch; }
+.auth-features { display: grid; gap: .65rem; width: 100%; max-width: 24rem; }
+.auth-feature { display: flex; align-items: center; gap: .8rem; color: #d3daf1; font-size: .95rem; padding: .5rem .7rem; border-radius: 14px; background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .08); }
 .auth-feature-icon { flex: none; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; border: 1px solid rgba(244, 181, 71, .4); }
 .auth-feature-icon svg { width: 17px; height: 17px; fill: none; stroke: #f4b547; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .auth-form-side { display: grid; place-items: center; padding: 2rem 1.2rem; background: var(--surface); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
@@ -822,3 +822,12 @@ details.rv[open] > summary::after { transform: rotate(180deg); }
 .ipv-bar i { display: block; height: 100%; background: var(--cy); transition: width .3s linear; }
 .ipv-b { flex: 1; overflow: auto; padding: 1rem 1.2rem 2rem; max-width: 1100px; width: 100%; margin: 0 auto; }
 .ipv .mc { cursor: pointer; user-select: none; }
+
+/* ---------- download preview ---------- */
+.dlp { width: min(560px, 92vw); }
+.dlp-img { display: block; width: 100%; max-height: 62dvh; object-fit: contain; border: 1px solid var(--line-2); border-radius: 10px; background: #fff; }
+.dlp-nav { justify-content: center; align-items: center; gap: .8rem; margin-top: .5rem; font-size: .9rem; }
+.dlp-tbl { max-height: 50dvh; overflow: auto; border: 1px solid var(--line-2); border-radius: 10px; }
+.dlp-tbl table { border-collapse: collapse; font-size: .78rem; white-space: nowrap; }
+.dlp-tbl th, .dlp-tbl td { padding: .3rem .5rem; border-bottom: 1px solid var(--line); text-align: left; }
+.dlp-tbl th { position: sticky; top: 0; background: var(--solid); }

@@ -1,5 +1,6 @@
 // Excel template: download pre-filled with the people the viewer may see, fill new rows, upload as add-requests.
 // Excel's own protection and dropdowns are only guidance — every row is re-validated here and again at admin approval.
+import { BRAND, NOTICE } from "./notice";
 import type { VPerson } from "./types";
 import type { Graph } from "./graph";
 import { DATE_RE, fbOk, yr } from "./text";
@@ -48,10 +49,12 @@ export function personLabels(g: Graph, ctx: Pick<TemplateCtx, "can">): { label: 
 
 const GNE: Record<string, string> = { M: "पुरुष", F: "महिला", O: "अन्य" };
 
-export async function buildTemplate(g: Graph, ctx: TemplateCtx): Promise<Blob> {
+export async function buildTemplate(g: Graph, ctx: TemplateCtx, signature?: string): Promise<Blob> {
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
-  wb.creator = "हाम्रो वंशावली";
+  wb.creator = BRAND;
+  wb.title = `${BRAND} — टेम्प्लेट`;
+  wb.description = NOTICE;
   const ws = wb.addWorksheet(SHEET, { views: [{ state: "frozen", xSplit: 1, ySplit: 1 }] });
   const help = wb.addWorksheet("निर्देश");
   const ls = wb.addWorksheet(LISTS, { state: "hidden" });
@@ -143,7 +146,7 @@ export async function buildTemplate(g: Graph, ctx: TemplateCtx): Promise<Blob> {
 
   help.getColumn(1).width = 120;
   [
-    "हाम्रो वंशावली — टेम्प्लेट",
+    `${BRAND} — टेम्प्लेट`,
     "१. खैरो रङका माथिका पङ्क्ति तपाईंले हेर्न पाउने अहिलेका व्यक्ति हुन् — यी हेर्न मात्र हो (अहिले सच्याउन मिल्दैन)।",
     "२. नयाँ व्यक्ति थप्न सेतो खाली पङ्क्तिमा लेख्नुहोस्। नाम अनिवार्य छ।",
     "३. बुबा र आमा सूचीबाट छान्नुहोस् (नाम, जन्म साल र बुबाको नाम देखिन्छ)। हजुरबुबा आफैँ भरिन्छ।",
@@ -153,17 +156,20 @@ export async function buildTemplate(g: Graph, ctx: TemplateCtx): Promise<Blob> {
     "७. फाइल अपलोड गर्दा सीधै थपिँदैन: एडमिन बाहेकका सबैको लागि परिवर्तन-अनुरोध बन्छ र एडमिनले स्वीकृत गरेपछि मात्र लागू हुन्छ।",
     "८. Excel को सुरक्षा र सूची केवल मार्गदर्शन हो; अपलोडमा सबै कुरा फेरि जाँचिन्छ।",
     "९. email र (अरूको) फोन देखाइँदैन/आयात हुँदैन।",
+    NOTICE,
+    ...(signature ? [signature] : []),
   ].forEach((t, i) => {
     const c = help.getRow(i + 1).getCell(1);
     c.value = t;
     c.alignment = { wrapText: true };
     if (i === 0) c.font = { bold: true, size: 14 };
   });
+  if (signature) wb.company = signature;
   void firstNew;
   const buf = await wb.xlsx.writeBuffer();
   return new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 }
-export const templateName = () => `vanshavali-template-${stamp()}.xlsx`;
+export const templateName = () => `baral-banshabrikshya-template-${stamp()}.xlsx`;
 
 // ---------------------------------------------------------------- upload
 
