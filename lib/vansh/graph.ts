@@ -109,9 +109,16 @@ export function createGraph(people: VPerson[]) {
     return M;
   };
 
+  /** Married if: has a spouse, has children, has a marriage date, or carries married/maiden name (the form's "विवाहित हो" tick). */
+  const isMarriedP = (p: VPerson): boolean =>
+    spouseIds(p).length > 0 ||
+    !!(p.marriage_bs || p.married_name || p.maiden_name) ||
+    people.some((c) => c.father_id === p.id || c.mother_id === p.id);
+
   return {
     people,
     byId,
+    isMarriedP,
     hasParents,
     spousesOf,
     byBirth,

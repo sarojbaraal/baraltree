@@ -2,13 +2,16 @@
 // Download / import entry (shown in the Family section). The button opens one window that explains every option.
 import React, { useEffect, useRef, useState } from "react";
 import { computeLayout } from "@/lib/vansh/layout";
-import { exportJPG, exportJSON, exportCSV, exportSVG, exportXLSX, svgText } from "@/lib/vansh/exporters";
+import { exportJPG, exportJSON, exportCSV, exportSVG, exportXLSX, loadPhotos, svgText } from "@/lib/vansh/exporters";
 import { exportMainXLSX, nearGraph } from "@/lib/vansh/exportMain";
 import { allPdf, type Paper } from "@/lib/vansh/branchPrint";
 import { diffImport, parseImportRows, readImportFile } from "@/lib/vansh/importer";
 import { useVansh } from "./VanshContext";
 import { ImportPreview } from "./AdminDialogs";
 import { np } from "@/lib/vansh/text";
+import { buildTemplate, parseTemplate, templateName, type NewPersonDraft, type TemplateParse } from "@/lib/vansh/template";
+import { download } from "@/lib/vansh/exporters";
+import { guardRequest, makeRequest } from "@/lib/vansh/requests";
 
 function Opt({ icon, title, info, children, disabled }: { icon: string; title: string; info: React.ReactNode; children: React.ReactNode; disabled?: boolean }) {
   return (
@@ -47,12 +50,12 @@ export function DownloadDialog() {
       <h3>⇩ वंशावली डाउनलोड</h3>
       <p className="mut">तपाईंले हेर्न पाउने व्यक्तिहरूको मात्र डाटा आउँछ। बन्द (locked) शाखा समावेश हुँदैन।</p>
 
-      <Opt icon="📷" title="फोटो (JPG)" info={<>चार्ट ठूलो हुँदा फोटोको गुणस्तर स्पष्ट नहुने भएकाले यसमा तपाईंको स्थानभन्दा २ पुस्ता माथि र २ पुस्ता तल (सिधा लाइन र पति/पत्नी) मात्र आउँछ। फोन/कम्प्युटरको ग्यालरीमा हेर्न मिल्छ।</>}>
-        <button disabled={!!busy} onClick={() => run("jpg", () => { const l = near(); return exportJPG(svgText(l, can, nm), l.W, l.H); })}>{busy === "jpg" ? "…" : "फोटो डाउनलोड"}</button>
+      <Opt icon="📷" title="फोटो (JPG)" info={<>चार्ट ठूलो हुँदा फोटोको गुणस्तर स्पष्ट नहुने भएकाले यसमा तपाईंको स्थानभन्दा ७ पुस्ता माथि (सिधा पुर्खा) र ७ पुस्ता तल (सन्तान), पति/पत्नीसहित आउँछ। प्रोफाइल फोटो भएकाको फोटो नै देखिन्छ। फोन/कम्प्युटरको ग्यालरीमा हेर्न मिल्छ।</>}>
+        <button disabled={!!busy} onClick={() => run("jpg", async () => { const l = near(); const ph = await loadPhotos(l.cards.map((c) => c.p), can); return exportJPG(svgText(l, can, nm, ph), l.W, l.H); })}>{busy === "jpg" ? "बन्दैछ…" : "फोटो डाउनलोड"}</button>
       </Opt>
 
-      <Opt icon="🖼" title="SVG चित्र" info={<>उच्च गुणस्तरको चित्र, जतिसुकै ठूलो गर्दा पनि स्पष्ट रहन्छ। Chrome/Safari वा कुनै SVG viewer एपमा खोल्नुहोस्। तपाईंले हेर्न पाउने सबै व्यक्ति समावेश हुन्छन्।</>}>
-        <button disabled={!!busy} onClick={() => run("svg", () => exportSVG(svgText(full(), can, nm)))}>SVG डाउनलोड</button>
+      <Opt icon="🖼" title="SVG चित्र" info={<>उच्च गुणस्तरको चित्र, जतिसुकै ठूलो गर्दा पनि स्पष्ट रहन्छ। प्रोफाइल फोटो भएकाको फोटो नै देखिन्छ (नभए नामको पहिलो अक्षर)। Chrome/Safari वा कुनै SVG viewer एपमा खोल्नुहोस्। तपाईंले हेर्न पाउने सबै व्यक्ति समावेश हुन्छन्।</>}>
+        <button disabled={!!busy} onClick={() => run("svg", async () => { const l = full(); const ph = await loadPhotos(l.cards.map((c) => c.p), can); return exportSVG(svgText(l, can, nm, ph)); })}>SVG डाउनलोड</button>
       </Opt>
 
       <Opt icon="📄" title="PDF" info={<>तपाईंले हेर्न पाउने सबै व्यक्ति पुस्ता-तहमा मिलाएर (ठाडो झरना ढाँचा) कागज साइज अनुसार स्तम्भमा बाँडिन्छ। धेरै जना भए पृष्ठ बढ्छ।</>}>
@@ -76,11 +79,9 @@ export function DownloadDialog() {
         <button disabled={!!busy} onClick={() => run("xlsx", () => exportMainXLSX(g, { can, isStaff, myPosId }).then((n) => toast(`${np(n)} जनाको Excel तयार भयो`)))}>Excel डाउनलोड</button>
       </Opt>
 
-      {isAdm && (
-        <Opt icon="🔁" title="आयात / निर्यात" info="पूर्ण ब्याकअप (JSON/CSV) र फाइलबाट डाटा अपलोड। एडमिनका लागि।">
-          <button className="ghost" onClick={() => openDialog(<ImportExportDialog />)}>विन्डो खोल्ने</button>
-        </Opt>
-      )}
+      <Opt icon="🔁" title="आयात / निर्यात" info={isAdm ? "Excel टेम्प्लेट डाउनलोड, भरेर अपलोड (नयाँ व्यक्ति थप्न), तथा पूर्ण ब्याकअप।" : "Excel टेम्प्लेट डाउनलोड गरी नयाँ व्यक्ति भरेर अपलोड गर्ने — एडमिनको स्वीकृतिका लागि अनुरोध बन्छ।"}>
+        <button className="ghost" onClick={() => openDialog(<ImportExportDialog />)}>विन्डो खोल्ने</button>
+      </Opt>
       <div className="row" style={{ marginTop: ".6rem" }}>
         <button className="ghost" onClick={closeDialog}>बन्द</button>
       </div>
@@ -88,10 +89,95 @@ export function DownloadDialog() {
   );
 }
 
-/** Admin: full backup + upload with preview. */
+/** Preview of a template upload: what will be added, what was rejected. */
+function TemplatePreview({ parse, isAdm, onResolve }: { parse: TemplateParse; isAdm: boolean; onResolve: (ok: boolean) => void }) {
+  const { drafts, errors, editedExisting } = parse;
+  return (
+    <div className="dlw">
+      <h3>अपलोड अघि जाँच</h3>
+      <p>
+        <b>{np(drafts.length)}</b> नयाँ व्यक्ति तयार{errors.length ? <> · <b>{np(errors.length)}</b> पङ्क्तिमा समस्या</> : null}
+        {editedExisting ? <> · <b>{np(editedExisting)}</b> अहिलेका व्यक्तिमा गरिएको सच्याइ लिइएन (अहिले नयाँ थप्न मात्र)</> : null}
+      </p>
+      <p className="mut">{isAdm ? "थप्ने थिच्दा सीधै वंशावलीमा थपिन्छ।" : "अनुरोध पठाउँदा एडमिनले स्वीकृत गरेपछि मात्र वंशावलीमा देखिन्छ।"}</p>
+      {errors.length > 0 && (
+        <details open>
+          <summary><b>समस्या भएका पङ्क्ति ({np(errors.length)}) — यी छोडिनेछन्</b></summary>
+          <div style={{ maxHeight: "30dvh", overflow: "auto" }}>
+            {errors.map((e, i) => (
+              <div key={i} className="mut" style={{ padding: ".2rem 0" }}>पङ्क्ति {e.row ? np(e.row) : "—"}: {e.msg}</div>
+            ))}
+          </div>
+        </details>
+      )}
+      {drafts.length > 0 && (
+        <details open={!errors.length}>
+          <summary><b>थपिने ({np(drafts.length)})</b></summary>
+          <div style={{ maxHeight: "30dvh", overflow: "auto" }}>
+            {drafts.map((d: NewPersonDraft) => (
+              <div key={d.row} style={{ padding: ".25rem 0" }}>
+                <b>➕ {String(d.payload.name)}</b> <span className="mut">{d.brief}</span>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+      <div className="row" style={{ marginTop: ".8rem" }}>
+        <button disabled={!drafts.length} onClick={() => onResolve(true)}>{isAdm ? "थप्ने" : "अनुरोध पठाउने"} ({np(drafts.length)})</button>
+        <button className="ghost" onClick={() => onResolve(false)}>रद्द</button>
+      </div>
+    </div>
+  );
+}
+
+/** Template download / upload for everyone; full backup and legacy file import for admin. */
 export function ImportExportDialog() {
-  const { db, g, people, openDialog, closeDialog, reload } = useVansh();
+  const { db, g, me, perms, people, myPosId, openDialog, closeDialog, reload, submit, toast } = useVansh();
+  const { can, isStaff, isAdm } = perms;
   const fileRef = useRef<HTMLInputElement>(null);
+  const tplRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const mayRequest = isStaff || perms.act === "premium";
+
+  const getTemplate = async () => {
+    setBusy(true);
+    try {
+      download(templateName(), await buildTemplate(g, { can, isStaff, myPosId }), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    } catch (e) {
+      alert((e as Error).message || String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const uploadTemplate = async (f: File) => {
+    if (!me) return;
+    setBusy(true);
+    try {
+      const parse = await parseTemplate(f, g, { can, isStaff, myPosId });
+      // same permission rule as the person form (premium: parent must be inside own area)
+      const ok: NewPersonDraft[] = [];
+      for (const d of parse.drafts) {
+        const bad = guardRequest(perms, "add", null, d.payload);
+        if (bad) parse.errors.push({ row: d.row, msg: `${String(d.payload.name)}: ${bad}` });
+        else ok.push(d);
+      }
+      parse.drafts = ok;
+      parse.errors.sort((a, b) => a.row - b.row);
+      const go = await new Promise<boolean>((res) => openDialog(<TemplatePreview parse={parse} isAdm={isAdm} onResolve={res} />));
+      if (!go) return closeDialog();
+      const batch = Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+      const reqs = parse.drafts.map((d) => makeRequest(me, "add", null, { ...d.payload, batch }, "Excel टेम्प्लेटबाट"));
+      const err = await submit(reqs, `✅ ${np(reqs.length)} अनुरोध पठाइयो — एडमिनको स्वीकृतिपछि देखिनेछ`);
+      if (err) alert(err);
+      closeDialog();
+    } catch (e) {
+      alert("अपलोड भएन: " + ((e as Error).message || e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const doImport = async (f: File) => {
     try {
       const raw = await readImportFile(f);
@@ -111,20 +197,40 @@ export function ImportExportDialog() {
       alert("आयात भएन: " + ((er as Error).message || er));
     }
   };
+  void toast;
   return (
     <div className="dlw">
       <h3>🔁 आयात / निर्यात</h3>
-      <p className="mut">आयात गर्नुअघि JSON ब्याकअप लिनुहोस्। फाइलमा नभएका व्यक्ति हटाइँदैनन्। अपलोड गरेपछि फरक देखाउने पूर्वावलोकन आउँछ, पुष्टि गरेपछि मात्र लागू हुन्छ।</p>
-      <div className="row">
-        <button className="ghost" onClick={() => exportXLSX(g).catch((e) => alert(e.message))}>📊 पूर्ण Excel</button>
-        <button className="ghost" onClick={() => exportCSV(g)}>📄 CSV</button>
-        <button className="ghost" onClick={() => exportJSON(people)}>💾 JSON ब्याकअप</button>
+      <div className="dlopt">
+        <div className="dlo-h"><b>१. टेम्प्लेट डाउनलोड</b></div>
+        <p className="mut">तपाईंले हेर्न पाउने व्यक्तिहरू पहिले नै भरिएको (हेर्न मात्र) Excel फाइल, तल नयाँ व्यक्ति थप्न खाली पङ्क्ति। बुबा/आमा सूचीबाट छान्न मिल्छ, मिति र फोनको ढाँचा मिलाइएको छ। निर्देश शीटमा पढ्नुहोस्।</p>
+        <div className="row"><button disabled={busy} onClick={getTemplate}>{busy ? "…" : "टेम्प्लेट डाउनलोड"}</button></div>
       </div>
-      <div className="row" style={{ marginTop: ".8rem" }}>
-        <button onClick={() => fileRef.current?.click()}>📥 फाइल अपलोड</button>
-        <button className="ghost" onClick={closeDialog}>बन्द</button>
-        <input type="file" ref={fileRef} accept=".xlsx,.xls,.csv,.json" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) doImport(f); e.target.value = ""; }} />
+      <div className="dlopt">
+        <div className="dlo-h"><b>२. भरेको फाइल अपलोड</b></div>
+        <p className="mut">
+          अहिले नयाँ व्यक्ति थप्न मात्र (अहिलेका व्यक्ति सच्याउने सुविधा पछि आउँछ)। {isAdm ? "एडमिनको अपलोड जाँचपछि सीधै थपिन्छ।" : mayRequest ? "तपाईंको अपलोड एडमिनको स्वीकृतिका लागि अनुरोध बन्छ। " + (perms.act === "premium" ? "बुबा/आमा तपाईंकै सम्पादन क्षेत्रभित्रका हुनुपर्छ।" : "") : "तपाईंको भूमिकाले अपलोड अनुरोध पठाउन मिल्दैन।"}
+          {" "}कडा जाँच अपलोडमा नै हुन्छ — Excel को सुरक्षामा भर नपर्नुहोस्।
+        </p>
+        <div className="row">
+          <button disabled={busy || !mayRequest} onClick={() => tplRef.current?.click()}>📥 Excel अपलोड</button>
+          <input type="file" ref={tplRef} accept=".xlsx" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadTemplate(f); e.target.value = ""; }} />
+        </div>
       </div>
+      {isAdm && (
+        <div className="dlopt">
+          <div className="dlo-h"><b>३. एडमिन: पूर्ण ब्याकअप / पुरानो ढाँचाको आयात</b></div>
+          <p className="mut">आयात गर्नुअघि JSON ब्याकअप लिनुहोस्। फाइलमा नभएका व्यक्ति हटाइँदैनन्; पूर्वावलोकनमा फरक देखिन्छ।</p>
+          <div className="row">
+            <button className="ghost" onClick={() => exportXLSX(g).catch((e) => alert(e.message))}>📊 पूर्ण Excel</button>
+            <button className="ghost" onClick={() => exportCSV(g)}>📄 CSV</button>
+            <button className="ghost" onClick={() => exportJSON(people)}>💾 JSON</button>
+            <button className="ghost" onClick={() => fileRef.current?.click()}>📥 पुरानो फाइल अपलोड</button>
+            <input type="file" ref={fileRef} accept=".xlsx,.xls,.csv,.json" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) doImport(f); e.target.value = ""; }} />
+          </div>
+        </div>
+      )}
+      <div className="row"><button className="ghost" onClick={closeDialog}>बन्द</button></div>
     </div>
   );
 }

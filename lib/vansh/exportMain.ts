@@ -25,7 +25,7 @@ export function mainRows(g: Graph, ctx: MainCtx): string[][] {
     .map((p) => {
       const sp = g.spousesOf(p);
       const private_ = ctx.isStaff || p.id === ctx.myPosId;
-      const married = sp.length > 0 || !!p.marriage_bs;
+      const married = g.isMarriedP(p);
       const f = p.father_id ? g.byId[p.father_id] : null;
       return [
         p.name,
@@ -65,8 +65,9 @@ export async function exportMainXLSX(g: Graph, ctx: MainCtx) {
   return rows.length;
 }
 
-/** Me, my direct ancestors up to `up` generations, my descendants down to `down`, and their spouses. */
-export function nearSubset(g: Graph, myId: string, up = 2, down = 2): VPerson[] {
+/** Me, my direct ancestors up to `up` generations (default 7), my descendants down to `down`, and their spouses. */
+export const NEAR_GEN = 7;
+export function nearSubset(g: Graph, myId: string, up = NEAR_GEN, down = NEAR_GEN): VPerson[] {
   const keep = new Set<string>([myId]);
   const climb = (id: string, n: number) => {
     if (n === 0) return;

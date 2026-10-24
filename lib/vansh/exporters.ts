@@ -132,7 +132,37 @@ export async function exportXLSX(g: Graph) {
 }
 
 // ---- chart image export ----
-export function svgText(layout: Layout, can: (id: string) => boolean, nm: (p: VPerson) => string): string {
+/**
+ * Fetches profile photos as small round-ready data URLs so they can live inside an exported SVG/JPG
+ * (an SVG drawn into a canvas cannot load outside images). Failures are skipped — the initial letter is used.
+ */
+export async function loadPhotos(people: VPerson[], can: (id: string) => boolean, size = 96): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  const todo = people.filter((p) => p.photo_url && can(p.id) && !p.name_only);
+  const one = async (p: VPerson) => {
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 10000);
+      const res = await fetch(p.photo_url!, { signal: ctl.signal, mode: "cors" });
+      clearTimeout(t);
+      if (!res.ok) return;
+      const bmp = await createImageBitmap(await res.blob());
+      const cv = document.createElement("canvas");
+      cv.width = cv.height = size;
+      const c = cv.getContext("2d");
+      if (!c) return;
+      const m = Math.min(bmp.width, bmp.height);
+      c.drawImage(bmp, (bmp.width - m) / 2, (bmp.height - m) / 2, m, m, 0, 0, size, size);
+      out[p.id] = cv.toDataURL("image/jpeg", 0.82);
+    } catch {
+      /* keep the letter avatar */
+    }
+  };
+  for (let i = 0; i < todo.length; i += 8) await Promise.all(todo.slice(i, i + 8).map(one));
+  return out;
+}
+
+export function svgText(layout: Layout, can: (id: string) => boolean, nm: (p: VPerson) => string, photos: Record<string, string> = {}): string {
   const { lines, cards, W, H } = layout;
   const F = 'font-family="Noto Sans Devanagari,sans-serif"';
   const cut = (s: string) => xmlEsc(s.length > 20 ? s.slice(0, 19) + "…" : s);
@@ -141,13 +171,19 @@ export function svgText(layout: Layout, can: (id: string) => boolean, nm: (p: VP
       .map((l) => `<path d="${l.d}" fill="none" stroke="#8A9A9C" stroke-width="1.5"${l.m ? ' stroke-dasharray="5 4"' : ""}/>`)
       .join("") +
     cards
-      .map(({ p, x, y, d }) => {
+      .map(({ p, x, y, d }, i) => {
         const fill = p.gender === "M" ? "#4A78A8" : p.gender === "F" ? "#C0587A" : "#7A8C8F";
+        const cx = x + 30, cy = y + CH / 2 + 2;
+        const face = photos[p.id]
+          ? `<clipPath id="ph${i}"><circle cx="${cx}" cy="${cy}" r="19"/></clipPath>` +
+            `<image href="${photos[p.id]}" x="${cx - 19}" y="${cy - 19}" width="38" height="38" preserveAspectRatio="xMidYMid slice" clip-path="url(#ph${i})"/>` +
+            `<circle cx="${cx}" cy="${cy}" r="19" fill="none" stroke="${fill}" stroke-width="2"/>`
+          : `<circle cx="${cx}" cy="${cy}" r="19" fill="${fill}"/>` +
+            `<text x="${cx}" y="${y + CH / 2 + 8}" text-anchor="middle" font-size="18" fill="#fff" ${F}>${xmlEsc(can(p.id) ? Array.from(p.name)[0] : "🔒")}</text>`;
         return (
           `<rect x="${x}" y="${y}" width="${CW}" height="${CH}" rx="10" fill="#fff" stroke="#C5D0CC"/>` +
           `<rect x="${x}" y="${y}" width="${CW}" height="5" rx="2" fill="${GEN[d % GEN.length]}"/>` +
-          `<circle cx="${x + 30}" cy="${y + CH / 2 + 2}" r="19" fill="${fill}"/>` +
-          `<text x="${x + 30}" y="${y + CH / 2 + 8}" text-anchor="middle" font-size="18" fill="#fff" ${F}>${xmlEsc(can(p.id) ? Array.from(p.name)[0] : "🔒")}</text>` +
+          face +
           `<text x="${x + 58}" y="${y + CH / 2}" font-size="14" font-weight="600" fill="#1B2A2F" ${F}>${cut(nm(p))}</text>` +
           `<text x="${x + 58}" y="${y + CH / 2 + 18}" font-size="12" fill="#5C6C70" ${F}>${yr(p.birth_bs) || "?"}${p.is_living ? "" : " – " + (yr(p.death_bs) || "?")}</text>`
         );

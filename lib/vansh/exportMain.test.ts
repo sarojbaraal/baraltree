@@ -33,14 +33,19 @@ describe("mainRows", () => {
     expect(rows.find((x) => x[0] === "k")![12]).toBe("");
     expect(rows.find((x) => x[0] === "me")![12]).toBe("me@x");
   });
+  it("marks parents as married even without a spouse", () => {
+    const r = mainRows(g, { can, isStaff: true, myPosId: null }).find((x) => x[0] === "k")!;
+    expect(r[9]).toBe("विवाहित");
+    expect(mainRows(g, { can, isStaff: true, myPosId: null }).find((x) => x[0] === "kkk")![9]).toBe("अविवाहित");
+  });
   it("skips people the viewer cannot access", () => {
     expect(mainRows(g, { can, isStaff: true, myPosId: null }).some((x) => x[0] === "lock")).toBe(false);
   });
 });
 
 describe("nearSubset", () => {
-  it("is me ±2 generations plus spouses", () => {
+  it("is me ±7 generations plus spouses", () => {
     const ids = nearSubset(g, "me").map((p) => p.id).sort();
-    expect(ids).toEqual(["f", "gf", "k", "kk", "m", "me"]);
+    expect(ids).toEqual(["f", "gf", "k", "kk", "kkk", "m", "me"]);
   });
 });
