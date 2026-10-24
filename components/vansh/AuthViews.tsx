@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useVansh } from "./VanshContext";
 import { DateField, PasswordField } from "./ui";
+import InvitePreview from "./InvitePreview";
 
 type Mode = "login" | "signup" | "forgot";
 const TITLE: Record<Mode, string> = { login: "स्वागतम् !", signup: "खाता बनाउनुहोस्", forgot: "पासवर्ड रिसेट" };
@@ -62,6 +63,7 @@ export function AuthView() {
   const [msg, setMsg] = useState<{ t: string; ok?: boolean } | null>(null);
   const [inv, setInv] = useState<{ name: string | null; checked: boolean }>({ name: null, checked: false });
   const [busy, setBusy] = useState(false);
+  const [pvDone, setPvDone] = useState(false);
   const token = invite();
 
   useEffect(() => {
@@ -131,6 +133,16 @@ export function AuthView() {
 
   return (
     <div className="auth-wrap">
+      {token && inv.name && !pvDone && (
+        <InvitePreview
+          token={token}
+          name={inv.name}
+          onDone={() => {
+            setPvDone(true);
+            switchMode("signup");
+          }}
+        />
+      )}
       <div className="auth-visual">
         <div className="auth-visual-content">
           <div className="auth-mandala">
@@ -294,7 +306,7 @@ export function AuthView() {
               <dt>यो साइट के हो?</dt>
               <dd>बराल परिवारको वंशावली — को कसको छोरा/छोरी, को कुन पुस्ता र कसको कुन नाता हो भन्ने निजी परिवार-रेकर्ड। सार्वजनिक वेबसाइट होइन।</dd>
               <dt>को के हेर्न सक्छ?</dt>
-              <dd>खाता बनाएपछि एडमिनले स्वीकृत गरेमा मात्र पहुँच खुल्छ। साधारण सदस्यले आफ्नो शाखा बाहेकका व्यक्तिको पूरा विवरण देख्दैनन्; ती शाखा बन्द (locked) रहन्छन्।</dd>
+              <dd>खाता बनाएपछि एडमिनले स्वीकृत गरेमा मात्र पहुँच खुल्छ। विवाहित छोरी-चेलीका ससुराली परिवारका शाखा साधारण सदस्यका लागि बन्द (नाम लुकेको) रहन्छन्।</dd>
               <dt>इमेल र फोन कसले देख्छ?</dt>
               <dd>इमेल र फोन नम्बर एडमिन/मोडरेटर र सम्बन्धित व्यक्ति आफैँले मात्र देख्न सक्छन्।</dd>
               <dt>पासवर्ड र लगइन?</dt>
