@@ -45,7 +45,19 @@ export function planPosterPages(g: Graph, limit = 40): PosterPage[] {
     const lv = levels(rootId);
     let L = lv.length - 1;
     const count = (l: number) => withSpouses(lv.slice(0, l + 1).flat()).size;
-    const wide = (l: number) => withSpouses(lv[l]).size > 11; // a row wider than ~11 cards gets unreadably small
+    // a row wider than ~11 cards gets unreadably small; groups of 4+ childless siblings hang vertically, so they do not count
+    const wide = (l: number) => {
+      const groups = new Map<string, string[]>();
+      for (const id of lv[l]) {
+        const p = g.byId[id];
+        const key = p.father_id || p.mother_id || id;
+        (groups.get(key) ?? groups.set(key, []).get(key)!).push(id);
+      }
+      const hasKids = (id: string) => [g.byId[id], ...g.spousesOf(g.byId[id]).map((x) => g.byId[x])].some((q) => q && g.kidsOf(q).length);
+      let n = 0;
+      for (const ids of groups.values()) if (!(ids.length >= 4 && ids.every((id) => !hasKids(id)))) n += withSpouses(ids).size;
+      return n > 11;
+    };
     while (L > 1 && (count(L) > limit || wide(L))) L--;
     const ids = withSpouses(lv.slice(0, L + 1).flat());
     if (L < lv.length - 1) {

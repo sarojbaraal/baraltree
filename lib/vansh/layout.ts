@@ -10,7 +10,9 @@ export const HG = 26;
 export const VG = 64;
 export const GEN = ["#E4572E", "#F3A712", "#29A19C", "#3A7CA5", "#7B5EA7", "#D1477A", "#5B8C5A", "#C17C3B"];
 
-export interface Dims { cw: number; ch: number; gap: number; hg: number; vg: number; heart?: boolean }
+export interface Dims { cw: number; ch: number; gap: number; hg: number; vg: number; heart?: boolean; /** children without descendants hang in a vertical column when a parent has at least this many */ stack?: number; /** everything below a hanging node hangs too (outline style) */ deep?: boolean }
+const STK = 22; // indent of a hanging column
+const SG = 26; // gap between hanging cards
 export const DEFAULT_DIMS: Dims = { cw: CW, ch: CH, gap: GAP, hg: HG, vg: VG };
 /** Smaller cards and a gap wide enough for a heart between spouses: used by the printable poster. */
 export const POSTER_DIMS: Dims = { cw: 158, ch: 60, gap: 24, hg: 14, vg: 46, heart: true };
@@ -28,6 +30,7 @@ export interface TreeNode {
   ct: number;
   tw: number;
   ax: number;
+  stk?: boolean;
 }
 export interface Card {
   p: VPerson;
@@ -89,6 +92,13 @@ function measure(n: TreeNode, collapsed: Set<string>) {
   n.vis.forEach((c) => measure(c, collapsed));
   n.ct = n.vis.reduce((a, c) => a + c.tw, 0) + D.hg * Math.max(0, n.vis.length - 1);
   n.tw = Math.max(n.w, n.ct);
+  const canHang = (c: TreeNode) => c.sps.length <= 1 && (c.vis.length === 0 || !!c.stk);
+  n.stk = !!D.stack && n.sps.length <= 1 && n.vis.length > 0 && n.vis.every(canHang) && (n.vis.length >= D.stack || !!D.deep);
+  if (n.stk) {
+    const pi = rowOf(n).indexOf(n.p);
+    n.ct = pi * (D.cw + D.gap) + STK * 2 + Math.max(...n.vis.map((c) => c.tw));
+    n.tw = Math.max(n.w, n.ct);
+  }
 }
 
 function rowOf(n: TreeNode): VPerson[] {
@@ -101,9 +111,9 @@ function rowOf(n: TreeNode): VPerson[] {
   return [sps[0], p, ...sps.slice(1)];
 }
 
-function place(n: TreeNode, x: number, y: number, cards: Card[], lines: Line[], units: Unit[]) {
+function place(n: TreeNode, x: number, y: number, cards: Card[], lines: Line[], units: Unit[]): number {
   const row = rowOf(n);
-  const ux = x + (n.tw - n.w) / 2;
+  const ux = n.stk ? x : x + (n.tw - n.w) / 2;
   const px = ux + n.w / 2;
   const cx: Record<string, number> = {};
   row.forEach((q, i) => {
@@ -124,6 +134,20 @@ function place(n: TreeNode, x: number, y: number, cards: Card[], lines: Line[], 
   });
   n.ax = cx[n.p.id];
   if (n.all.length) units.push({ key: n.p.id, px, y, n: n.all.length, open: n.vis.length > 0 });
+  if (n.stk) {
+    // hanging column: a spine under the parent card, one short branch per child (children may hang their own children)
+    const sx = ux + pi * (D.cw + D.gap) + STK;
+    let cy = y + D.ch + 14;
+    let lastY = cy;
+    n.vis.forEach((c) => {
+      lastY = cy;
+      const bottom = place(c, sx + STK, cy, cards, lines, units);
+      lines.push({ d: `M${sx} ${cy + D.ch / 2}H${sx + STK}`, c: c.p.id });
+      cy = bottom + SG;
+    });
+    lines.push({ d: `M${sx} ${y + D.ch}V${lastY + D.ch / 2}`, c: n.p.id });
+    return cy - SG;
+  }
   let cur = x + (n.tw - n.ct) / 2;
   n.vis.forEach((c) => {
     const fx = n.sps.length >= 2 && c.from && cx[c.from] != null ? cx[c.from] : px;
@@ -132,6 +156,7 @@ function place(n: TreeNode, x: number, y: number, cards: Card[], lines: Line[], 
     lines.push({ d: `M${fx} ${y0}V${y + D.ch + D.vg / 2}H${c.ax}V${y + D.ch + D.vg}`, c: c.p.id });
     cur += c.tw + D.hg;
   });
+  return y + D.ch;
 }
 
 function buildTrees(g: Graph): TreeNode[] {

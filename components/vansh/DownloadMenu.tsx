@@ -1,9 +1,8 @@
 "use client";
 // Download / import entry (shown in the Family section). The button opens one window that explains every option.
 import React, { useRef, useState } from "react";
-import { computeLayout, POSTER_DIMS } from "@/lib/vansh/layout";
 import { exportJSON, exportCSV, exportXLSX, jpgBlob, loadPhotos, svgBlob } from "@/lib/vansh/exporters";
-import { posterSvg, svgSize } from "@/lib/vansh/poster";
+import { bestLayout, posterSvg, svgSize } from "@/lib/vansh/poster";
 import { mainXlsxBlob, nearGraph } from "@/lib/vansh/exportMain";
 import { allPrint, type Paper } from "@/lib/vansh/branchPrint";
 import { DownloadPreview, useStampMaker, type Prepared } from "./DownloadPreview";
@@ -48,11 +47,11 @@ export function DownloadDialog() {
       const data = await fn();
       openDialog(<DownloadPreview data={data} onCancel={() => openDialog(<DownloadDialog />)} />);
     });
-  const full = () => computeLayout(g, new Set(), POSTER_DIMS);
+  const full = () => bestLayout(g, 420, 297);
   const near = () => {
     if (!myPosId || !g.byId[myPosId]) throw new Error("तपाईंको स्थान वंशावलीमा तोकिएको छैन — एडमिनले स्थान तोकेपछि यो चल्छ।");
     const ng = nearGraph(g, myPosId);
-    return computeLayout(ng, new Set(), POSTER_DIMS);
+    return bestLayout(ng, 420, 297);
   };
   return (
     <div className="dlw">

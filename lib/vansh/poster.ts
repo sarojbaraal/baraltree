@@ -2,7 +2,8 @@
 // photo or default male/female figure, a heart between spouses with the children's bracket hanging from it,
 // a big title and a generation legend. Used for chart pages in PDF and for the JPG / SVG downloads.
 import type { VPerson } from "./types";
-import type { Layout } from "./layout";
+import { computeLayout, POSTER_DIMS, type Layout } from "./layout";
+import type { Graph } from "./graph";
 import { symbol } from "./exporters";
 import { BRAND, NOTICE, wrapChars, type Stamp } from "./notice";
 import { np, yr } from "./text";
@@ -117,3 +118,18 @@ export function svgSize(svg: string) {
   return { w: m ? +m[1] : 1000, h: m ? +m[2] : 700 };
 }
 export const POSTER_PAD = 36;
+
+/**
+ * Picks the layout that fills a box (w × h, same units as the layout) best: the normal row layout, or one where the
+ * childless children of a big family hang in a vertical column so the row does not grow so wide.
+ */
+export function bestLayout(g: Graph, boxW: number, boxH: number): Layout {
+  const fit = (l: Layout) => Math.min(boxW / (l.W + 2 * POSTER_PAD), boxH / (l.H + 46 + 120));
+  let best = computeLayout(g, new Set(), POSTER_DIMS);
+  for (const deep of [false, true])
+    for (const k of [8, 6, 4, 3, 2]) {
+      const l = computeLayout(g, new Set(), { ...POSTER_DIMS, stack: k, deep });
+      if (fit(l) > fit(best) * 1.04) best = l;
+    }
+  return best;
+}

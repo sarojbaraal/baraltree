@@ -21,3 +21,18 @@ describe("planPosterPages", () => {
     for (const pg of pages) for (const [id, to] of Object.entries(pg.cuts)) expect(pages[to].from).toEqual({ page: pg.idx, id });
   });
 });
+
+import { computeLayout, POSTER_DIMS } from "./layout";
+describe("hanging column layout", () => {
+  it("narrows a family of many childless children without losing anyone or overlapping", () => {
+    const ppl = [P("r"), ...Array.from({ length: 9 }, (_, i) => P("k" + i, "r"))];
+    const g = createGraph(ppl);
+    const flat = computeLayout(g, new Set(), POSTER_DIMS);
+    const st = computeLayout(g, new Set(), { ...POSTER_DIMS, stack: 4 });
+    expect(st.cards).toHaveLength(10);
+    expect(st.W).toBeLessThan(flat.W / 3);
+    expect(st.H).toBeGreaterThan(flat.H);
+    const ys = st.cards.filter((c) => c.d === 1).map((c) => c.y).sort((a, b) => a - b);
+    for (let i = 1; i < ys.length; i++) expect(ys[i] - ys[i - 1]).toBeGreaterThanOrEqual(POSTER_DIMS.ch);
+  });
+});

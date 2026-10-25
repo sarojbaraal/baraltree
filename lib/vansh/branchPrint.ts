@@ -6,7 +6,7 @@
 import type { VPerson } from "./types";
 import { createGraph, type Graph } from "./graph";
 import { GEN, POSTER_DIMS, computeLayout } from "./layout";
-import { PGEN, POSTER_BG, POSTER_PAD, posterSvg } from "./poster";
+import { PGEN, POSTER_BG, POSTER_PAD, bestLayout, posterSvg } from "./poster";
 import { planPosterPages, type PosterPage } from "./posterPlan";
 import { np, yr } from "./text";
 import { BRAND, NOTICE, wrapChars, type Stamp } from "./notice";
@@ -277,7 +277,8 @@ export async function renderPrint(job: PrintJob): Promise<PrintResult> {
         const keep = (v?: string | null) => (v && inPage.has(v) ? v : null);
         // references leaving the page are cut, otherwise the page root would not count as a root
         const g2 = createGraph(pg.ids.map((id) => ({ ...byId[id], father_id: keep(byId[id].father_id), mother_id: keep(byId[id].mother_id), spouse_id: keep(byId[id].spouse_id), more_spouse_ids: (byId[id].more_spouse_ids || []).filter((x) => inPage.has(x)) })));
-        return { page: pg, layout: computeLayout(g2, new Set(), POSTER_DIMS) };
+        const best = bestLayout(g2, caw, cah);
+        return { page: pg, layout: best };
       });
       const fits = built.every(({ layout }) => Math.min(caw / (layout.W + 2 * POSTER_PAD), cah / (layout.H + 46 + 120)) >= MIN_SCALE);
       if (!fits && limit !== 16) continue;
