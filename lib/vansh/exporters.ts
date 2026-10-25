@@ -177,7 +177,7 @@ export async function loadPhotos(people: VPerson[], can: (id: string) => boolean
   return out;
 }
 
-const symbol = (id: "avM" | "avF") => (SPRITE_INNER.match(new RegExp(`<symbol id="${id}"[\\s\\S]*?</symbol>`)) || [""])[0];
+export const symbol = (id: "avM" | "avF") => (SPRITE_INNER.match(new RegExp(`<symbol id="${id}"[\\s\\S]*?</symbol>`)) || [""])[0];
 
 export function svgText(layout: Layout, can: (id: string) => boolean, nm: (p: VPerson) => string, photos: Record<string, string> = {}, stamp?: Stamp): string {
   const { lines, cards, W, H } = layout;

@@ -1,8 +1,9 @@
 "use client";
 // Download / import entry (shown in the Family section). The button opens one window that explains every option.
 import React, { useRef, useState } from "react";
-import { computeLayout } from "@/lib/vansh/layout";
-import { exportJSON, exportCSV, exportXLSX, footerHeight, jpgBlob, loadPhotos, svgBlob, svgText } from "@/lib/vansh/exporters";
+import { computeLayout, POSTER_DIMS } from "@/lib/vansh/layout";
+import { exportJSON, exportCSV, exportXLSX, jpgBlob, loadPhotos, svgBlob } from "@/lib/vansh/exporters";
+import { posterSvg, svgSize } from "@/lib/vansh/poster";
 import { mainXlsxBlob, nearGraph } from "@/lib/vansh/exportMain";
 import { allPrint, type Paper } from "@/lib/vansh/branchPrint";
 import { DownloadPreview, useStampMaker, type Prepared } from "./DownloadPreview";
@@ -47,11 +48,11 @@ export function DownloadDialog() {
       const data = await fn();
       openDialog(<DownloadPreview data={data} onCancel={() => openDialog(<DownloadDialog />)} />);
     });
-  const full = () => computeLayout(g, new Set());
+  const full = () => computeLayout(g, new Set(), POSTER_DIMS);
   const near = () => {
     if (!myPosId || !g.byId[myPosId]) throw new Error("तपाईंको स्थान वंशावलीमा तोकिएको छैन — एडमिनले स्थान तोकेपछि यो चल्छ।");
     const ng = nearGraph(g, myPosId);
-    return computeLayout(ng, new Set());
+    return computeLayout(ng, new Set(), POSTER_DIMS);
   };
   return (
     <div className="dlw">
@@ -63,7 +64,9 @@ export function DownloadDialog() {
           const l = near();
           const ph = await loadPhotos(l.cards.map((c) => c.p), can);
           const st = await mkStamp(`jpg|${l.cards.length}`);
-          const blob = await jpgBlob(svgText(l, can, nm, ph, st), l.W, l.H, footerHeight(st, l.W + 40));
+          const svg = posterSvg(l, can, nm, ph, { title: ["सात पुस्ता, ", "एउटै वंश"], stamp: st });
+          const sz = svgSize(svg);
+          const blob = await jpgBlob(svg, sz.w - 40, sz.h - 40);
           return { blob, fileName: `baral-banshabrikshya-${stamp()}.jpg`, images: [{ src: URL.createObjectURL(blob) }], note: `${np(l.cards.length)} जना · हस्ताक्षर ID ${st.id}` };
         })}>{busy === "jpg" ? "बन्दैछ…" : "फोटो हेर्ने / डाउनलोड"}</button>
       </Opt>
@@ -73,7 +76,7 @@ export function DownloadDialog() {
           const l = full();
           const ph = await loadPhotos(l.cards.map((c) => c.p), can);
           const st = await mkStamp(`svg|${l.cards.length}`);
-          const blob = svgBlob(svgText(l, can, nm, ph, st));
+          const blob = svgBlob(posterSvg(l, can, nm, ph, { title: ["पूरा वंशावली, ", "एउटै रगत"], stamp: st }));
           return { blob, fileName: `baral-banshabrikshya-${stamp()}.svg`, images: [{ src: URL.createObjectURL(blob) }], note: `${np(l.cards.length)} जना · हस्ताक्षर ID ${st.id}` };
         })}>{busy === "svg" ? "बन्दैछ…" : "SVG हेर्ने / डाउनलोड"}</button>
       </Opt>

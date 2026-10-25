@@ -10,6 +10,13 @@ export const HG = 26;
 export const VG = 64;
 export const GEN = ["#E4572E", "#F3A712", "#29A19C", "#3A7CA5", "#7B5EA7", "#D1477A", "#5B8C5A", "#C17C3B"];
 
+export interface Dims { cw: number; ch: number; gap: number; hg: number; vg: number; heart?: boolean }
+export const DEFAULT_DIMS: Dims = { cw: CW, ch: CH, gap: GAP, hg: HG, vg: VG };
+/** Smaller cards and a gap wide enough for a heart between spouses: used by the printable poster. */
+export const POSTER_DIMS: Dims = { cw: 158, ch: 60, gap: 24, hg: 14, vg: 46, heart: true };
+let D: Dims = DEFAULT_DIMS;
+let HEARTS: { x: number; y: number }[] = [];
+
 export interface TreeNode {
   p: VPerson;
   sps: VPerson[];
@@ -48,6 +55,8 @@ export interface Layout {
   W: number;
   H: number;
   cardPos: Record<string, Card>;
+  hearts: { x: number; y: number }[];
+  dims: Dims;
 }
 
 function buildNode(g: Graph, p: VPerson, seen: Set<string>, d: number): TreeNode {
@@ -72,13 +81,13 @@ function buildNode(g: Graph, p: VPerson, seen: Set<string>, d: number): TreeNode
       }
     })
   );
-  return { p, sps, d, w: (sps.length + 1) * CW + sps.length * GAP, all, vis: [], ct: 0, tw: 0, ax: 0 };
+  return { p, sps, d, w: (sps.length + 1) * D.cw + sps.length * D.gap, all, vis: [], ct: 0, tw: 0, ax: 0 };
 }
 
 function measure(n: TreeNode, collapsed: Set<string>) {
   n.vis = collapsed.has(n.p.id) ? [] : n.all;
   n.vis.forEach((c) => measure(c, collapsed));
-  n.ct = n.vis.reduce((a, c) => a + c.tw, 0) + HG * Math.max(0, n.vis.length - 1);
+  n.ct = n.vis.reduce((a, c) => a + c.tw, 0) + D.hg * Math.max(0, n.vis.length - 1);
   n.tw = Math.max(n.w, n.ct);
 }
 
@@ -98,18 +107,19 @@ function place(n: TreeNode, x: number, y: number, cards: Card[], lines: Line[], 
   const px = ux + n.w / 2;
   const cx: Record<string, number> = {};
   row.forEach((q, i) => {
-    const qx = ux + i * (CW + GAP);
+    const qx = ux + i * (D.cw + D.gap);
     cards.push({ p: q, x: qx, y, d: n.d });
-    cx[q.id] = qx + CW / 2;
+    cx[q.id] = qx + D.cw / 2;
   });
   const pi = row.indexOf(n.p);
   n.sps.forEach((s) => {
     const si = row.indexOf(s);
     if (Math.abs(si - pi) === 1) {
       const a = Math.min(si, pi);
-      lines.push({ d: `M${ux + a * (CW + GAP) + CW} ${y + CH / 2}H${ux + (a + 1) * (CW + GAP)}`, c: n.p.id });
+      lines.push({ d: `M${ux + a * (D.cw + D.gap) + D.cw} ${y + D.ch / 2}H${ux + (a + 1) * (D.cw + D.gap)}`, c: n.p.id });
+      if (D.heart && n.sps.length === 1) HEARTS.push({ x: ux + a * (D.cw + D.gap) + D.cw + D.gap / 2, y: y + D.ch / 2 });
     } else {
-      lines.push({ d: `M${cx[n.p.id]} ${y + CH}V${y + CH + 12}H${cx[s.id]}V${y + CH}`, c: n.p.id, m: 1 });
+      lines.push({ d: `M${cx[n.p.id]} ${y + D.ch}V${y + D.ch + 12}H${cx[s.id]}V${y + D.ch}`, c: n.p.id, m: 1 });
     }
   });
   n.ax = cx[n.p.id];
@@ -117,9 +127,10 @@ function place(n: TreeNode, x: number, y: number, cards: Card[], lines: Line[], 
   let cur = x + (n.tw - n.ct) / 2;
   n.vis.forEach((c) => {
     const fx = n.sps.length >= 2 && c.from && cx[c.from] != null ? cx[c.from] : px;
-    place(c, cur, y + CH + VG, cards, lines, units);
-    lines.push({ d: `M${fx} ${y + CH}V${y + CH + VG / 2}H${c.ax}V${y + CH + VG}`, c: c.p.id });
-    cur += c.tw + HG;
+    place(c, cur, y + D.ch + D.vg, cards, lines, units);
+    const y0 = D.heart && n.sps.length === 1 && fx === px ? y + D.ch / 2 : y + D.ch; // poster: the child bracket hangs from the heart
+    lines.push({ d: `M${fx} ${y0}V${y + D.ch + D.vg / 2}H${c.ax}V${y + D.ch + D.vg}`, c: c.p.id });
+    cur += c.tw + D.hg;
   });
 }
 
@@ -145,7 +156,9 @@ export function initialCollapsed(g: Graph): Set<string> {
   return c;
 }
 
-export function computeLayout(g: Graph, collapsed: Set<string>): Layout {
+export function computeLayout(g: Graph, collapsed: Set<string>, dims: Dims = DEFAULT_DIMS): Layout {
+  D = dims;
+  HEARTS = [];
   const cards: Card[] = [];
   const lines: Line[] = [];
   const units: Unit[] = [];
@@ -154,11 +167,13 @@ export function computeLayout(g: Graph, collapsed: Set<string>): Layout {
   trees.forEach((t) => {
     measure(t, collapsed);
     place(t, x, 0, cards, lines, units);
-    x += t.tw + HG * 3;
+    x += t.tw + D.hg * 3;
   });
-  const W = Math.max(x - HG * 3, CW);
-  const H = Math.max(CH, ...cards.map((c) => c.y + CH)) + 34;
-  return { cards, lines, units, trees, W, H, cardPos: Object.fromEntries(cards.map((c) => [c.p.id, c])) };
+  const W = Math.max(x - D.hg * 3, D.cw);
+  const H = Math.max(D.ch, ...cards.map((c) => c.y + D.ch)) + 34;
+  const out = { cards, lines, units, trees, W, H, cardPos: Object.fromEntries(cards.map((c) => [c.p.id, c])), hearts: HEARTS, dims };
+  D = DEFAULT_DIMS;
+  return out;
 }
 
 /** "संक्षिप्त": keep the user's own branch open and fold the rest. */

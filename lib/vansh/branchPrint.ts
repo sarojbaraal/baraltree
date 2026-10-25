@@ -5,8 +5,8 @@
 // jsPDF cannot shape Devanagari, so every page is drawn on a canvas by the browser and embedded as an image.
 import type { VPerson } from "./types";
 import { createGraph, type Graph } from "./graph";
-import { CH, CW, GEN, computeLayout } from "./layout";
-import { svgText } from "./exporters";
+import { GEN, POSTER_DIMS, computeLayout } from "./layout";
+import { POSTER_BG, POSTER_PAD, posterSvg } from "./poster";
 import { np, yr } from "./text";
 import { BRAND, NOTICE, wrapChars, type Stamp } from "./notice";
 
@@ -264,8 +264,8 @@ export async function renderPrint(job: PrintJob): Promise<PrintResult> {
   const lw = paper.h, lh = paper.w; // landscape
   if (job.chart && job.chart.people.length) {
     const sub = createGraph(job.chart.people.map((p) => ({ ...p })));
-    const layout = computeLayout(sub, new Set());
-    const img = await svgImage(svgText(layout, can, nm, job.chart.photos));
+    const layout = computeLayout(sub, new Set(), POSTER_DIMS);
+    const img = await svgImage(posterSvg(layout, can, nm, job.chart.photos, { bare: true, genOffset: job.firstLvl }));
     const caw = lw - 2 * M, cah = lh - M - HEAD - M - FOOT;
     const fit = Math.min(caw / img.width, cah / img.height, 0.5);
     const s = Math.max(fit, MIN_SCALE);
@@ -276,8 +276,8 @@ export async function renderPrint(job: PrintJob): Promise<PrintResult> {
     const occ = Array.from({ length: crows }, (_, r) =>
       Array.from({ length: ccols }, (_, k) => {
         if (ccols * crows === 1) return true;
-        const x0 = (k * (caw - OV)) / s - 20 - 6, x1 = x0 + caw / s + 12, y0 = (r * (cah - OV)) / s - 20 - 6, y1 = y0 + cah / s + 12;
-        return layout.cards.some((c) => c.x < x1 && c.x + CW > x0 && c.y < y1 && c.y + CH > y0);
+        const x0 = (k * (caw - OV)) / s - POSTER_PAD - 6, x1 = x0 + caw / s + 12, y0 = (r * (cah - OV)) / s - 6, y1 = y0 + cah / s + 12;
+        return layout.cards.some((c) => c.x < x1 && c.x + layout.dims.cw > x0 && c.y < y1 && c.y + layout.dims.ch > y0);
       })
     );
     chart = { occ, img, s, ccols, crows, cw: dw, ch: dh, caw, cah };
@@ -406,6 +406,7 @@ export async function renderPrint(job: PrintJob): Promise<PrintResult> {
         const { c, mm } = x;
         c.save();
         c.beginPath(); c.rect(mm(box.x), mm(box.y), mm(box.w), mm(box.h)); c.clip();
+        c.fillStyle = POSTER_BG; c.fillRect(mm(box.x), mm(box.y), mm(box.w), mm(box.h));
         c.imageSmoothingQuality = "high";
         if (tiles === 1) c.drawImage(chart.img, mm(box.x + (box.w - chart.cw) / 2), mm(box.y + (box.h - chart.ch) / 2), mm(chart.cw), mm(chart.ch));
         else c.drawImage(chart.img, mm(box.x - k * stepW), mm(box.y - r * stepH), mm(chart.cw), mm(chart.ch));
