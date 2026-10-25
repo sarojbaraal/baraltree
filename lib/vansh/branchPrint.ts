@@ -6,7 +6,8 @@
 import type { VPerson } from "./types";
 import { createGraph, type Graph } from "./graph";
 import { GEN, POSTER_DIMS, computeLayout } from "./layout";
-import { POSTER_BG, POSTER_PAD, posterSvg } from "./poster";
+import { PGEN, POSTER_BG, POSTER_PAD, posterSvg } from "./poster";
+import { planPosterPages, type PosterPage } from "./posterPlan";
 import { np, yr } from "./text";
 import { BRAND, NOTICE, wrapChars, type Stamp } from "./notice";
 
@@ -258,35 +259,42 @@ export async function renderPrint(job: PrintJob): Promise<PrintResult> {
   const pagesN = Math.max(1, Math.ceil(columns.length / cols));
   const rowH = fs * 1.45, indent = fs * 1.7, colW = (aw - gap * (cols - 1)) / cols;
 
-  // chart section (planned first so the page total is known). Wider than a page → overview page + overlapping tiles.
-  const OV = 10; // mm of overlap between neighbouring tiles
-  let chart: { occ: boolean[][]; img: HTMLImageElement; s: number; ccols: number; crows: number; cw: number; ch: number; caw: number; cah: number } | null = null;
+  // chart section: split into poster pages (one branch per page, each says where it continues from)
   const lw = paper.h, lh = paper.w; // landscape
+  const caw = lw - 2 * M, cah = lh - M - HEAD - M - FOOT;
+  type PP = { page: PosterPage; img: HTMLImageElement; w: number; h: number; s: number; name: string; count: number };
+  const posters: PP[] = [];
+  const idxPage = job.chart ? 1 : 0; // index page before the posters
   if (job.chart && job.chart.people.length) {
     const sub = createGraph(job.chart.people.map((p) => ({ ...p })));
-    const layout = computeLayout(sub, new Set(), POSTER_DIMS);
-    const img = await svgImage(posterSvg(layout, can, nm, job.chart.photos, { bare: true, genOffset: job.firstLvl }));
-    const caw = lw - 2 * M, cah = lh - M - HEAD - M - FOOT;
-    const fit = Math.min(caw / img.width, cah / img.height, 0.5);
-    const s = Math.max(fit, MIN_SCALE);
-    const dw = img.width * s, dh = img.height * s;
-    const n = (len: number, cap: number) => (len <= cap + 1e-6 ? 1 : Math.ceil((len - OV) / (cap - OV) - 1e-6));
-    const ccols = n(dw, caw), crows = n(dh, cah);
-    // a tile is printed only when a card (or a connector next to it) falls inside it; empty areas are skipped
-    const occ = Array.from({ length: crows }, (_, r) =>
-      Array.from({ length: ccols }, (_, k) => {
-        if (ccols * crows === 1) return true;
-        const x0 = (k * (caw - OV)) / s - POSTER_PAD - 6, x1 = x0 + caw / s + 12, y0 = (r * (cah - OV)) / s - 6, y1 = y0 + cah / s + 12;
-        return layout.cards.some((c) => c.x < x1 && c.x + layout.dims.cw > x0 && c.y < y1 && c.y + layout.dims.ch > y0);
-      })
-    );
-    chart = { occ, img, s, ccols, crows, cw: dw, ch: dh, caw, cah };
+    const byId = Object.fromEntries(job.chart.people.map((p) => [p.id, p]));
+    const who = (id: string) => (can(id) ? nm(byId[id]) : "🔒");
+    for (const limit of [40, 30, 22, 16]) {
+      const pages = planPosterPages(sub, limit);
+      const abs = (i: number) => pagesN + 1 + i + 1; // PDF page number of poster i
+      const built: { page: PosterPage; layout: ReturnType<typeof computeLayout> }[] = pages.map((pg) => {
+        const inPage = new Set(pg.ids);
+        const keep = (v?: string | null) => (v && inPage.has(v) ? v : null);
+        // references leaving the page are cut, otherwise the page root would not count as a root
+        const g2 = createGraph(pg.ids.map((id) => ({ ...byId[id], father_id: keep(byId[id].father_id), mother_id: keep(byId[id].mother_id), spouse_id: keep(byId[id].spouse_id), more_spouse_ids: (byId[id].more_spouse_ids || []).filter((x) => inPage.has(x)) })));
+        return { page: pg, layout: computeLayout(g2, new Set(), POSTER_DIMS) };
+      });
+      const fits = built.every(({ layout }) => Math.min(caw / (layout.W + 2 * POSTER_PAD), cah / (layout.H + 46 + 120)) >= MIN_SCALE);
+      if (!fits && limit !== 16) continue;
+      posters.length = 0;
+      for (const { page: pg, layout } of built) {
+        const chips = Object.fromEntries(Object.entries(pg.cuts).map(([id, to]) => [id, `→ पृ. ${np(abs(to))}`]));
+        const banner = pg.from ? `↳ ${who(pg.from.id)} बाट निरन्तर · पृ. ${np(abs(pg.from.page))} मा` : undefined;
+        const svg = posterSvg(layout, can, nm, job.chart.photos, { bare: true, genOffset: job.firstLvl + pg.depth, chips, banner });
+        const img = await svgImage(svg);
+        const fit = Math.min(caw / img.width, cah / img.height, 0.5);
+        posters.push({ page: pg, img, w: img.width * fit, h: img.height * fit, s: fit, name: pg.root ? who(pg.root) : "अन्य परिवार", count: pg.ids.length });
+      }
+      break;
+    }
   }
-  const tiles = chart ? chart.occ.flat().filter(Boolean).length : 0;
-  const overview = chart && chart.ccols * chart.crows > 1 ? 1 : 0;
-  const chartN = tiles + overview;
+  const chartN = posters.length ? posters.length + idxPage : 0;
   const total = pagesN + chartN;
-  const tileName = (r: number, k: number) => String.fromCharCode(65 + (r % 26)) + (k + 1);
 
   const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: job.paper, compress: true });
@@ -371,66 +379,37 @@ export async function renderPrint(job: PrintJob): Promise<PrintResult> {
     addPage(x, `झरना ${pg + 1}`, false);
   }
 
-  if (chart) {
-    const stepW = chart.caw - OV, stepH = chart.cah - OV;
-    if (overview) {
+  if (posters.length) {
+    // index page
+    const xi = newCanvas(lw, lh, paper.dpi);
+    const bi = frame(xi, job, pagesN + 1, total, "चार्ट सूची");
+    {
+      const { c, mm } = xi;
+      c.textBaseline = "alphabetic"; c.textAlign = "left";
+      c.fillStyle = "#1F6F78"; c.font = `600 ${mm(4)}px ${F}`;
+      c.fillText(posters.length === 1 ? "चार्ट अर्को पृष्ठमा छ।" : `चार्ट ${np(posters.length)} पृष्ठमा बाँडिएको छ — हरेक पृष्ठ एउटा शाखा हो र माथि "कहाँबाट निरन्तर" लेखिएको छ।`, mm(bi.x), mm(bi.y + 4));
+      const rowH = 6.2, perCol = Math.max(1, Math.floor((bi.h - 12) / rowH)), colW = bi.w / Math.ceil(posters.length / perCol);
+      posters.forEach((pp, i) => {
+        const col = Math.floor(i / perCol), row = i % perCol;
+        const xx = bi.x + col * colW, yy = bi.y + 14 + row * rowH;
+        c.fillStyle = PGEN[(pp.page.depth + job.firstLvl) % PGEN.length];
+        c.beginPath(); c.arc(mm(xx + 1.6), mm(yy - 1.2), mm(1.4), 0, Math.PI * 2); c.fill();
+        c.fillStyle = "#1B2A2F"; c.font = `600 ${mm(3.5)}px ${F}`;
+        const label = `पृ. ${np(pagesN + 1 + i + 1)}  ${pp.name.length > 22 ? pp.name.slice(0, 21) + "…" : pp.name} · ${np(pp.count)} जना`;
+        c.fillText(label, mm(xx + 5), mm(yy));
+        if (pp.page.from) { c.fillStyle = "#5C6C70"; c.font = `${mm(3)}px ${F}`; c.fillText(`(पृ. ${np(pagesN + 1 + pp.page.from.page + 1)} बाट)`, mm(xx + 5 + colW * 0.62), mm(yy)); }
+      });
+    }
+    addPage(xi, "चार्ट सूची", true);
+    posters.forEach((pp, i) => {
       const x = newCanvas(lw, lh, paper.dpi);
-      const box = frame(x, job, pagesN + 1, total, "चार्ट — नक्सा");
+      const box = frame(x, job, pagesN + idxPage + i + 1, total, `चार्ट · ${pp.name}`);
       const { c, mm } = x;
-      const ov = Math.min(box.w / chart.cw, (box.h - 8) / chart.ch);
-      const ox = box.x + (box.w - chart.cw * ov) / 2, oy = box.y + 8;
-      c.fillStyle = "#1F6F78"; c.font = `600 ${mm(3.6)}px ${F}`; c.textBaseline = "alphabetic";
-      c.fillText(`यो चार्ट ${np(tiles)} खण्डमा छापिएको छ (खाली भाग छापिएको छैन)। रातो ग्रिडले खण्डको सीमा र नाम (A1, B2…) देखाउँछ; खण्डहरू क्रमशः अर्का पृष्ठहरूमा छन्।`, mm(box.x), mm(box.y + 3));
+      c.fillStyle = POSTER_BG; c.fillRect(mm(box.x), mm(box.y), mm(box.w), mm(box.h));
       c.imageSmoothingQuality = "high";
-      c.drawImage(chart.img, mm(ox), mm(oy), mm(chart.cw * ov), mm(chart.ch * ov));
-      c.setLineDash([mm(2), mm(1.4)]); c.strokeStyle = "#D1493F"; c.lineWidth = mm(0.35);
-      c.font = `700 ${mm(4.6)}px ${F}`; c.textAlign = "center"; c.textBaseline = "middle";
-      for (let r = 0; r < chart.crows; r++)
-        for (let k = 0; k < chart.ccols; k++) {
-          if (!chart.occ[r][k]) continue;
-          const tx = ox + k * stepW * ov, ty = oy + r * stepH * ov;
-          const tw = Math.min(chart.caw, chart.cw - k * stepW) * ov, th = Math.min(chart.cah, chart.ch - r * stepH) * ov;
-          c.strokeRect(mm(tx), mm(ty), mm(tw), mm(th));
-          c.fillStyle = "rgba(209,73,63,.85)"; c.fillText(tileName(r, k), mm(tx + 6), mm(ty + 5));
-        }
-      c.setLineDash([]);
-      addPage(x, "चार्ट नक्सा", true);
-    }
-    let seq = 0;
-    for (let r = 0; r < chart.crows; r++) {
-      for (let k = 0; k < chart.ccols; k++) {
-        if (!chart.occ[r][k]) continue;
-        const x = newCanvas(lw, lh, paper.dpi);
-        const n = pagesN + overview + ++seq;
-        const box = frame(x, job, n, total, tiles > 1 ? `चार्ट खण्ड ${tileName(r, k)}` : "चार्ट");
-        const { c, mm } = x;
-        c.save();
-        c.beginPath(); c.rect(mm(box.x), mm(box.y), mm(box.w), mm(box.h)); c.clip();
-        c.fillStyle = POSTER_BG; c.fillRect(mm(box.x), mm(box.y), mm(box.w), mm(box.h));
-        c.imageSmoothingQuality = "high";
-        if (tiles === 1) c.drawImage(chart.img, mm(box.x + (box.w - chart.cw) / 2), mm(box.y + (box.h - chart.ch) / 2), mm(chart.cw), mm(chart.ch));
-        else c.drawImage(chart.img, mm(box.x - k * stepW), mm(box.y - r * stepH), mm(chart.cw), mm(chart.ch));
-        c.restore();
-        if (tiles > 1) {
-          // where the chart continues
-          const tag = (txt: string, tx: number, ty: number, al: CanvasTextAlign) => {
-            c.font = `600 ${mm(3.4)}px ${F}`;
-            const w = c.measureText(txt).width + mm(3);
-            const bx = al === "right" ? tx - w : al === "center" ? tx - w / 2 : tx;
-            c.fillStyle = "rgba(255,255,255,.92)"; c.fillRect(bx, ty - mm(2.6), w, mm(5.2));
-            c.strokeStyle = "#D1493F"; c.lineWidth = mm(0.25); c.strokeRect(bx, ty - mm(2.6), w, mm(5.2));
-            c.fillStyle = "#D1493F"; c.textAlign = "left"; c.textBaseline = "middle"; c.fillText(txt, bx + mm(1.5), ty);
-          };
-          const cx = mm(box.x + box.w / 2), cy = mm(box.y + box.h / 2);
-          if (k + 1 < chart.ccols && chart.occ[r][k + 1]) tag(`→ ${tileName(r, k + 1)}`, mm(box.x + box.w - 1), cy, "right");
-          if (k > 0 && chart.occ[r][k - 1]) tag(`← ${tileName(r, k - 1)}`, mm(box.x + 1), cy, "left");
-          if (r + 1 < chart.crows && chart.occ[r + 1][k]) tag(`↓ ${tileName(r + 1, k)}`, cx, mm(box.y + box.h - 3), "center");
-          if (r > 0 && chart.occ[r - 1][k]) tag(`↑ ${tileName(r - 1, k)}`, cx, mm(box.y + 3), "center");
-          c.textAlign = "left";
-        }
-        addPage(x, `चार्ट ${tileName(r, k)}`, true);
-      }
-    }
+      c.drawImage(pp.img, mm(box.x + (box.w - pp.w) / 2), mm(box.y + (box.h - pp.h) / 2), mm(pp.w), mm(pp.h));
+      addPage(x, `चार्ट ${i + 1}`, true);
+    });
   }
   return { blob: pdf.output("blob"), pages: out, cascadePages: pagesN, chartPages: chartN };
 }

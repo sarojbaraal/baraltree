@@ -21,6 +21,10 @@ export interface PosterOpts {
   stamp?: Stamp;
   /** leave the top title band and the footer out (the PDF page already has its own) */
   bare?: boolean;
+  /** small tag under a card, keyed by person id (e.g. "→ पृ. ५") */
+  chips?: Record<string, string>;
+  /** line above the tree on a continuation page */
+  banner?: string;
 }
 
 export const POSTER_BG = "#FBF4EE";
@@ -45,7 +49,7 @@ export function posterSvg(layout: Layout, can: (id: string) => boolean, nm: (p: 
   const { cards, lines, hearts, W, H, dims } = layout;
   const { cw, ch } = dims;
   const PAD = 36;
-  const TOP = o.bare ? 0 : 96;
+  const TOP = o.bare ? (o.banner ? 40 : 0) : 96;
   const off = o.genOffset ?? 0;
   const maxD = Math.max(0, ...cards.map((c) => c.d));
   const legCols = Math.max(1, Math.min(5, Math.floor((W + 2 * PAD) / 190)));
@@ -62,14 +66,16 @@ export function posterSvg(layout: Layout, can: (id: string) => boolean, nm: (p: 
     .join("");
   const cardSvg = cards
     .map(({ p, x, y, d }, i) => {
-      const col = PGEN[d % PGEN.length];
+      const col = PGEN[(d + off) % PGEN.length];
       const full = can(p.id) ? nm(p) : "";
       const parts = full.trim().split(/\s+/);
       const l1 = can(p.id) ? parts[0] || "" : "गोप्य";
       const l2 = parts.length > 1 ? parts.slice(1).join(" ") : "";
       const life = can(p.id) ? (yr(p.birth_bs) || "") + (p.is_living ? "" : " – " + (yr(p.death_bs) || "?")) : "";
       const tx = x + 52;
+      const chip = o.chips?.[p.id];
       return (
+        (chip ? `<rect x="${x + cw / 2 - 38}" y="${y + ch + 5}" width="76" height="19" rx="9.5" fill="${col}"/><text x="${x + cw / 2}" y="${y + ch + 19}" text-anchor="middle" font-size="11.5" font-weight="700" fill="#fff" ${F}>${esc(chip)}</text>` : "") +
         `<rect x="${x}" y="${y}" width="${cw}" height="${ch}" rx="17" fill="#fff" stroke="${col}" stroke-width="2.6"/>` +
         face(p, i, x + 28, y + ch / 2, 17.5, col, can, photos) +
         `<text x="${tx}" y="${y + (life ? 23 : 28)}" font-size="14" font-weight="700" fill="#2B2420" ${F}>${esc(cut(l1))}</text>` +
@@ -85,10 +91,11 @@ export function posterSvg(layout: Layout, can: (id: string) => boolean, nm: (p: 
     Array.from({ length: maxD + 1 }, (_, g) => {
       const col = g % legCols, row = Math.floor(g / legCols);
       const lx = PAD + col * ((TW - 2 * PAD) / legCols), ly = legY + 18 + row * 26;
-      return `<rect x="${lx}" y="${ly - 12}" width="14" height="14" rx="4" fill="${PGEN[g % PGEN.length]}"/><text x="${lx + 22}" y="${ly}" font-size="14" fill="#4B413A" ${F}>${genName(g + off)}</text>`;
+      return `<rect x="${lx}" y="${ly - 12}" width="14" height="14" rx="4" fill="${PGEN[(g + off) % PGEN.length]}"/><text x="${lx + 22}" y="${ly}" font-size="14" fill="#4B413A" ${F}>${genName(g + off)}</text>`;
     }).join("") +
     `</g>`;
 
+  const banner = o.banner ? `<rect x="${PAD}" y="6" width="${Math.min(TW - 2 * PAD, 40 + Array.from(o.banner).length * 11)}" height="26" rx="13" fill="#E6F1F1"/><text x="${PAD + 14}" y="24" font-size="14" font-weight="600" fill="#1F6F78" ${F}>${esc(o.banner)}</text>` : "";
   const title = o.bare || !o.title ? "" : `<text x="${PAD}" y="62" font-size="40" fill="#2B2420" ${F}>${esc(o.title[0])}<tspan font-weight="800">${esc(o.title[1])}</tspan></text><text x="${PAD}" y="86" font-size="13" fill="#8C7D72" ${F}>${esc(BRAND)}</text>`;
   const fy = TOP + H + PAD + legH + 6;
   const foot = noteLines.length
@@ -98,7 +105,7 @@ export function posterSvg(layout: Layout, can: (id: string) => boolean, nm: (p: 
   const meta = o.stamp ? `<metadata>${esc(BRAND + " | " + o.stamp.line + " | " + NOTICE)}</metadata>` : "";
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${TW}" height="${TH}" viewBox="0 0 ${TW} ${TH}">${meta}` +
-    `<defs>${symbol("avM")}${symbol("avF")}</defs><rect width="${TW}" height="${TH}" fill="${POSTER_BG}"/>${title}` +
+    `<defs>${symbol("avM")}${symbol("avF")}</defs><rect width="${TW}" height="${TH}" fill="${POSTER_BG}"/>${title}${banner}` +
     `<g transform="translate(${PAD} ${TOP})">${lineSvg}${heartSvg}${cardSvg}</g>` +
     `<g transform="translate(0 0)">${legend}</g>${foot}</svg>`
   );
