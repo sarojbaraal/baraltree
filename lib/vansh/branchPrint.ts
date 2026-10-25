@@ -5,9 +5,9 @@
 // jsPDF cannot shape Devanagari, so every page is drawn on a canvas by the browser and embedded as an image.
 import type { VPerson } from "./types";
 import { createGraph, type Graph } from "./graph";
-import { GEN, computeLayout } from "./layout";
+import { CH, CW, GEN, computeLayout } from "./layout";
 import { svgText } from "./exporters";
-import { yr } from "./text";
+import { np, yr } from "./text";
 import { BRAND, NOTICE, wrapChars, type Stamp } from "./notice";
 
 export const BRANCH_LEVELS = 7;
@@ -258,8 +258,9 @@ export async function renderPrint(job: PrintJob): Promise<PrintResult> {
   const pagesN = Math.max(1, Math.ceil(columns.length / cols));
   const rowH = fs * 1.45, indent = fs * 1.7, colW = (aw - gap * (cols - 1)) / cols;
 
-  // chart section (planned first so the page total is known)
-  let chart: { img: HTMLImageElement; s: number; ccols: number; crows: number; cw: number; ch: number } | null = null;
+  // chart section (planned first so the page total is known). Wider than a page → overview page + overlapping tiles.
+  const OV = 10; // mm of overlap between neighbouring tiles
+  let chart: { occ: boolean[][]; img: HTMLImageElement; s: number; ccols: number; crows: number; cw: number; ch: number; caw: number; cah: number } | null = null;
   const lw = paper.h, lh = paper.w; // landscape
   if (job.chart && job.chart.people.length) {
     const sub = createGraph(job.chart.people.map((p) => ({ ...p })));
@@ -269,10 +270,23 @@ export async function renderPrint(job: PrintJob): Promise<PrintResult> {
     const fit = Math.min(caw / img.width, cah / img.height, 0.5);
     const s = Math.max(fit, MIN_SCALE);
     const dw = img.width * s, dh = img.height * s;
-    chart = { img, s, ccols: Math.max(1, Math.ceil(dw / caw - 1e-6)), crows: Math.max(1, Math.ceil(dh / cah - 1e-6)), cw: dw, ch: dh };
+    const n = (len: number, cap: number) => (len <= cap + 1e-6 ? 1 : Math.ceil((len - OV) / (cap - OV) - 1e-6));
+    const ccols = n(dw, caw), crows = n(dh, cah);
+    // a tile is printed only when a card (or a connector next to it) falls inside it; empty areas are skipped
+    const occ = Array.from({ length: crows }, (_, r) =>
+      Array.from({ length: ccols }, (_, k) => {
+        if (ccols * crows === 1) return true;
+        const x0 = (k * (caw - OV)) / s - 20 - 6, x1 = x0 + caw / s + 12, y0 = (r * (cah - OV)) / s - 20 - 6, y1 = y0 + cah / s + 12;
+        return layout.cards.some((c) => c.x < x1 && c.x + CW > x0 && c.y < y1 && c.y + CH > y0);
+      })
+    );
+    chart = { occ, img, s, ccols, crows, cw: dw, ch: dh, caw, cah };
   }
-  const chartN = chart ? chart.ccols * chart.crows : 0;
+  const tiles = chart ? chart.occ.flat().filter(Boolean).length : 0;
+  const overview = chart && chart.ccols * chart.crows > 1 ? 1 : 0;
+  const chartN = tiles + overview;
   const total = pagesN + chartN;
+  const tileName = (r: number, k: number) => String.fromCharCode(65 + (r % 26)) + (k + 1);
 
   const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: job.paper, compress: true });
@@ -358,23 +372,64 @@ export async function renderPrint(job: PrintJob): Promise<PrintResult> {
   }
 
   if (chart) {
-    const x0 = newCanvas(lw, lh, paper.dpi);
+    const stepW = chart.caw - OV, stepH = chart.cah - OV;
+    if (overview) {
+      const x = newCanvas(lw, lh, paper.dpi);
+      const box = frame(x, job, pagesN + 1, total, "चार्ट — नक्सा");
+      const { c, mm } = x;
+      const ov = Math.min(box.w / chart.cw, (box.h - 8) / chart.ch);
+      const ox = box.x + (box.w - chart.cw * ov) / 2, oy = box.y + 8;
+      c.fillStyle = "#1F6F78"; c.font = `600 ${mm(3.6)}px ${F}`; c.textBaseline = "alphabetic";
+      c.fillText(`यो चार्ट ${np(tiles)} खण्डमा छापिएको छ (खाली भाग छापिएको छैन)। रातो ग्रिडले खण्डको सीमा र नाम (A1, B2…) देखाउँछ; खण्डहरू क्रमशः अर्का पृष्ठहरूमा छन्।`, mm(box.x), mm(box.y + 3));
+      c.imageSmoothingQuality = "high";
+      c.drawImage(chart.img, mm(ox), mm(oy), mm(chart.cw * ov), mm(chart.ch * ov));
+      c.setLineDash([mm(2), mm(1.4)]); c.strokeStyle = "#D1493F"; c.lineWidth = mm(0.35);
+      c.font = `700 ${mm(4.6)}px ${F}`; c.textAlign = "center"; c.textBaseline = "middle";
+      for (let r = 0; r < chart.crows; r++)
+        for (let k = 0; k < chart.ccols; k++) {
+          if (!chart.occ[r][k]) continue;
+          const tx = ox + k * stepW * ov, ty = oy + r * stepH * ov;
+          const tw = Math.min(chart.caw, chart.cw - k * stepW) * ov, th = Math.min(chart.cah, chart.ch - r * stepH) * ov;
+          c.strokeRect(mm(tx), mm(ty), mm(tw), mm(th));
+          c.fillStyle = "rgba(209,73,63,.85)"; c.fillText(tileName(r, k), mm(tx + 6), mm(ty + 5));
+        }
+      c.setLineDash([]);
+      addPage(x, "चार्ट नक्सा", true);
+    }
+    let seq = 0;
     for (let r = 0; r < chart.crows; r++) {
       for (let k = 0; k < chart.ccols; k++) {
+        if (!chart.occ[r][k]) continue;
         const x = newCanvas(lw, lh, paper.dpi);
-        const n = pagesN + r * chart.ccols + k + 1;
-        const box = frame(x, job, n, total, chartN > 1 ? `चार्ट ${r * chart.ccols + k + 1}/${chartN}` : "चार्ट");
+        const n = pagesN + overview + ++seq;
+        const box = frame(x, job, n, total, tiles > 1 ? `चार्ट खण्ड ${tileName(r, k)}` : "चार्ट");
         const { c, mm } = x;
         c.save();
         c.beginPath(); c.rect(mm(box.x), mm(box.y), mm(box.w), mm(box.h)); c.clip();
         c.imageSmoothingQuality = "high";
-        if (chartN === 1) c.drawImage(chart.img, mm(box.x + (box.w - chart.cw) / 2), mm(box.y + (box.h - chart.ch) / 2), mm(chart.cw), mm(chart.ch));
-        else c.drawImage(chart.img, mm(box.x - k * box.w), mm(box.y - r * box.h), mm(chart.cw), mm(chart.ch));
+        if (tiles === 1) c.drawImage(chart.img, mm(box.x + (box.w - chart.cw) / 2), mm(box.y + (box.h - chart.ch) / 2), mm(chart.cw), mm(chart.ch));
+        else c.drawImage(chart.img, mm(box.x - k * stepW), mm(box.y - r * stepH), mm(chart.cw), mm(chart.ch));
         c.restore();
-        addPage(x, `चार्ट ${r * chart.ccols + k + 1}`, true);
+        if (tiles > 1) {
+          // where the chart continues
+          const tag = (txt: string, tx: number, ty: number, al: CanvasTextAlign) => {
+            c.font = `600 ${mm(3.4)}px ${F}`;
+            const w = c.measureText(txt).width + mm(3);
+            const bx = al === "right" ? tx - w : al === "center" ? tx - w / 2 : tx;
+            c.fillStyle = "rgba(255,255,255,.92)"; c.fillRect(bx, ty - mm(2.6), w, mm(5.2));
+            c.strokeStyle = "#D1493F"; c.lineWidth = mm(0.25); c.strokeRect(bx, ty - mm(2.6), w, mm(5.2));
+            c.fillStyle = "#D1493F"; c.textAlign = "left"; c.textBaseline = "middle"; c.fillText(txt, bx + mm(1.5), ty);
+          };
+          const cx = mm(box.x + box.w / 2), cy = mm(box.y + box.h / 2);
+          if (k + 1 < chart.ccols && chart.occ[r][k + 1]) tag(`→ ${tileName(r, k + 1)}`, mm(box.x + box.w - 1), cy, "right");
+          if (k > 0 && chart.occ[r][k - 1]) tag(`← ${tileName(r, k - 1)}`, mm(box.x + 1), cy, "left");
+          if (r + 1 < chart.crows && chart.occ[r + 1][k]) tag(`↓ ${tileName(r + 1, k)}`, cx, mm(box.y + box.h - 3), "center");
+          if (r > 0 && chart.occ[r - 1][k]) tag(`↑ ${tileName(r - 1, k)}`, cx, mm(box.y + 3), "center");
+          c.textAlign = "left";
+        }
+        addPage(x, `चार्ट ${tileName(r, k)}`, true);
       }
     }
-    void x0;
   }
   return { blob: pdf.output("blob"), pages: out, cascadePages: pagesN, chartPages: chartN };
 }
@@ -397,11 +452,13 @@ export async function branchPrint(g: Graph, rootId: string, w: Who, paper: Paper
   });
 }
 
-/** Everything the viewer may see, cascade layout only. */
-export function allPrint(g: Graph, w: Who, paper: Paper, stamp: Stamp) {
+/** Everything the viewer may see: cascade pages, then the whole chart (overview page + tiles). */
+export async function allPrint(g: Graph, w: Who, paper: Paper, stamp: Stamp, loadPh?: (people: VPerson[]) => Promise<Record<string, string>>) {
   const rows = allRows(g);
+  const vis = g.people.filter((p) => w.can(p.id));
   return renderPrint({
     rows, can: w.can, nm: w.nm, paper, title: "पूर्ण वंशावली",
-    sub: `${rows.length} परिवार-पङ्क्ति · ${paper.toUpperCase()}`, firstLvl: 0, stamp,
+    sub: `${vis.length} जना · ${paper.toUpperCase()}`, firstLvl: 0, stamp,
+    chart: { people: vis, photos: loadPh ? await loadPh(vis) : {} },
   });
 }

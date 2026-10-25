@@ -243,20 +243,56 @@ export function DateField({ value, onChange }: { value: string; onChange: (v: st
 export function DialogHost() {
   const { dialog, closeDialog } = useVansh();
   const ref = useRef<HTMLDialogElement>(null);
+  const [off, setOff] = useState({ x: 0, y: 0 });
+  const [peek, setPeek] = useState(false);
+  const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
     if (dialog && !d.open) d.showModal();
     if (!dialog && d.open) d.close();
+    if (!dialog) { setOff({ x: 0, y: 0 }); setPeek(false); }
   }, [dialog]);
+  const moved = off.x !== 0 || off.y !== 0;
   return (
     <dialog
       id="dlg"
       ref={ref}
-      className={dialog?.ed ? "ed" : ""}
+      className={(dialog?.ed ? "ed" : "") + (moved ? " moved" : "") + (peek ? " peek" : "")}
+      style={{ translate: `${off.x}px ${off.y}px` }}
       onClose={closeDialog}
       onCancel={closeDialog}
     >
+      {dialog && (
+        <div className="dlg-grip">
+          <span
+            className="dlg-drag"
+            title="तानेर सार्नुहोस्"
+            onPointerDown={(e) => {
+              (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+              drag.current = { x: e.clientX, y: e.clientY, ox: off.x, oy: off.y };
+            }}
+            onPointerMove={(e) => {
+              const d = drag.current;
+              if (!d) return;
+              const lim = (v: number, m: number) => Math.max(-m, Math.min(m, v));
+              setOff({ x: lim(d.ox + e.clientX - d.x, innerWidth), y: lim(d.oy + e.clientY - d.y, innerHeight) });
+            }}
+            onPointerUp={() => { drag.current = null; }}
+            onPointerCancel={() => { drag.current = null; }}
+            onDoubleClick={() => setOff({ x: 0, y: 0 })}
+          >⠿ तान्नुहोस्</span>
+          <button
+            type="button"
+            className="ghost dlg-peek"
+            title="थिचिराख्दा विन्डो पारदर्शी हुन्छ — पछाडिको सामग्री हेर्न"
+            aria-label="पछाडि हेर्ने"
+            onPointerDown={(e) => { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); setPeek(true); }}
+            onPointerUp={() => setPeek(false)}
+            onPointerCancel={() => setPeek(false)}
+          >👁</button>
+        </div>
+      )}
       {dialog?.node}
     </dialog>
   );

@@ -78,7 +78,7 @@ export function DownloadDialog() {
         })}>{busy === "svg" ? "बन्दैछ…" : "SVG हेर्ने / डाउनलोड"}</button>
       </Opt>
 
-      <Opt icon="📄" title="PDF" info={<>तपाईंले हेर्न पाउने सबै व्यक्ति पुस्ता-तहमा मिलाएर (ठाडो झरना ढाँचा) कागज साइज अनुसार स्तम्भमा बाँडिन्छ। धेरै जना भए पृष्ठ बढ्छ।</>}>
+      <Opt icon="📄" title="PDF" info={<>तपाईंले हेर्न पाउने सबै व्यक्ति पहिला ठाडो झरना ढाँचामा, त्यसपछि चार्ट। चार्ट ठूलो भए पढ्न मिल्ने साइजमै राखेर पूरा चार्टको नक्सा-पृष्ठ (रातो ग्रिड) र ग्रिडअनुसारका खण्ड (A1, A2…) छापिन्छ; हरेक खण्डमा "→ A2" जस्ता निरन्तरताका चिन्ह हुन्छन् — खण्ड जोडेर पूरा पोस्टर बनाउन सकिन्छ।</>}>
         <select value={paper} onChange={(e) => setPaper(e.target.value as Paper)} aria-label="कागज साइज">
           <option value="a4">A4</option>
           <option value="a3">A3</option>
@@ -86,8 +86,8 @@ export function DownloadDialog() {
         </select>
         <button disabled={!!busy} onClick={() => prep("pdf", async () => {
           const st = await mkStamp(`pdf|${g.people.length}|${paper}`);
-          const out = await allPrint(g, { can, nm }, paper, st);
-          return { blob: out.blob, fileName: `baral-banshabrikshya-${paper.toUpperCase()}.pdf`, images: out.pages.map((x) => ({ src: x.thumb, label: x.label })), note: `${np(out.cascadePages)} पृष्ठ · हस्ताक्षर ID ${st.id}` };
+          const out = await allPrint(g, { can, nm }, paper, st, (ps) => loadPhotos(ps, can));
+          return { blob: out.blob, fileName: `baral-banshabrikshya-${paper.toUpperCase()}.pdf`, images: out.pages.map((x) => ({ src: x.thumb, label: x.label })), note: `${np(out.cascadePages)} झरना पृष्ठ + ${np(out.chartPages)} चार्ट पृष्ठ · हस्ताक्षर ID ${st.id}` };
         })}>{busy === "pdf" ? "बन्दैछ…" : "PDF हेर्ने / डाउनलोड"}</button>
       </Opt>
 
