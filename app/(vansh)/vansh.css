@@ -873,3 +873,8 @@ dialog.moved { box-shadow: 0 14px 50px rgba(0, 0, 0, .45); }
   .tools button { min-height: 42px; }
   .cgrid .card, .mgrid > * { min-height: 56px; }
 }
+
+/* ---------- offline banner ---------- */
+.offb { position: sticky; top: calc(var(--hdr-h, 64px) + 8px); z-index: 40; margin: .6rem auto 0; max-width: 1100px; display: grid; gap: .35rem; padding: .6rem .9rem; font-size: .88rem; line-height: 1.5; border-radius: 14px; color: var(--ink); background: color-mix(in srgb, #f4b547 22%, var(--solid)); border: 1px solid color-mix(in srgb, #f4b547 60%, transparent); }
+.offb button { margin-left: .6rem; min-height: 32px; padding: .15rem .7rem; font-size: .8rem; }
+.offb .offe { color: var(--bad, #c0392b); }

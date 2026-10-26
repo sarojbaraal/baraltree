@@ -188,7 +188,11 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
       const finalMarried = mn?.married ?? marriedName;
 
       let photoUrl: string | undefined;
-      if (photo) {
+      let offlinePhoto: { blob: Blob; name: string } | undefined;
+      if (photo && navigator.onLine === false) {
+        // no connection: the photo waits in the outbox and is uploaded together with the change
+        offlinePhoto = { blob: photo, name: `${p?.id || "new"}-${Date.now()}.webp` };
+      } else if (photo) {
         setErr("📸 फोटो अपलोड हुँदैछ...");
         const fileName = `${p?.id || "new"}-${Date.now()}.webp`;
         const { error: upErr } = await db.storage.from("profile-photos").upload(fileName, photo, { contentType: photo.type || undefined });
@@ -219,7 +223,7 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
       if (res.facebookChanged && p) {
         if (perms.isAdm) {
           const { error } = await db.rpc("set_facebook", { pid: p.id, url: res.facebook });
-          if (error) return setErr(error.message);
+          if (error) return setErr(/fetch|network/i.test(error.message) ? "Facebook लिंक फेर्न इन्टरनेट चाहिन्छ; अरू परिवर्तन मात्र अहिले सुरक्षित गर्न सकिन्छ।" : error.message);
           if (!Object.keys(payload).length) {
             closeDialog();
             toast("✅ सुरक्षित भयो");
@@ -228,7 +232,7 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
           }
         } else payload.facebook = res.facebook;
       }
-      const e = await send(action, p?.id ?? null, payload, nt);
+      const e = await send(action, p?.id ?? null, payload, nt, offlinePhoto ? { photo: offlinePhoto } : undefined);
       if (e) setErr(e);
       else closeDialog();
     } finally {

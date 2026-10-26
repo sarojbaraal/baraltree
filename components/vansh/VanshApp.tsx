@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { DownloadDialog } from "./DownloadMenu";
 import Image from "next/image";
 import { ROLE_L } from "@/lib/vansh/graph";
+import { np } from "@/lib/vansh/text";
 import type { Role, TabKey } from "@/lib/vansh/types";
 import { VanshProvider, useVansh } from "./VanshContext";
 import { DialogHost, Toast } from "./ui";
@@ -63,7 +64,7 @@ function InstallButton() {
 }
 
 function Shell() {
-  const { db, phase, me, act, roles, setAct, tab, setTab, sel, perms, treeApi, people, openDialog } = useVansh();
+  const { db, phase, me, act, roles, setAct, tab, setTab, sel, perms, treeApi, people, openDialog, online, outbox, syncNow, discardOutbox } = useVansh();
   const { theme, toggle } = useTheme();
   const [wide, setWide] = useState(true);
   const [hdrH, setHdrH] = useState(72);
@@ -87,7 +88,16 @@ function Shell() {
 
   // register the service worker (offline shell)
   useEffect(() => {
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+    if (!("serviceWorker" in navigator)) return;
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then(() => navigator.serviceWorker.ready)
+      .then((reg) => {
+        // first visit: the files this page already loaded are handed to the worker so the next start works offline
+        const urls = [location.pathname, ...performance.getEntriesByType("resource").map((x) => x.name).filter((n) => n.startsWith(location.origin))];
+        reg.active?.postMessage({ type: "cache", urls });
+      })
+      .catch(() => {});
   }, []);
 
   const inApp = phase === "app";
@@ -197,6 +207,23 @@ function Shell() {
           ⓘ
         </span>
       </header>
+      {inApp && (!online || outbox.length > 0) && (
+        <div className="offb" role="status">
+          {!online && <div>📴 इन्टरनेट छैन — पछिल्लो सुरक्षित डाटा देखाइँदैछ। हेर्ने, खोज्ने, थप्ने र सच्याउने सबै चल्छ; परिवर्तन इन्टरनेट आएपछि आफैँ सर्भरमा जान्छ।</div>}
+          {outbox.filter((i) => !i.error).length > 0 && (
+            <div>
+              ⏳ पठाउन बाँकी: {np(outbox.filter((i) => !i.error).length)} परिवर्तन
+              {online && <button className="ghost" onClick={() => syncNow()}>अहिले पठाउने</button>}
+            </div>
+          )}
+          {outbox.filter((i) => i.error).map((i) => (
+            <div key={i.id} className="offe">
+              ⚠ पठाउन सकिएन ({new Date(i.ts).toLocaleString("ne-NP")}): {i.error}
+              <button className="ghost" onClick={() => discardOutbox(i.id)}>हटाउने</button>
+            </div>
+          ))}
+        </div>
+      )}
       <main id="app" className={inApp && eff === "tree" ? "wide" : ""} style={pushed ? { marginLeft: "calc(var(--det-w, 460px) + 18px)", marginRight: 0 } : undefined}>
         {phase === "loading" ? null : body}
       </main>
