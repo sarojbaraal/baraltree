@@ -2,6 +2,7 @@
 // Dialogs for adding / editing / deleting people and relations (ported from the original app.js: form, kidsForm,
 // spouseForm, parentForm, addMenu, inviteForm).
 import PhotoCrop, { type PhotoCropHandle } from "./PhotoCrop";
+import { webUrl } from "@/lib/vansh/native";
 import React, { useEffect, useRef, useState } from "react";
 import type { VPerson, NewRequest } from "@/lib/vansh/types";
 import { ORDER, ROLE_L } from "@/lib/vansh/graph";
@@ -16,7 +17,7 @@ import { DownloadPreview, useStampMaker } from "./DownloadPreview";
 import { useVansh } from "./VanshContext";
 import { Avatar, DateField, PasswordField, Sx, SXMSG, personOptions, useSx } from "./ui";
 
-const siteUrl = () => `${location.origin}${location.pathname}`;
+const siteUrl = webUrl;
 
 function Note({ label = "एडमिनलाई सन्देश", value, onChange }: { label?: string; value: string; onChange: (v: string) => void }) {
   const { perms } = useVansh();

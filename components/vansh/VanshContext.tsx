@@ -10,6 +10,7 @@ import {
 } from "@/lib/vansh/graph";
 import { guardRequest, makeRequest } from "@/lib/vansh/requests";
 import { loadSiteAvatars, primeSiteAvatars } from "@/lib/vansh/avatars";
+import { initDeepLinks } from "@/lib/vansh/native";
 import { applyLocal, clearSnapshot, isNetErr, loadOutbox, loadSnapshot, remapIds, saveOutbox, saveSnapshot, type OutboxItem, type Snapshot } from "@/lib/vansh/offline";
 
 const dataUrl = (b: Blob) => new Promise<string>((res) => { const f = new FileReader(); f.onload = () => res(String(f.result)); f.onerror = () => res(""); f.readAsDataURL(b); });
@@ -248,6 +249,10 @@ export function VanshProvider({ children }: { children: React.ReactNode }) {
         history.replaceState(null, "", location.pathname);
       }
     } catch {}
+    let stopLinks = () => {};
+    initDeepLinks(db, () => setTimeout(boot, 0)).then((f) => (stopLinks = f)).catch(() => {});
+    const onRecovery = () => { recovering.current = true; };
+    window.addEventListener("vv-recovery", onRecovery);
     const { data: sub } = db.auth.onAuthStateChange((ev, session) => {
       if (ev === "PASSWORD_RECOVERY") recovering.current = true;
       if (ev === "TOKEN_REFRESHED") return;
@@ -256,7 +261,7 @@ export function VanshProvider({ children }: { children: React.ReactNode }) {
       if (ev === "SIGNED_IN" && session?.user.id === userId.current) return;
       setTimeout(boot, 0);
     });
-    return () => sub.subscription.unsubscribe();
+    return () => { sub.subscription.unsubscribe(); stopLinks(); window.removeEventListener("vv-recovery", onRecovery); };
   }, [db, boot]);
 
   const setAct = useCallback(

@@ -1,6 +1,7 @@
 "use client";
 // Login / signup / forgot password, new-password, identity (position) request and "waiting for approval" screens.
 import React, { useEffect, useState } from "react";
+import { authRedirect, oauthSignIn } from "@/lib/vansh/native";
 import { useVansh } from "./VanshContext";
 import { DateField, PasswordField } from "./ui";
 import InvitePreview from "./InvitePreview";
@@ -35,7 +36,7 @@ function ContactFields({ v, set, hint }: { v: { bd: string; ph: string; loc: str
 }
 const NUDGE = "कम्तिमा जन्म मिति र फोन नम्बर राखिदिनुहोस् — एडमिनलाई तपाईंलाई वंशावलीमा सही व्यक्तिसँग जोड्न सजिलो हुन्छ। नराख्ने हो भने फेरि थिच्नुहोस्, यसबिना पनि पठाइनेछ।";
 
-const siteUrl = () => `${location.origin}${location.pathname}`;
+const siteUrl = authRedirect;
 
 function Say({ m }: { m: { t: string; ok?: boolean } | null }) {
   return (
@@ -121,8 +122,8 @@ export function AuthView() {
 
   const oauth = async (provider: "google" | "facebook") => {
     try { localStorage.setItem("vv_oauth", "1"); } catch {}
-    const { error } = await db.auth.signInWithOAuth({ provider, options: { redirectTo: siteUrl() } });
-    if (error) say(error.message);
+    const msg = await oauthSignIn(db, provider);
+    if (msg) say(msg);
   };
 
   const onEnter = (e: React.KeyboardEvent) => e.key === "Enter" && go();
