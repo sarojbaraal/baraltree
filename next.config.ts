@@ -9,6 +9,8 @@ function buildStamp(): string {
 }
 
 const nextConfig: NextConfig = {
+  // Capacitor (Android) loads the static files in `out/`.
+  output: "export",
   env: { NEXT_PUBLIC_APP_VER: buildStamp() },
   // Old Next.js auth pages wrote to `profiles` directly (now blocked by design); the app at "/" handles sign-in/up.
   async redirects() {
@@ -18,8 +20,7 @@ const nextConfig: NextConfig = {
       permanent: false,
     }));
   },
-  cacheComponents: true,
-  partialPrefetching: true,
+  // cacheComponents / partialPrefetching (PPR) cannot be used together with `output: "export"`, so they are off on this branch.
   turbopack: {
     rules: {
       "*.css": {
