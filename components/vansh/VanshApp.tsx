@@ -1,5 +1,6 @@
 "use client";
 // App shell: header (tabs, user, theme), the active view, profile panel, dialogs, toast, PWA install button.
+import { isNative } from "@/lib/vansh/native";
 import React, { useEffect, useState } from "react";
 import { DownloadDialog } from "./DownloadMenu";
 import Image from "next/image";
@@ -89,6 +90,12 @@ function Shell() {
   // register the service worker (offline shell)
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
+    if (isNative()) {
+      // the app already carries its own files; a service worker only risks serving an old copy, so remove any left over
+      navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});
+      caches?.keys().then((ks) => ks.forEach((k) => caches.delete(k))).catch(() => {});
+      return;
+    }
     navigator.serviceWorker
       .register("/sw.js")
       .then(() => navigator.serviceWorker.ready)

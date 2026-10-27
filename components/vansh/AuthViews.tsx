@@ -84,7 +84,10 @@ export function AuthView() {
     setBusy(true);
     try {
       if (mode === "login") {
-        const { error } = await db.auth.signInWithPassword({ email: e, password: pw });
+        const slow = new Promise<never>((_, no) => setTimeout(() => no(new Error("timeout")), 20000));
+        const { error } = await Promise.race([db.auth.signInWithPassword({ email: e, password: pw }), slow]).catch((x) => ({
+          error: { message: x?.message === "timeout" ? "सर्भरसँग जोडिन सकिएन (२० सेकेन्ड कुर्दा जवाफ आएन)। इन्टरनेट जाँच्नुहोस्।" : `जडान असफल: ${x?.message || x}` },
+        }));
         if (error) say(error.message);
         else try { localStorage.removeItem("vv_oauth"); } catch {}
       } else if (mode === "signup") {
