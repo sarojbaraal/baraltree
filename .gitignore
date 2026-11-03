@@ -13,6 +13,10 @@
 # testing
 /coverage
 
+# android
+android/
+out/
+
 # next.js
 /.next/
 /out/
