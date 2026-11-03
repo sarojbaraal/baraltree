@@ -7,7 +7,7 @@ import { ageN, bsNow, bsYear, composeDate, match, na, np, surnameOf, wifeNames }
 import { buildKidRequests, buildPersonPayload, groupBatches, guardRequest } from "../requests";
 import { diffImport, parseImportRows } from "../importer";
 import { csvText, jsonText, sheetRows } from "../exporters";
-import type { VProfile, ChangeRequest } from "../types";
+import type { VPerson, VProfile, ChangeRequest } from "../types";
 
 const meAt = (id: string, extra: Partial<VProfile> = {}): VProfile => ({
   id: "u1",
@@ -308,5 +308,28 @@ describe("import / export", () => {
     const json = JSON.parse(jsonText(g.people));
     expect(json[0]).toHaveProperty("maiden_name", null);
     expect(json).toHaveLength(g.people.length);
+  });
+});
+
+describe("chart: a man with two wives", () => {
+  const P = (id: string, g: "M" | "F", o: Partial<VPerson> = {}) => person({ id, name: id, gender: g, ...o });
+  const people = [
+    P("J", "M", { spouse_id: "D", more_spouse_ids: ["W"], birth_bs: "2011-01-01" }),
+    P("D", "F", { spouse_id: "J" }),
+    P("W", "F", { spouse_id: "J" }),
+    P("raju", "M", { father_id: "J", mother_id: "D", birth_bs: "2041-01-01" }),
+    P("a", "F", { father_id: "J", mother_id: "W", birth_bs: "2035-01-01" }),
+    P("b", "M", { father_id: "J", mother_id: "W", birth_bs: "2038-01-01" }),
+  ];
+  it("hangs each wife's children from her own bracket, at its own height", () => {
+    const L = computeLayout(createGraph(people), new Set());
+    const bar = (id: string) => L.lines.find((l) => l.c === id && /V\d+H/.test(l.d) && l.d.startsWith("M"))!.d;
+    const num = (d: string) => d.match(/-?\d+(\.\d+)?/g)!.map(Number);
+    const [fxR, , yR] = num(bar("raju")); // from D
+    const [fxA, , yA] = num(bar("a")); // from W
+    expect(fxR).toBe(L.cardPos.D.x + CW / 2); // starts at the first wife
+    expect(fxA).toBe(L.cardPos.W.x + CW / 2); // and the other starts at the second wife
+    expect(yR).not.toBe(yA); // never the same bar line
+    expect(num(bar("a"))[2]).toBe(num(bar("b"))[2]); // the same wife's children share one bar
   });
 });

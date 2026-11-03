@@ -149,11 +149,18 @@ function place(n: TreeNode, x: number, y: number, cards: Card[], lines: Line[], 
     return cy - SG;
   }
   let cur = x + (n.tw - n.ct) / 2;
+  // several spouses: each spouse's children hang from their own bracket line at its own height, so one spouse's
+  // children never look joined to another spouse (the brackets overlap sideways when families are wide)
+  const multi = n.sps.length >= 2;
+  const groups = n.sps.length + (n.vis.some((c) => !c.from) ? 1 : 0);
+  const step = multi && groups > 1 ? Math.min(10, (D.vg - 20) / (groups - 1)) : 0;
   n.vis.forEach((c) => {
-    const fx = n.sps.length >= 2 && c.from && cx[c.from] != null ? cx[c.from] : px;
+    const fx = multi && c.from && cx[c.from] != null ? cx[c.from] : px;
     place(c, cur, y + D.ch + D.vg, cards, lines, units);
     const y0 = D.heart && n.sps.length === 1 && fx === px ? y + D.ch / 2 : y + D.ch; // poster: the child bracket hangs from the heart
-    lines.push({ d: `M${fx} ${y0}V${y + D.ch + D.vg / 2}H${c.ax}V${y + D.ch + D.vg}`, c: c.p.id });
+    const gi = multi ? (c.from ? n.sps.findIndex((s) => s.id === c.from) : n.sps.length) : 0;
+    const by = multi ? y + D.ch + 10 + gi * step : y + D.ch + D.vg / 2;
+    lines.push({ d: `M${fx} ${y0}V${by}H${c.ax}V${y + D.ch + D.vg}`, c: c.p.id });
     cur += c.tw + D.hg;
   });
   return y + D.ch;
