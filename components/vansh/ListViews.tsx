@@ -10,6 +10,7 @@ import { Avatar, KidCount } from "./ui";
 import PersonSearch from "./PersonSearch";
 import { AnchorDialog, PersonForm } from "./PersonDialogs";
 import DownloadMenu from "./DownloadMenu";
+import { Birthdays, StoryCard, TodayLine } from "./HeroAi";
 
 // search text survives tab switches, like the original
 export const qText = { tree: "", fam: "" };
@@ -80,7 +81,7 @@ export function FamView() {
         <br />
         <span className="mut">
           {R[p.id] || "साइनो स्पष्ट छैन"}
-          {yr(p.birth_bs) ? " · " + yr(p.birth_bs) : ""}
+          {yr(p.birth_bs) ? " · " + np(yr(p.birth_bs)) : ""}
         </span>
       </div>
       <KidCount kids={kidsOf(p)} />
@@ -97,13 +98,16 @@ export function FamView() {
         <div className="hello">
           <span className="hchip">{act ? ROLE_L[act] : ""}</span>
           <h2>नमस्ते, {meName}</h2>
+          <TodayLine />
           <p>{msg}</p>
+          <div className="stats">
+            <span><b>{np(ic)}</b> मुख्य परिवार</span>
+            <span><b>{np(access.acc ? access.acc.size : people.length)}</b> खुला</span>
+            <span><b>{np(people.length)}</b> कुल सदस्य</span>
+          </div>
+          <Birthdays onOpen={(id) => { showCard(id); pick(id); }} />
         </div>
-        <div className="stats">
-          <div><b>{np(ic)}</b><span>मुख्य परिवार</span></div>
-          <div><b>{np(access.acc ? access.acc.size : people.length)}</b><span>खुला सदस्य</span></div>
-          <div><b>{np(people.length)}</b><span>कुल सदस्य</span></div>
-        </div>
+        {base && <StoryCard person={base} />}
         <div className="row">
           {act !== "general" && (
             <button className="ghost" onClick={() => openDialog(<PersonForm action="add" />, true)}>
@@ -301,7 +305,7 @@ export function MemView() {
                 <b>{dispName(p)}</b>
                 <br />
                 <span className="mut">
-                  {(p.gender === "M" ? "पुरुष" : p.gender === "F" ? "महिला" : "") + " · " + (yr(p.birth_bs) || "?")}
+                  {(p.gender === "M" ? "पुरुष" : p.gender === "F" ? "महिला" : "") + " · " + (np(yr(p.birth_bs)) || "?")}
                 </span>
               </div>
             </div>

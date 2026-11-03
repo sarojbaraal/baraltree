@@ -50,7 +50,7 @@ export default function PersonSearch({
   const q = dq.trim().toLowerCase();
   const sections = useMemo<Section[]>(() => {
     const out: Section[] = [];
-    const sub = (p: VPerson) => [rel[p.id], yr(p.birth_bs)].filter(Boolean).join(" · ");
+    const sub = (p: VPerson) => [rel[p.id], np(yr(p.birth_bs))].filter(Boolean).join(" · ");
     if (!q) {
       // chevron with nothing typed: group everybody by relation
       const by = new Map<string, Row[]>();

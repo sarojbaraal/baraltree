@@ -5,6 +5,8 @@ import { relMap, relsOf, genNo } from "@/lib/vansh/relations";
 import { ordinalOf } from "@/lib/vansh/kinship";
 import type { VPerson } from "@/lib/vansh/types";
 import { chartGoto } from "@/lib/vansh/chartGoto";
+import { neDate } from "@/lib/vansh/bs";
+import { generateAiSummary } from "@/lib/vansh/aiSummary";
 import { ageN, dispName, fbOk, np, yr } from "@/lib/vansh/text";
 import { useVansh } from "./VanshContext";
 import { Avatar, KidCount } from "./ui";
@@ -182,21 +184,7 @@ export default function DetailPanel({
     setBusyAi(true);
     toast("🤖 AI ले विश्लेषण गर्दैछ...");
     try {
-      const { data, error } = await db.functions.invoke("generate-ai-insights", {
-        body: {
-          action: "summarize",
-          person: { name: p.name, gender: p.gender, birth_bs: p.birth_bs, death_bs: p.death_bs, is_living: p.is_living, birth_place: p.birth_place, notes: p.notes },
-          family_context: {
-            father: (p.father_id && g.byId[p.father_id]?.name) || "अज्ञात",
-            mother: (p.mother_id && g.byId[p.mother_id]?.name) || "अज्ञात",
-            spouse: p.spouse_id ? g.byId[p.spouse_id]?.name : "अज्ञात",
-            children: g.kidsOf(p).map((k) => k.name).join(", ") || "उल्लेख नभएको",
-          },
-        },
-      });
-      if (error) throw error;
-      const { error: e2 } = await db.rpc("set_ai_summary", { pid: p.id, summary: data.summary, tags: data.tags || [] });
-      if (e2) throw e2;
+      await generateAiSummary(db, g, p);
       toast("✅ AI सारांश सुरक्षित भयो!");
       await reload();
     } catch (err) {
@@ -326,7 +314,7 @@ export default function DetailPanel({
                     <b>{ok ? dispName(q) : nm(q)}</b>
                     <small>
                       {l}
-                      {ok && yr(q.birth_bs) ? " · " + yr(q.birth_bs) : ""}
+                      {ok && yr(q.birth_bs) ? " · " + np(yr(q.birth_bs)) : ""}
                     </small>
                   </div>
                   {ok && <KidCount kids={g.kidsOf(q)} />}
@@ -338,12 +326,12 @@ export default function DetailPanel({
           )}
           </Sec>
           <Sec id="pi" title="व्यक्तिगत विवरण" col={col} toggle={toggle}>
-          <Box c="#F59E0B" ic="🎂" l="जन्म मिति (BS)">{p.birth_bs}</Box>
-          {!p.is_living && <Box c="#6B7280" ic="🕊" l="मृत्यु मिति (BS)">{p.death_bs}</Box>}
+          <Box c="#F59E0B" ic="🎂" l="जन्म मिति">{neDate(p.birth_bs)}</Box>
+          {!p.is_living && <Box c="#6B7280" ic="🕊" l="मृत्यु मिति">{neDate(p.death_bs)}</Box>}
           {!p.is_living && <Box c="#6B7280" ic="🪦" l="मृत्यु स्थान" mg>{p.death_place}</Box>}
           <Box c="" ic="🎓" l="शिक्षा" mg>{p.education}</Box>
           <Box c="" ic="💼" l="पेशा" mg>{p.occupation}</Box>
-          <Box c="" ic="💒" l="विवाह मिति (BS)" mg>{p.marriage_bs}</Box>
+          <Box c="" ic="💒" l="विवाह मिति" mg>{neDate(p.marriage_bs)}</Box>
           {p.gender === "F" && (
             <>
               <Box c="#EC4899" ic="👰" l="विवाहअघिको थर">{p.maiden_name}</Box>

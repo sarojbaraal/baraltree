@@ -427,7 +427,7 @@ export default function TreeView() {
                 <div className="tx">
                   <small className="gn">Gen {d + 1}</small>
                   <b>{ok ? dispName(p, true) : nm(p)}</b>
-                  <span>{ok ? (yr(p.birth_bs) || "?") + (p.is_living ? "" : " – " + (yr(p.death_bs) || "?")) : "लक"}</span>
+                  <span>{ok ? (np(yr(p.birth_bs)) || "?") + (p.is_living ? "" : " – " + (np(yr(p.death_bs)) || "?")) : "लक"}</span>
                 </div>
               </div>
             );

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getSiteAvatars, subscribeSiteAvatars } from "@/lib/vansh/avatars";
 import { composeDate, match, MONTHS_NE, na, np } from "@/lib/vansh/text";
+import { AD_MAX_YEAR, AD_MIN_YEAR, adToBsStr, neDate } from "@/lib/vansh/bs";
 import type { VPerson } from "@/lib/vansh/types";
 import type { Graph, Perms } from "@/lib/vansh/graph";
 import { useVansh } from "./VanshContext";
@@ -204,11 +205,17 @@ function fmtDate(digits: string): string {
 export function DateField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const initial = String(value || "").replace(/(-00)+$/, "");
   const [text, setText] = useState(np(initial));
+  // the date can be typed in BS (default) or AD; it is always stored and shown as BS in Nepali digits
+  const [ad, setAd] = useState(false);
   const plain = na(text);
   const [y, m = "", d = ""] = plain.split("-");
-  const bad =
-    (m.length === 2 && +m > 12 ? "महिना ०० (थाहा छैन) वा ०१ देखि १२ सम्म हुनुपर्छ" : "") ||
-    (d.length === 2 && +d > 32 ? "गते ०० (थाहा छैन) वा ०१ देखि ३२ सम्म हुनुपर्छ" : "");
+  const conv = ad && y.length === 4 && m.length === 2 && d.length === 2 ? adToBsStr(plain) : null;
+  const bad = ad
+    ? y.length === 4 && (+y < AD_MIN_YEAR || +y > AD_MAX_YEAR)
+      ? `ई.सं. ${np(AD_MIN_YEAR)} देखि ${np(AD_MAX_YEAR)} सम्मको मिति मात्र वि.सं. मा बदलिन्छ`
+      : d.length === 2 && !conv ? "यो ई.सं. मिति मिलेन" : ""
+    : (m.length === 2 && +m > 12 ? "महिना ०० (थाहा छैन) वा ०१ देखि १२ सम्म हुनुपर्छ" : "") ||
+      (d.length === 2 && +d > 32 ? "गते ०० (थाहा छैन) वा ०१ देखि ३२ सम्म हुनुपर्छ" : "");
   const change = (raw: string) => {
     let digits = na(raw).replace(/\D/g, "").slice(0, 8);
     // a backspace over an auto-inserted hyphen must still delete a digit
@@ -216,24 +223,52 @@ export function DateField({ value, onChange }: { value: string; onChange: (v: st
     const f = fmtDate(digits);
     setText(np(f));
     const [yy, mm, dd] = f.split("-");
+    if (ad) {
+      // only a complete, valid AD date is converted; until then the stored BS value is left alone
+      if (yy?.length === 4 && mm?.length === 2 && dd?.length === 2) {
+        const bs = adToBsStr(f);
+        if (bs) onChange(bs);
+      }
+      return;
+    }
     onChange(composeDate(yy || "", mm && +mm >= 1 && +mm <= 12 ? mm : "", dd && +dd >= 1 && +dd <= 32 ? dd : ""));
     // "2050-00-00" is a valid "only the year is known" date — keep it as typed
   };
+  const switchTo = (toAd: boolean) => {
+    if (toAd === ad) return;
+    setAd(toAd);
+    if (toAd) setText(""); // AD is typed fresh; the existing BS value stays until a valid AD date replaces it
+    else setText(np(String(value || "").replace(/(-00)+$/, "")));
+  };
+  const finish = () => {
+    // leaving the box with a converted AD date: show it as the Nepali (BS) date it became
+    if (ad && conv) {
+      setAd(false);
+      setText(np(conv));
+    }
+  };
   return (
     <div className="dtr1">
+      <div className="dmode" role="group" aria-label="मितिको प्रकार">
+        <button type="button" className={ad ? "" : "on"} onClick={() => switchTo(false)}>वि.सं.</button>
+        <button type="button" className={ad ? "on" : ""} onClick={() => switchTo(true)}>ई.सं. (AD)</button>
+      </div>
       <input
         className="dsingle"
         inputMode="numeric"
         autoComplete="off"
         maxLength={10}
-        placeholder="बर्ष-महिना-गते (जस्तै २०४५-०५-१२)"
-        aria-label="मिति (वि.सं.)"
+        placeholder={ad ? "YYYY-MM-DD (ई.सं., जस्तै 1988-06-02)" : "बर्ष-महिना-गते (जस्तै २०४५-०५-१२)"}
+        aria-label={ad ? "मिति (ई.सं.)" : "मिति (वि.सं.)"}
         aria-invalid={bad ? true : undefined}
         value={text}
         onChange={(e) => change(e.target.value)}
+        onBlur={finish}
       />
-      {y.length === 4 && m.length === 2 && +m === 0 && !bad && <small className="mut">{np(y)} साल (महिना/गते थाहा छैन)</small>}
-      {m.length === 2 && +m >= 1 && +m <= 12 && !bad && <small className="mut">{MONTHS_NE[+m - 1]}{d.length === 2 ? ` ${np(+d)} गते` : ""}, {np(y)}</small>}
+      {ad && conv && !bad && <small className="mut">= {neDate(conv)} (वि.सं.) — बाहिर थिचेपछि यही देखिन्छ</small>}
+      {ad && !conv && !bad && <small className="mut">पूरा मिति (वर्ष-महिना-गते) लेख्नुहोस्</small>}
+      {!ad && y.length === 4 && m.length === 2 && +m === 0 && !bad && <small className="mut">{np(y)} साल (महिना/गते थाहा छैन)</small>}
+      {!ad && m.length === 2 && +m >= 1 && +m <= 12 && !bad && <small className="mut">{MONTHS_NE[+m - 1]}{d.length === 2 ? ` ${np(+d)} गते` : ""}, {np(y)}</small>}
       {bad && <small className="dterr">{bad}</small>}
     </div>
   );

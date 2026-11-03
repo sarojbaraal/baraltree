@@ -291,6 +291,22 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
           <label className="rcb" style={{ marginTop: ".9rem" }}>
             <input type="checkbox" checked={married} onChange={(e) => setMarried(e.target.checked)} /> विवाहित हो
           </label>
+          <div className="mbk" hidden={!married}>
+            <label>
+              पति/पत्नी{spn ? ": " + spn : ""}
+              <Sx st={spouse} options={opts} allowNew />
+            </label>
+            <div className="edg">
+              <div>
+                <label>विवाह मिति</label>
+                <DateField value={marriageBs} onChange={setMarriageBs} />
+              </div>
+              <label hidden={gender !== "F"}>
+                विवाहपछिको थर (पतिको थरबाट स्वतः)
+                <input value={marriedName} onChange={(e) => onMarriedName(e.target.value)} />
+              </label>
+            </div>
+          </div>
           <label>
             नाम
             <input value={name} onChange={(e) => setName(e.target.value)} />
@@ -298,16 +314,10 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
           <div className="pcw">
             <PhotoCrop ref={cropRef} bare onChange={setPhoto} current={v.photo_url} />
           </div>
-          <div className="edg mnl" hidden={!(gender === "F" && married)}>
-            <label>
-              विवाहपछिको थर (पतिको थरबाट स्वतः, नामको अन्त्यमा जोडिन्छ)
-              <input value={marriedName} onChange={(e) => onMarriedName(e.target.value)} />
-            </label>
-          </div>
           <hr />
           <div className="edg">
             <div>
-              <label>जन्म मिति (BS) — YYYY-MM-DD</label>
+              <label>जन्म मिति</label>
               <DateField value={birth} onChange={setBirth} />
             </div>
             <label>
@@ -323,7 +333,7 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
           <div hidden={living}>
             <div className="edg">
               <div>
-                <label>मृत्यु मिति (BS)</label>
+                <label>मृत्यु मिति</label>
                 <DateField value={death} onChange={setDeath} />
               </div>
               <label>
@@ -342,10 +352,6 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
               <input value={occupation} onChange={(e) => setOccupation(e.target.value)} placeholder="जस्तै: शिक्षक, किसान" />
             </label>
           </div>
-          <div hidden={!married}>
-            <label>विवाह मिति (BS)</label>
-            <DateField value={marriageBs} onChange={setMarriageBs} />
-          </div>
           <hr />
           <div className="sech">परिवार</div>
           <div className="edg">
@@ -356,14 +362,6 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
             <label>
               आमा
               <Sx st={mother} options={opts} allowNew />
-            </label>
-          </div>
-          <div hidden={!married}>
-            <hr />
-            <div className="sech">पति/पत्नी{spn ? ": " + spn : ""}</div>
-            <label>
-              पति/पत्नी
-              <Sx st={spouse} options={opts} allowNew />
             </label>
           </div>
           <hr />

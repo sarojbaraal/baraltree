@@ -165,7 +165,7 @@ export default function OverviewView() {
                     <b>{p.name}</b>
                     <small>
                       {R[p.id] || ""}
-                      {yr(p.birth_bs) ? " · " + yr(p.birth_bs) : ""}
+                      {yr(p.birth_bs) ? " · " + np(yr(p.birth_bs)) : ""}
                     </small>
                   </div>
                 </div>
