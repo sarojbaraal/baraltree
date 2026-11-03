@@ -23,6 +23,33 @@ function Box({ c, ic, l, children, mg }: { c: string; ic: string; l: string; chi
   );
 }
 
+/** Section heading that folds / unfolds its content. */
+function Sec({ id, title, col, toggle, children }: { id: string; title: React.ReactNode; col: Record<string, boolean>; toggle: (id: string) => void; children: React.ReactNode }) {
+  const shut = !!col[id];
+  return (
+    <>
+      <div
+        className={`pp-h pp-tg ${shut ? "shut" : ""}`}
+        id={id === "pi" ? "pi" : undefined}
+        role="button"
+        tabIndex={0}
+        aria-expanded={!shut}
+        onClick={() => toggle(id)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggle(id);
+          }
+        }}
+      >
+        <span>{title}</span>
+        <i aria-hidden>▾</i>
+      </div>
+      {!shut && children}
+    </>
+  );
+}
+
 export default function DetailPanel({
   depthOf, onGo, onPrint, top,
 }: {
@@ -36,6 +63,34 @@ export default function DetailPanel({
   const { db, g, me, sel, perms, pick, unpick, openDialog, toast, reload, setTab } = useVansh();
   const [more, setMore] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
+  // folded sections are remembered on this device
+  const [col, setCol] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    try {
+      setCol(JSON.parse(localStorage.getItem("vv_pp_col") || "{}") || {});
+    } catch {}
+  }, []);
+  const toggle = (id: string) =>
+    setCol((c) => {
+      const n = { ...c, [id]: !c[id] };
+      try { localStorage.setItem("vv_pp_col", JSON.stringify(n)); } catch {}
+      return n;
+    });
+  // the "More" dropdown closes on an outside click or Esc
+  useEffect(() => {
+    if (!more) return;
+    const down = (e: PointerEvent) => {
+      if (!moreRef.current?.contains(e.target as Node)) setMore(false);
+    };
+    const key = (e: KeyboardEvent) => e.key === "Escape" && setMore(false);
+    document.addEventListener("pointerdown", down);
+    document.addEventListener("keydown", key);
+    return () => {
+      document.removeEventListener("pointerdown", down);
+      document.removeEventListener("keydown", key);
+    };
+  }, [more]);
 
   // desktop: remembered width, set by dragging the right edge
   useEffect(() => {
@@ -117,6 +172,12 @@ export default function DetailPanel({
     }
   };
 
+  const goProfile = () => {
+    setMore(false);
+    if (col.pi) toggle("pi");
+    setTimeout(() => document.getElementById("pi")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  };
+
   const aiSummary = async () => {
     setBusyAi(true);
     toast("🤖 AI ले विश्लेषण गर्दैछ...");
@@ -173,46 +234,65 @@ export default function DetailPanel({
             <button className="ghost" onClick={showInChart} title="चार्टमा हेर्नुहोस्">
               <i>🌳</i>चार्ट
             </button>
-            <button className="ghost" onClick={() => document.getElementById("pi")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
-              <i>🪪</i>प्रोफाइल
-            </button>
+            {isAdm && (
+              <button className="ghost" disabled={busyAi} onClick={aiSummary} title="AI सारांश">
+                <i>✨</i>AI
+              </button>
+            )}
             {ce && (
               <>
                 <button className="ghost" onClick={() => openDialog(<PersonForm action="update" p={p} />, true)} title={isAdm ? "सच्याउने" : "सच्याउने (अनुरोध)"}>
                   <i>✏️</i>Edit
                 </button>
                 <button className="ghost" onClick={() => openDialog(<AddMenu p={p} />)}><i>➕</i>Add</button>
-                <button className="ghost" onClick={() => setMore((m) => !m)}><i>⋯</i>More</button>
               </>
             )}
-            {isAdm && (
-              <button className="ghost" disabled={busyAi} onClick={aiSummary} title="AI सारांश">
-                <i>✨</i>AI
+            <div className="pp-moreW" ref={moreRef}>
+              <button className={`ghost ${more ? "on" : ""}`} aria-haspopup="menu" aria-expanded={more} onClick={() => setMore((m) => !m)}>
+                <i>⋯</i>More
               </button>
-            )}
-            {onPrint && (
-              <button className="ghost" onClick={() => onPrint(p.id)} title="शाखा प्रिन्ट">
-                <i>🖨️</i>प्रिन्ट
-              </button>
-            )}
+              {more && (
+                <div className="pp-menu" role="menu">
+                  <button role="menuitem" onClick={goProfile}>🪪 प्रोफाइल</button>
+                  {onPrint && <button role="menuitem" onClick={() => { setMore(false); onPrint(p.id); }}>🖨️ प्रिन्ट</button>}
+                  {ce && isAdm && <button role="menuitem" onClick={() => { setMore(false); openDialog(<InviteDialog p={p} />); }}>🔗 निम्तो लिंक</button>}
+                  {ce && (
+                    <button role="menuitem" className="bad" onClick={() => { setMore(false); openDialog(<DeleteDialog p={p} />); }}>
+                      {isAdm ? "🗑 हटाउने" : "🗑 हटाउने अनुरोध"}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
-      {ce && !lim && more && (
-        <div id="pmore">
-          {isAdm && <button onClick={() => openDialog(<InviteDialog p={p} />)}>🔗 निम्तो लिंक</button>}
-          <button className="bad" onClick={() => openDialog(<DeleteDialog p={p} />)}>
-            {isAdm ? "🗑 हटाउने" : "🗑 हटाउने अनुरोध"}
-          </button>
-        </div>
-      )}
       {lim ? (
         <p className="mut" style={{ marginTop: "1rem" }}>यो शाखाको नाम मात्र हेर्न मिल्छ।</p>
       ) : (
         <>
+          {p.ai_summary && (
+            <Sec id="ai" title="✨ AI सारांश" col={col} toggle={toggle}>
+              <div className="ib w" style={{ ["--c" as string]: "#8B5CF6" }}>
+                <span className="ii">🤖</span>
+                <div>
+                  <small>AI विश्लेषण</small>
+                  <p style={{ margin: "0.5rem 0 0", lineHeight: 1.5, fontSize: "0.9rem" }}>{p.ai_summary}</p>
+                  {!!p.ai_tags?.length && (
+                    <div style={{ marginTop: "0.5rem", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                      {p.ai_tags.map((t) => (
+                        <span key={t} style={{ background: "var(--acc-glow)", color: "var(--acc)", padding: "0.2rem 0.6rem", borderRadius: 99, fontSize: "0.75rem", fontWeight: 600 }}>
+                          #{t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Sec>
+          )}
           {lineage.length > 1 && (
-            <>
-              <div className="pp-h">वंश परम्परा</div>
+            <Sec id="lin" title="वंश परम्परा" col={col} toggle={toggle}>
               <p className="kpt">
                 {lineage.map((x, i) => (
                   <React.Fragment key={x.id}>
@@ -225,9 +305,9 @@ export default function DetailPanel({
                   </React.Fragment>
                 ))}
               </p>
-            </>
+            </Sec>
           )}
-          <div className="pp-h">परिवार</div>
+          <Sec id="fam" title="परिवार" col={col} toggle={toggle}>
           {RL.length ? (
             RL.map(({ q, l, self }) => {
               const ok = can(q.id);
@@ -256,7 +336,8 @@ export default function DetailPanel({
           ) : (
             <p className="mut">कुनै नाता जोडिएको छैन।</p>
           )}
-          <div className="pp-h" id="pi">व्यक्तिगत विवरण</div>
+          </Sec>
+          <Sec id="pi" title="व्यक्तिगत विवरण" col={col} toggle={toggle}>
           <Box c="#F59E0B" ic="🎂" l="जन्म मिति (BS)">{p.birth_bs}</Box>
           {!p.is_living && <Box c="#6B7280" ic="🕊" l="मृत्यु मिति (BS)">{p.death_bs}</Box>}
           {!p.is_living && <Box c="#6B7280" ic="🪦" l="मृत्यु स्थान" mg>{p.death_place}</Box>}
@@ -279,27 +360,7 @@ export default function DetailPanel({
             </Box>
           )}
           <Box c="#D97706" ic="📝" l="टिप्पणी">{p.notes}</Box>
-          {p.ai_summary && (
-            <>
-              <div className="pp-h">✨ AI सारांश</div>
-              <div className="ib w" style={{ ["--c" as string]: "#8B5CF6" }}>
-                <span className="ii">🤖</span>
-                <div>
-                  <small>AI विश्लेषण</small>
-                  <p style={{ margin: "0.5rem 0 0", lineHeight: 1.5, fontSize: "0.9rem" }}>{p.ai_summary}</p>
-                  {!!p.ai_tags?.length && (
-                    <div style={{ marginTop: "0.5rem", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                      {p.ai_tags.map((t) => (
-                        <span key={t} style={{ background: "var(--acc-glow)", color: "var(--acc)", padding: "0.2rem 0.6rem", borderRadius: 99, fontSize: "0.75rem", fontWeight: 600 }}>
-                          #{t}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
+          </Sec>
         </>
       )}
     </aside>

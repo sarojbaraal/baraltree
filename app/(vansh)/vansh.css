@@ -878,3 +878,16 @@ dialog.moved { box-shadow: 0 14px 50px rgba(0, 0, 0, .45); }
 .offb { position: sticky; top: calc(var(--hdr-h, 64px) + 8px); z-index: 40; margin: .6rem auto 0; max-width: 1100px; display: grid; gap: .35rem; padding: .6rem .9rem; font-size: .88rem; line-height: 1.5; border-radius: 14px; color: var(--ink); background: color-mix(in srgb, #f4b547 22%, var(--solid)); border: 1px solid color-mix(in srgb, #f4b547 60%, transparent); }
 .offb button { margin-left: .6rem; min-height: 32px; padding: .15rem .7rem; font-size: .8rem; }
 .offb .offe { color: var(--bad, #c0392b); }
+
+/* profile panel: More dropdown + foldable sections */
+.pp-moreW { position: relative; display: block; }
+.pp-moreW > button.on { color: var(--ink); border-color: var(--cy); }
+.pp-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 90; min-width: 180px; display: grid; gap: 2px; padding: .35rem; border-radius: 14px; background: var(--solid); border: 1px solid var(--line-2); box-shadow: var(--shadow-lg); }
+.pp-act .pp-menu button { flex-direction: row; justify-content: flex-start; gap: .5rem; width: 100%; height: auto; min-height: 40px; padding: .3rem .6rem; border: 0; border-radius: 10px; background: none; font-size: .88rem; font-weight: 500; white-space: nowrap; box-shadow: none; }
+.pp-act .pp-menu button:hover { background: var(--cy-glow); color: var(--ink); }
+.pp-act .pp-menu button.bad { color: var(--bad, #dc2626); }
+.pp-tg { display: flex; align-items: center; justify-content: space-between; gap: .5rem; cursor: pointer; user-select: none; }
+.pp-tg:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; border-radius: 6px; }
+.pp-tg i { font-style: normal; font-size: .85rem; color: var(--mut); transition: transform .18s var(--ease, ease); }
+.pp-tg.shut i { transform: rotate(-90deg); }
+@media (prefers-reduced-motion: reduce) { .pp-tg i { transition: none; } }

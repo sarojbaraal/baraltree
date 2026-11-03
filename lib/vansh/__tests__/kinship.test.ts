@@ -287,3 +287,105 @@ describe("search helpers", () => {
     expect(baseTerm("कान्छी फुपू (ससुराली)")).toBe("फुपू");
   });
 });
+
+describe("a married woman's point of view", () => {
+  // she = bahu (b.2002), husband pati (b.2000); his house: sasura+sasu, jeth/amaju older, dewar/nanda younger
+  const D = (): VPerson[] => [
+    P("bff", "M", "1940", { spouse_id: "bfm" }),
+    P("bfm", "F", "1945", { spouse_id: "bff" }),
+    P("bf", "M", "1970", { father_id: "bff", mother_id: "bfm", spouse_id: "bm" }),
+    P("bm", "F", "1972", { father_id: "bmf", spouse_id: "bf" }),
+    P("bmf", "M", "1945"),
+    P("bahu", "F", "2002", { father_id: "bf", mother_id: "bm", spouse_id: "pati" }),
+    P("bbro", "M", "2005", { father_id: "bf", mother_id: "bm" }),
+    P("bsis", "F", "1999", { father_id: "bf", mother_id: "bm", spouse_id: "bsisH" }),
+    P("bsisH", "M", "1998", { spouse_id: "bsis" }),
+    P("bsisDau", "F", "2025", { father_id: "bsisH", mother_id: "bsis", spouse_id: "bsisDauH" }),
+    P("bsisDauH", "M", "2024", { spouse_id: "bsisDau" }),
+    // husband's house
+    P("pff", "M", "1938", { spouse_id: "pfm" }),
+    P("pfm", "F", "1943", { spouse_id: "pff" }),
+    P("sasura", "M", "1968", { father_id: "pff", mother_id: "pfm", spouse_id: "sasu" }),
+    P("sasu", "F", "1971", { father_id: "pmf", mother_id: "pmm", spouse_id: "sasura" }),
+    P("pmf", "M", "1942", { spouse_id: "pmm" }),
+    P("pmm", "F", "1946", { spouse_id: "pmf" }),
+    P("pmama", "M", "1974", { father_id: "pmf", mother_id: "pmm" }),
+    P("jeth", "M", "1995", { father_id: "sasura", mother_id: "sasu", spouse_id: "jethani" }),
+    P("jethani", "F", "1996", { spouse_id: "jeth" }),
+    P("amaju", "F", "1997", { father_id: "sasura", mother_id: "sasu", spouse_id: "bhinaju" }),
+    P("bhinaju", "M", "1996", { spouse_id: "amaju" }),
+    P("pati", "M", "2000", { father_id: "sasura", mother_id: "sasu", spouse_id: "bahu" }),
+    P("dewar", "M", "2004", { father_id: "sasura", mother_id: "sasu", spouse_id: "deurani" }),
+    P("deurani", "F", "2005", { spouse_id: "dewar" }),
+    P("nanda", "F", "2006", { father_id: "sasura", mother_id: "sasu", spouse_id: "nandaH" }),
+    P("nandaH", "M", "2005", { spouse_id: "nanda" }),
+    P("bhatija", "M", "2030", { father_id: "dewar", mother_id: "deurani", spouse_id: "bhatijaW" }),
+    P("bhatijaW", "F", "2031", { spouse_id: "bhatija" }),
+    P("bhatiji", "F", "2032", { father_id: "dewar", mother_id: "deurani", spouse_id: "bhatijiH" }),
+    P("bhatijiH", "M", "2031", { spouse_id: "bhatiji" }),
+    P("bhatijaSon", "M", "2055", { father_id: "bhatija", mother_id: "bhatijaW" }),
+    P("bhanji", "F", "2030", { father_id: "nandaH", mother_id: "nanda", spouse_id: "bhanjiH" }),
+    P("bhanjiH", "M", "2029", { spouse_id: "bhanji" }),
+    // husband's father's brother's sons (his clan cousins)
+    P("pkaka", "M", "1972", { father_id: "pff", mother_id: "pfm" }),
+    P("cOld", "M", "1996", { father_id: "pkaka" }),
+    P("cYoung", "M", "2004", { father_id: "pkaka" }),
+    // her own descendants
+    P("son", "M", "2025", { father_id: "pati", mother_id: "bahu", spouse_id: "sonW" }),
+    P("sonW", "F", "2026", { spouse_id: "son" }),
+    P("gs", "M", "2050", { father_id: "son", mother_id: "sonW", spouse_id: "gsW" }),
+    P("gsW", "F", "2051", { spouse_id: "gs" }),
+    P("gd", "F", "2052", { father_id: "son", mother_id: "sonW", spouse_id: "gdH" }),
+    P("gdH", "M", "2051", { spouse_id: "gd" }),
+  ];
+  const r = kinFrom(D(), "bahu").R;
+  it("husband's parents and brothers/sisters (the words a wife says differently)", () => {
+    expect(r.sasura).toBe("ससुरा");
+    expect(r.sasu).toBe("सासू");
+    expect(r.jeth).toBe("जेठाजु");
+    expect(r.dewar).toBe("देवर");
+    expect(r.amaju).toBe("आमाजु");
+    expect(r.nanda).toBe("नन्द");
+    expect(r.jethani).toBe("जेठानी");
+    expect(r.deurani).toBe("देउरानी");
+  });
+  it("husband's sisters' husbands", () => {
+    expect(r.bhinaju).toBe("भिनाजु"); // आमाजुको पति
+    expect(r.nandaH).toBe("ज्वाइँ"); // नन्दको पति
+  });
+  it("husband's clan brothers are always जेठाजु / देवर, whichever branch", () => {
+    expect(r.cOld).toBe("जेठाजु");
+    expect(r.cYoung).toBe("देवर");
+  });
+  it("devar's children and their families", () => {
+    expect(r.bhatija).toBe("भतिजा");
+    expect(r.bhatijaW).toBe("बुहारी");
+    expect(r.bhatiji).toBe("भतिजी");
+    expect(r.bhatijiH).toBe("ज्वाइँ");
+    expect(r.bhatijaSon).toBe("नाति");
+    expect(r.bhanji).toBe("भान्जी");
+    expect(r.bhanjiH).toBe("भान्जे ज्वाइँ");
+  });
+  it("grandchildren's spouses", () => {
+    expect(r.gsW).toBe("नातिने बुहारी");
+    expect(r.gdH).toBe("नातिने ज्वाइँ");
+    expect(r.sonW).toBe("बुहारी");
+  });
+  it("her sister's daughter's husband is भान्जे ज्वाइँ", () => {
+    expect(r.bsisDauH).toBe("भान्जे ज्वाइँ (माईति)"); // same word as her husband's side → labelled
+  });
+  it("side labels: no ससुराली for her husband's house; माईति for her parents' house; मावली for a mother's side", () => {
+    expect(r.pff).toBe("हजुरबुबा"); // husband's house, no label
+    expect(r.bff).toBe("हजुरबुबा (माईति)");
+    expect(r.bmf).toBe("हजुरबुबा (मावली)");
+    expect(r.pmf).toBe("हजुरबुबा (मावली)"); // husband's mother's father
+    expect(Object.values(r).some((t) => t.includes("ससुराली"))).toBe(false);
+  });
+  it("a man still labels his wife's side ससुराली and an unmarried woman has no माईति label", () => {
+    const m = kinFrom(D(), "pati").R;
+    expect(m.bff).toBe("हजुरबुबा (ससुराली)");
+    const un = kinFrom(D().map((x) => (x.id === "bahu" ? { ...x, spouse_id: null } : x.id === "pati" ? { ...x, spouse_id: null } : x)), "bahu").R;
+    expect(un.bff).toBe("हजुरबुबा");
+    expect(baseTerm("हजुरबुबा (माईति)")).toBe("हजुरबुबा");
+  });
+});

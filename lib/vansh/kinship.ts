@@ -216,7 +216,7 @@ function spouseOfBlood(u: number, k: number, s: string, nodes: VPerson[], t: VPe
   }
   if (u === 0) {
     if (k === 1) return isM(r) ? "बुहारी" : isF(r) ? "ज्वाइँ" : "बुहारी/ज्वाइँ";
-    if (k === 2) return isM(r) ? "नाति-बुहारी" : isF(r) ? "नातिनी-ज्वाइँ" : null;
+    if (k === 2) return isM(r) ? "नातिने बुहारी" : isF(r) ? "नातिने ज्वाइँ" : null;
     return null;
   }
   const d = u - k;
@@ -229,9 +229,14 @@ function spouseOfBlood(u: number, k: number, s: string, nodes: VPerson[], t: VPe
         : isF(r) ? "फुपाजु" : null;
     return isM(r) ? "माइजू" : isF(r) ? (olderThan(r, par) === true ? "ठूलोबा" : "सानाबा") : null;
   }
-  if (d === -1) return isM(r) ? "बुहारी" : isF(r) ? "ज्वाइँ" : null;
+  if (d === -1) {
+    // a brother's (or any clan brother's) child → बुहारी/ज्वाइँ; a sister's / other line's child → भान्जे बुहारी/भान्जे ज्वाइँ
+    const sib = nodes[nodes.length - 3];
+    const brotherLine = isM(sib) && (u === 1 || (first === "f" && isM(nodes[u + 1])));
+    return brotherLine ? (isM(r) ? "बुहारी" : isF(r) ? "ज्वाइँ" : null) : isM(r) ? "भान्जे बुहारी" : isF(r) ? "भान्जे ज्वाइँ" : null;
+  }
   if (d >= 2) return by(t, "हजुरबुबा", "हजुरआमा");
-  return null;
+  return isM(r) ? "नातिने बुहारी" : isF(r) ? "नातिने ज्वाइँ" : null;
 }
 
 type SpouseCount = (p: VPerson) => number;
@@ -268,6 +273,45 @@ function bloodTerm(u: number, k: number, s: string, nodes: VPerson[], t: VPerson
   return by(t, "नाति", "नातिनी");
 }
 
+
+const PARENT_IN_LAW: Record<string, string> = {
+  "बुबा": "ससुरा",
+  "आमा": "सासू",
+  "सौतेनो बुबा": "सौतेनो ससुरा",
+  "सौतेनी आमा": "सौतेनी सासू",
+};
+
+/**
+ * A wife's word for a relative of her husband. `path`/`nodes` start at the husband, so his own term is found first and
+ * only the few words a wife says differently are replaced.
+ */
+function husbandSideTerm(path: string, nodes: VPerson[], sc: SpouseCount): string | null {
+  const H = nodes[0];
+  const t = nodes[nodes.length - 1];
+  // husband's children from another wife
+  if (path === "s" || path === "d") return by(t, "सौतेनो छोरा", "सौतेनी छोरी", "सौतेनो सन्तान");
+  // same generation in his clan, whichever branch: his elder brother is always जेठाजु, younger always देवर
+  let m = /^([fm]+)([sd]+)$/.exec(path);
+  if (m && m[1].length === m[2].length) {
+    const o = olderThan(t, H);
+    return isM(t)
+      ? o === true ? "जेठाजु" : o === false ? "देवर" : "जेठाजु/देवर"
+      : isF(t)
+      ? o === true ? "आमाजु" : o === false ? "नन्द" : "आमाजु/नन्द"
+      : null;
+  }
+  m = /^([fm]+)([sd]+)([hw])$/.exec(path);
+  if (m && m[1].length === m[2].length) {
+    const r = nodes[nodes.length - 2];
+    if (isM(r)) {
+      const o = olderThan(r, H);
+      return o === true ? "जेठानी" : o === false ? "देउरानी" : "जेठानी/देउरानी";
+    }
+  }
+  const T = termForPath(path, nodes, sc);
+  return T && (PARENT_IN_LAW[T] ?? T);
+}
+
 /** Term for the person at the end of `path`, or null when there is no exact word. */
 export function termForPath(path: string, nodes: VPerson[], sc: SpouseCount = ownSpouseCount): string | null {
   const t = nodes[nodes.length - 1];
@@ -281,6 +325,10 @@ export function termForPath(path: string, nodes: VPerson[], sc: SpouseCount = ow
   if (m) return spouseOfBlood(m[1].length, m[2].length, path.slice(0, -1), nodes, t, sc);
 
   if (path === "hw" || path === "wh") return isF(me) && isF(t) ? "सौता" : null;
+
+  // a married woman: her husband's house is her own house, so his relatives carry the husband's own words
+  // (only ससुरा, सासू, जेठाजु, देवर, आमाजु, नन्द, जेठानी, देउरानी are named from her side)
+  if (isF(me) && path[0] === "h" && path.length > 1) return husbandSideTerm(path.slice(1), nodes.slice(1), sc);
 
   // spouse's relatives
   m = /^[hw]([fm]*)([sd]*)$/.exec(path);
@@ -381,10 +429,30 @@ const CORE = [
   /^[hw][fm][sd]$/, // spouse's siblings
 ];
 
-/** Which side of the family a path runs through: मावली (via mother's parents), ससुराली (via spouse), else blood. */
-function sideOf(path: string): "" | " (मावली)" | " (ससुराली)" {
+interface SideCtx {
+  /** The anchor is a woman. */
+  woman: boolean;
+  /** The anchor is a woman with a husband in the tree: her own parents' house is the माईति. */
+  married: boolean;
+}
+
+/**
+ * Which side of the family a path runs through.
+ *  - via mother's parents → (मावली)
+ *  - a man: via his wife → (ससुराली)
+ *  - a married woman: her own parents' house → (माईति); her husband's house is her own house (no label), except his
+ *    mother's side (मावली) and the in-law families of his house (ससुराली)
+ */
+function sideOf(path: string, c: SideCtx): "" | " (मावली)" | " (ससुराली)" | " (माईति)" {
   if (/^m[fm]/.test(path)) return " (मावली)";
-  if (/^[hw]/.test(path) && path.length > 1 && !/^[hw][sd]/.test(path)) return " (ससुराली)";
+  if (c.woman && path[0] === "h") {
+    const rest = path.slice(1);
+    if (/^m[fm]/.test(rest)) return " (मावली)";
+    if (/[hw][fm]/.test(rest)) return " (ससुराली)";
+    return "";
+  }
+  if (!c.woman && /^[hw]/.test(path) && path.length > 1 && !/^[hw][sd]/.test(path)) return " (ससुराली)";
+  if (c.married && path.length > 1 && path[0] === "f") return " (माईति)";
   return "";
 }
 
@@ -397,6 +465,8 @@ function run(net: Net, anchorId: string): Kin {
   const paths: Record<string, string> = {};
   const C = new Set<string>();
   const found = search(net, anchorId);
+  const anchor = net.byId[anchorId];
+  const ctx: SideCtx = { woman: isF(anchor), married: isF(anchor) && (net.spouses[anchorId]?.length || 0) > 0 };
   const base: Record<string, string> = {};
   Object.keys(found).forEach((id) => {
     if (id === VIRTUAL_ME) return;
@@ -408,14 +478,14 @@ function run(net: Net, anchorId: string): Kin {
   });
   // the same word on different sides (हजुरबुबा, बहिनी …) → tell the sides apart
   const sides: Record<string, Set<string>> = {};
-  Object.keys(base).forEach((id) => (sides[base[id]] ||= new Set()).add(sideOf(paths[id])));
+  Object.keys(base).forEach((id) => (sides[base[id]] ||= new Set()).add(sideOf(paths[id], ctx)));
   Object.keys(base).forEach((id) => {
     let t = base[id];
     if (ORDERED.has(t)) {
       const w = ordinalIn(net, net.byId[id]);
       if (w && !(t === "काका" && w.startsWith("जेठ"))) t = `${w} ${t}`;
     }
-    const sd = sideOf(paths[id]);
+    const sd = sideOf(paths[id], ctx);
     R[id] = sd && sides[base[id]].size > 1 ? t + sd : t;
   });
   return { R, paths, C, anchorId };
@@ -543,5 +613,5 @@ export function kinChain(
 const ORD_PREFIX = /^(जेठो|जेठी|माइलो|माइली|साइलो|साइली|काइँलो|काइँली|राइलो|राइली|ठाइलो|ठाइली|झाइँलो|झाइँली|अन्तरे|जन्तरे|पानी मन्तरे|कान्छो|कान्छी)\s+/;
 /** "माइलो काका" → "काका"; "हजुरबुबा (मावली)" → "हजुरबुबा". The word people search and group by. */
 export function baseTerm(term: string): string {
-  return term.replace(/\s*\((मावली|ससुराली)\)\s*$/, "").replace(ORD_PREFIX, "").trim();
+  return term.replace(/\s*\((मावली|ससुराली|माईति)\)\s*$/, "").replace(ORD_PREFIX, "").trim();
 }
