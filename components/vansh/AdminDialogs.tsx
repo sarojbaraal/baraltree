@@ -1,5 +1,6 @@
 "use client";
 // Admin dialogs: import preview and "create account" (ported from the original app.js previewImport / acctForm).
+import { webUrl } from "@/lib/vansh/native";
 import React, { useState, useSyncExternalStore } from "react";
 import { AVATAR_FILES, getSiteAvatars, loadSiteAvatars, subscribeSiteAvatars, type SiteAvatars } from "@/lib/vansh/avatars";
 import { IMPORT_LABELS, type ImportDiff } from "@/lib/vansh/importer";
@@ -87,7 +88,7 @@ export function AcctDialog({ onDone }: { onDone: () => void }) {
   const [fb, setFb] = useState("");
   const [err, setErr] = useState("");
   const [done, setDone] = useState("");
-  const site = `${location.origin}${location.pathname}`;
+  const site = webUrl();
 
   if (done)
     return (
