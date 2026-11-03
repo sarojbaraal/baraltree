@@ -439,16 +439,15 @@ interface SideCtx {
 /**
  * Which side of the family a path runs through.
  *  - via mother's parents → (मावली)
- *  - a man: via his wife → (ससुराली)
+ *  - a man: via his wife (her parents' house is his ससुराली) → (ससुराली)
  *  - a married woman: her own parents' house → (माईति); her husband's house is her own house (no label), except his
- *    mother's side (मावली) and the in-law families of his house (ससुराली)
+ *    mother's side (मावली). A woman never has a ससुराली.
  */
 function sideOf(path: string, c: SideCtx): "" | " (मावली)" | " (ससुराली)" | " (माईति)" {
   if (/^m[fm]/.test(path)) return " (मावली)";
   if (c.woman && path[0] === "h") {
     const rest = path.slice(1);
     if (/^m[fm]/.test(rest)) return " (मावली)";
-    if (/[hw][fm]/.test(rest)) return " (ससुराली)";
     return "";
   }
   if (!c.woman && /^[hw]/.test(path) && path.length > 1 && !/^[hw][sd]/.test(path)) return " (ससुराली)";
