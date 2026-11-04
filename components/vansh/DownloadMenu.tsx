@@ -36,6 +36,14 @@ export function DownloadDialog() {
     const set = gr ? gAll.downSet(gr.id) : new Set<string>();
     return createGraph(gAll.people.filter((p) => set.has(p.id)));
   }, [gAll, me, perms.act]);
+  // the wall chart: everyone below the member's own grandfather, with photos (children included)
+  const wall = useMemo(() => {
+    const gr = me ? premiumGrand(gAll, me) : null;
+    if (!gr) return null;
+    const set = gAll.downSet(gr.id);
+    const wg = createGraph(gAll.people.filter((p) => set.has(p.id) && !p.is_locked));
+    return { root: gr, g: wg };
+  }, [gAll, me]);
   const [busy, setBusy] = useState("");
   const [paper, setPaper] = useState<Paper>("a3");
   const run = async (key: string, fn: () => Promise<unknown> | unknown, ok?: string) => {
@@ -71,6 +79,26 @@ export function DownloadDialog() {
         <p className="card">छाप्ने र डाउनलोड गर्ने सुविधा तपाईंको भूमिकामा उपलब्ध छैन। चाहिए भने एडमिनसँग सम्पर्क गर्नुहोस्।</p>
       ) : (
         <>
+      {wall && (
+        <Opt icon="🖼" title="भित्ते वंशवृक्ष" info={<><b>{wall.root.name}</b> को पुस्ताको वंशावली ({np(wall.g.people.length)} जना), फोटो सहित, भित्तामा टाँस्न मिल्ने ठूलो चित्र। साना बालबालिकाको फोटो र मिति पनि समावेश हुन्छ। फोन, ठेगाना, टिप्पणी कहिल्यै आउँदैन। छापिएको नाम र मिति तल स्थायी रूपमा छापिन्छ। A2 (४२×५९.४ सेमी) वा A1 मा छाप्न SVG लिनुहोस्; फोन/कम्प्युटरमा हेर्न JPG।</>}>
+          <button disabled={!!busy} onClick={() => prep("wall-jpg", async () => {
+            const l = bestLayout(wall.g, 594, 420);
+            const ph = await loadPhotos(l.cards.map((c) => c.p), can);
+            const st = await mkStamp(`wall|${wall.root.id}|${l.cards.length}`);
+            const svg = posterSvg(l, can, nm, ph, { title: [`${wall.root.name} को `, "वंशवृक्ष"], stamp: st });
+            const sz = svgSize(svg);
+            const blob = await jpgBlob(svg, sz.w - 40, sz.h - 40);
+            return { blob, fileName: `vanshabriksha-${wall.root.name}-${stamp()}.jpg`, images: [{ src: URL.createObjectURL(blob) }], note: `${np(l.cards.length)} जना · हस्ताक्षर ID ${st.id}` };
+          })}>{busy === "wall-jpg" ? "बन्दैछ…" : "JPG हेर्ने / डाउनलोड"}</button>
+          <button className="ghost" disabled={!!busy} onClick={() => prep("wall-svg", async () => {
+            const l = bestLayout(wall.g, 594, 420);
+            const ph = await loadPhotos(l.cards.map((c) => c.p), can);
+            const st = await mkStamp(`wallsvg|${wall.root.id}|${l.cards.length}`);
+            const blob = svgBlob(posterSvg(l, can, nm, ph, { title: [`${wall.root.name} को `, "वंशवृक्ष"], stamp: st }));
+            return { blob, fileName: `vanshabriksha-${wall.root.name}-${stamp()}.svg`, images: [{ src: URL.createObjectURL(blob) }], note: `${np(l.cards.length)} जना · हस्ताक्षर ID ${st.id}` };
+          })}>{busy === "wall-svg" ? "बन्दैछ…" : "SVG (छाप्न)"}</button>
+        </Opt>
+      )}
       <Opt icon="📷" title="फोटो (JPG)" info={<>चार्ट ठूलो हुँदा फोटोको गुणस्तर स्पष्ट नहुने भएकाले यसमा तपाईंको स्थानभन्दा ७ पुस्ता माथि (सिधा पुर्खा) र ७ पुस्ता तल (सन्तान), पति/पत्नीसहित आउँछ। प्रोफाइल फोटो भएकाको फोटो नै देखिन्छ। फोन/कम्प्युटरको ग्यालरीमा हेर्न मिल्छ।</>}>
         <button disabled={!!busy} onClick={() => prep("jpg", async () => {
           const l = near();
