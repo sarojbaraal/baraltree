@@ -108,7 +108,7 @@ export function FamView() {
         </div>
         {me?.position_person_id && byId[me.position_person_id] && <StoryCard person={byId[me.position_person_id]} />}
         <div className="row">
-          {act !== "general" && (
+          {act !== "general" && act !== "other" && (
             <button className="ghost" onClick={() => openDialog(<PersonForm action="add" />, true)}>
               {isAdm ? "+ सदस्य थप्ने" : "+ सदस्य थप्ने अनुरोध"}
             </button>

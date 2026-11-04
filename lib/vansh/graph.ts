@@ -5,11 +5,12 @@ export type Graph = ReturnType<typeof createGraph>;
 
 export const ROLE_L: Record<Role, string> = {
   general: "सामान्य सदस्य",
-  premium: "प्रिमियम सदस्य",
+  other: "अन्य",
+  premium: "बंशज सदस्य",
   moderator: "मोडरेटर",
   admin: "एडमिन",
 };
-export const ORDER: Role[] = ["admin", "moderator", "premium", "general"];
+export const ORDER: Role[] = ["admin", "moderator", "premium", "general", "other"];
 
 export function createGraph(people: VPerson[]) {
   const byId: Record<string, VPerson> = Object.fromEntries(people.map((p) => [p.id, p]));
@@ -199,7 +200,7 @@ export function makePerms(act: Role | null, access: Access): Perms {
     act,
     isAdm,
     isStaff,
-    seesAll: act !== "general",
+    seesAll: act !== "general" && act !== "other",
     can,
     canEdit: (id) => isStaff || (act === "premium" && !!access.edits && access.edits.has(id)),
     nm: (p) => (can(p.id) ? p.name : "••••••"),

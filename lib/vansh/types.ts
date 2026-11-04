@@ -1,7 +1,7 @@
 // Types for the Vansavali app. Mirrors the shape returned by the `get_people` RPC.
 
 export type Gender = "M" | "F" | "O" | "" | null;
-export type Role = "admin" | "moderator" | "premium" | "general";
+export type Role = "admin" | "moderator" | "premium" | "general" | "other";
 export type TabKey = "fam" | "tree" | "mem" | "mine" | "admin" | "ov";
 
 export interface VPerson {

@@ -105,7 +105,7 @@ function Shell() {
   useDailyEvents(inApp);
   const todayTxt = useTodayLabel();
   const eff: TabKey =
-    (tab === "mine" && act === "general") || ((tab === "admin" || tab === "ov") && !perms.isStaff) ? "fam" : tab;
+    (tab === "mine" && (act === "general" || act === "other")) || ((tab === "admin" || tab === "ov") && !perms.isStaff) ? "fam" : tab;
   const panelOpen = inApp && !!sel && !!people.length;
   const pushed = panelOpen && wide;
 
@@ -118,7 +118,7 @@ function Shell() {
     ["fam", "🏡 परिवार"],
     ["tree", "🌳 चार्ट"],
     ["mem", "👥 सदस्य"],
-    ...(act !== "general" ? ([["mine", "📋 अनुरोध"]] as [TabKey, string][]) : []),
+    ...(act !== "general" && act !== "other" ? ([["mine", "📋 अनुरोध"]] as [TabKey, string][]) : []),
     ...(perms.isStaff ? ([["admin", "⚙ एडमिन"]] as [TabKey, string][]) : []),
   ];
 

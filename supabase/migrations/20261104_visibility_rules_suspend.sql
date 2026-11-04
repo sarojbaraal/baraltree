@@ -1,12 +1,14 @@
 -- 1) Visibility rules per role (get_people) and 2) admin: suspend / delete a member.
 --
--- Surname test: the last word of the name is "बराल".
--- general   : Baral-surname men only (+ the member's own record and immediate family)
--- premium / moderator ("वंशज"): Baral men, women who are Baral by marriage (name ends बराल),
---             Baral-born daughters (married away or not), everyone below the member's grandfather and below the
---             mother's grandfather; nobody else's maternal side
--- other (viewer is not a Baral): everyone below the viewer's own grandfather (sons' line + daughters' branches)
--- admin     : everything
+-- Five roles. Surname test: the last word of the name is "बराल".
+-- general   (सामान्य) : Baral-surname men only (+ own record and immediate family)
+-- premium   (बंशज)    : Baral men, women named Baral, Baral-born daughters (married away or not), everyone below the
+--                      member's grandfather and below the mother's grandfather
+-- moderator           : everyone, except other people's maternal side
+-- other     (अन्य)    : everyone below the member's own grandfather (sons' line + daughters' branches)
+-- admin               : everything
+-- "Maternal side" = the natal family (ancestors, their other descendants) of a woman who married into the Baral family;
+-- it stays hidden except the viewer's own mother's side. The Baral line itself is never hidden by this.
 -- Everyone outside a viewer's set is returned as a locked placeholder ("••••••") so the chart keeps its shape.
 
 create or replace function public.is_baral_name(n text) returns boolean
@@ -18,17 +20,17 @@ create or replace function public.get_people(p_role text default null::text)
 returns jsonb language plpgsql stable security definer set search_path to 'public' as $function$
 declare
   pr profiles; rs text[]; r text; adm boolean;
-  own uuid; f uuid; gf uuid; mo uuid; mf uuid; mgf uuid; vp uuid; viewer_baral boolean;
+  own uuid; f uuid; gf uuid; mo uuid; mf uuid; mgf uuid;
   vis uuid[] := '{}';
 begin
   select * into pr from profiles where id = auth.uid();
   if not found or pr.suspended_at is not null then return '[]'::jsonb; end if;
   rs := coalesce(pr.roles, '{}');
-  if pr.role = 'admin' then rs := array['admin','moderator','premium','general'];
+  if pr.role = 'admin' then rs := array['admin','moderator','premium','general','other'];
   elsif pr.role = 'member' and cardinality(rs) = 0 then rs := array['general']; end if;
   if cardinality(rs) = 0 then return '[]'::jsonb; end if;
   r := case when p_role = any(rs) then p_role
-            else (select x from unnest(array['admin','moderator','premium','general']) x where x = any(rs) limit 1) end;
+            else (select x from unnest(array['admin','moderator','premium','general','other']) x where x = any(rs) limit 1) end;
   adm := r = 'admin';
 
   own := pr.position_person_id;
@@ -44,9 +46,6 @@ begin
     mf := (select father_id from people where id = mo);
     mgf := coalesce((select father_id from people where id = mf), mf);
 
-    vp := coalesce(own, pr.position_parent_id, pr.position_grand_id);
-    viewer_baral := coalesce((select is_baral_name(name) from people where id = vp), true);
-
     -- the member's own record and immediate family
     vis := array(
       select id from people where id = own
@@ -54,9 +53,9 @@ begin
       union select x from people p, unnest(array[p.father_id, p.mother_id]) x where p.id = own and x is not null
       union select id from people where own is not null and (father_id = own or mother_id = own));
 
-    if viewer_baral and r = 'general' then
+    if r = 'general' then
       vis := vis || array(select id from people where gender = 'M' and is_baral_name(name));
-    elsif viewer_baral then
+    elsif r = 'premium' then
       vis := vis || array(
         select id from people where gender = 'M' and is_baral_name(name)
         union select id from people where gender = 'F' and is_baral_name(name)
@@ -71,16 +70,57 @@ begin
           select id from dd
           union
           select s from people p join dd on dd.id = p.id, unnest(array[p.spouse_id] || coalesce(p.more_spouse_ids, '{}')) s where s is not null));
-    elsif not viewer_baral and gf is not null then
-      vis := vis || array(
-        with recursive dd(id) as (
-          select gf
+    elsif r = 'other' then
+      if gf is not null then
+        vis := vis || array(
+          with recursive dd(id) as (
+            select gf
+            union
+            select c.id from people c join dd on c.father_id = dd.id or c.mother_id = dd.id
+          )
+          select id from dd
           union
-          select c.id from people c join dd on c.father_id = dd.id or c.mother_id = dd.id
+          select s from people p join dd on dd.id = p.id, unnest(array[p.spouse_id] || coalesce(p.more_spouse_ids, '{}')) s where s is not null);
+      end if;
+    else
+      -- moderator: everyone except other people's maternal side
+      vis := array(
+        with recursive
+        wives as (
+          select w.id from people w
+          where w.gender = 'F' and (w.father_id is not null or w.mother_id is not null)
+            and w.id is distinct from mo
+            and not coalesce((select is_baral_name(f.name) from people f where f.id = w.father_id), false)
+            and (exists (select 1 from people sp where (sp.id = w.spouse_id or sp.id = any(coalesce(w.more_spouse_ids, '{}')))
+                         and sp.gender = 'M' and is_baral_name(sp.name))
+                 or exists (select 1 from people c join people fa on fa.id = c.father_id
+                         where c.mother_id = w.id and fa.gender = 'M' and is_baral_name(fa.name)))
+        ),
+        anc(id) as (
+          select x from wives w join people p on p.id = w.id, unnest(array[p.father_id, p.mother_id]) x where x is not null
+          union
+          select y from anc a join people p on p.id = a.id, unnest(array[p.father_id, p.mother_id]) y where y is not null
+        ),
+        cand(id) as (
+          select id from anc
+          union
+          select c.id from people c join cand on c.father_id = cand.id or c.mother_id = cand.id
+        ),
+        keep(id) as (
+          select id from wives
+          union
+          select c.id from people c join keep on c.father_id = keep.id or c.mother_id = keep.id
+        ),
+        hid(id) as (
+          select id from cand
+          union
+          select s from people p join cand on cand.id = p.id, unnest(array[p.spouse_id] || coalesce(p.more_spouse_ids, '{}')) s where s is not null
         )
-        select id from dd
-        union
-        select s from people p join dd on dd.id = p.id, unnest(array[p.spouse_id] || coalesce(p.more_spouse_ids, '{}')) s where s is not null);
+        select id from people
+        where id not in (select id from hid where id is not null)
+           or id in (select id from keep)
+           or is_baral_name(name)
+           or id = any(vis));
     end if;
   end if;
 
@@ -104,6 +144,16 @@ alter table public.change_requests drop constraint if exists change_requests_req
   add constraint change_requests_requested_by_fkey foreign key (requested_by) references public.profiles(id) on delete set null;
 alter table public.change_requests drop constraint if exists change_requests_reviewed_by_fkey,
   add constraint change_requests_reviewed_by_fkey foreign key (reviewed_by) references public.profiles(id) on delete set null;
+
+create or replace function public.set_roles(target uuid, new_roles text[]) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not is_admin() then raise exception 'अनुमति छैन'; end if;
+  if not (new_roles <@ array['general','premium','moderator','admin','other']) then raise exception 'अमान्य भूमिका'; end if;
+  update profiles set roles = new_roles,
+    role = case when 'admin' = any(new_roles) then 'admin' when cardinality(new_roles) > 0 then 'member' else 'pending' end
+  where id = target;
+end $$;
 
 -- ---- admin: suspend / un-suspend / delete a member ----
 create or replace function public.admin_suspend_user(p_user uuid, p_suspend boolean) returns void

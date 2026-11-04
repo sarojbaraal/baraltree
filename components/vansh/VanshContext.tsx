@@ -270,7 +270,7 @@ export function VanshProvider({ children }: { children: React.ReactNode }) {
       try {
         localStorage.setItem("vv_role", r);
       } catch {}
-      if ((r === "general" || r === "premium") && tab === "admin") setTabState("fam");
+      if ((r === "general" || r === "other" || r === "premium") && tab === "admin") setTabState("fam");
       loadPeople(r);
     },
     [loadPeople, tab]
