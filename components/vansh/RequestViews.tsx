@@ -98,8 +98,9 @@ const initialRoles = (u: VProfile): string[] => {
   return !u.roles?.length && u.role === "pending" ? ["general"] : base;
 };
 
-function UserCard({ u, isNew, onSave, onAnchor }: { u: VProfile; isNew: boolean; onSave: (u: VProfile, roles: string[], pos: string) => Promise<void>; onAnchor: () => void }) {
-  const { g, perms } = useVansh();
+function UserCard({ u, isNew, onSave, onAnchor, onSuspend, onDelete }: { u: VProfile; isNew: boolean; onSave: (u: VProfile, roles: string[], pos: string) => Promise<void>; onAnchor: () => void; onSuspend: (u: VProfile) => void; onDelete: (u: VProfile) => void }) {
+  const { g, perms, me } = useVansh();
+  const self = me?.id === u.id;
   const [roles, setRoles] = useState<string[]>(() => initialRoles(u));
   const sx = useSx({ value: u.position_person_id, label: u.position_person_id ? g.byId[u.position_person_id]?.name || "" : "" });
   const opts = useMemo(
@@ -116,6 +117,7 @@ function UserCard({ u, isNew, onSave, onAnchor }: { u: VProfile; isNew: boolean;
   return (
     <div className="card">
       <b>{u.full_name || "—"}</b> · <span className={isNew ? "" : "mut"}>{u.email}</span>
+      {u.suspended_at && <span className="badge" style={{ marginLeft: ".5rem", color: "var(--bad, #e5484d)" }}>⏸ निलम्बित</span>}
       {isNew && (
         <p className="mut">
           {c ? <>स्थान: {c.name}<br /></> : q ? <>स्थान: {q.name} को सन्तान<br /></> : gr ? <>स्थान: {gr.name} को वंश<br /></> : null}
@@ -155,6 +157,12 @@ function UserCard({ u, isNew, onSave, onAnchor }: { u: VProfile; isNew: boolean;
           {isNew ? "स्वीकृत गर्ने" : "सुरक्षित गर्ने"}
         </button>
         <button className="ghost" onClick={onAnchor}>🧭 नाता सन्दर्भ{u.custom_anchor ? " ✓" : ""}</button>
+        {!self && (
+          <>
+            <button className="ghost" onClick={() => onSuspend(u)}>{u.suspended_at ? "▶ पुनः सक्रिय" : "⏸ निलम्बन"}</button>
+            <button className="bad" onClick={() => onDelete(u)}>🗑 मेट्ने</button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -236,6 +244,23 @@ export function AdminView() {
     await refresh();
   };
 
+  const suspend = async (u: VProfile) => {
+    const on = !u.suspended_at;
+    const nm = u.full_name || u.email;
+    if (!confirm(on ? `${nm} को खाता निलम्बन गर्ने? उनी लगइन गर्न सक्ने छैनन्।` : `${nm} को खाता फेरि सक्रिय गर्ने?`)) return;
+    const { error } = await db.rpc("admin_suspend_user", { p_user: u.id, p_suspend: on });
+    if (error) return alert(error.message);
+    await refresh();
+  };
+  const delUser = async (u: VProfile) => {
+    const nm = u.full_name || u.email;
+    if (!confirm(`${nm} को खाता स्थायी रूपमा मेट्ने? यो फिर्ता हुँदैन। (वंशावलीमा उनको व्यक्ति-विवरण रहिरहन्छ।)`)) return;
+    if (prompt("पुष्टि गर्न 'मेट्ने' टाइप गर्नुहोस्") !== "मेट्ने") return;
+    const { error } = await db.rpc("admin_delete_user", { p_user: u.id });
+    if (error) return alert(error.message);
+    await refresh();
+  };
+
   const revN = adm ? reviewCount(reviewIssues(g.people)) : 0;
   const sections: Record<Sec, [string, number]> = {
     new: ["🆕 नयाँ सदस्य", pend.length],
@@ -294,9 +319,9 @@ export function AdminView() {
   } else if (cur === "rev") {
     body = <ReviewPanel />;
   } else if (cur === "new") {
-    body = <>{pend.map((u) => <UserCard key={u.id} u={u} isNew onSave={saveUser} onAnchor={() => anchorFor(u)} />)}</>;
+    body = <>{pend.map((u) => <UserCard key={u.id} u={u} isNew onSave={saveUser} onAnchor={() => anchorFor(u)} onSuspend={suspend} onDelete={delUser} />)}</>;
   } else if (cur === "mem") {
-    body = <>{mem.map((u) => <UserCard key={u.id} u={u} isNew={false} onSave={saveUser} onAnchor={() => anchorFor(u)} />)}</>;
+    body = <>{mem.map((u) => <UserCard key={u.id} u={u} isNew={false} onSave={saveUser} onAnchor={() => anchorFor(u)} onSuspend={suspend} onDelete={delUser} />)}</>;
   } else {
     const hg: Record<string, ChangeRequest[]> = {};
     hist.forEach((r) => (hg[r.status + ":" + r.action] ||= []).push(r));

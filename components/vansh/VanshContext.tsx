@@ -212,6 +212,10 @@ export function VanshProvider({ children }: { children: React.ReactNode }) {
       if (stale()) return;
     }
     setMe(profile);
+    if (profile?.suspended_at) {
+      setPeople([]);
+      return setPhase("pending");
+    }
     const rs = myRoles(profile);
     let chosen: Role | null = null;
     if (rs.length) {

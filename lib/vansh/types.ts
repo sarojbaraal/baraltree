@@ -52,6 +52,7 @@ export interface VProfile {
   birth_bs?: string | null;
   phone?: string | null;
   location?: string | null;
+  suspended_at?: string | null;
   custom_anchor?: { target_id: string; relation_type: string } | null;
 }
 

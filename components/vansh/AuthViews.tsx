@@ -417,6 +417,13 @@ export function PosView() {
 
 export function PendingView() {
   const { me } = useVansh();
+  if (me?.suspended_at)
+    return (
+      <div className="card">
+        <h2>खाता निलम्बित छ</h2>
+        <p>एडमिनले तपाईंको खाता अस्थायी रूपमा रोकेका छन्। थप जानकारीका लागि एडमिनसँग सम्पर्क गर्नुहोस्।</p>
+      </div>
+    );
   return (
     <div className="card">
       <h2>स्वीकृतिको पर्खाइमा</h2>
