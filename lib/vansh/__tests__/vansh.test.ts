@@ -153,7 +153,7 @@ describe("kinship labels", () => {
 
 describe("access rules", () => {
   it("expands admin to all roles and maps legacy member", () => {
-    expect(myRoles({ id: "x", email: "", full_name: "", role: "admin" })).toEqual(["admin", "moderator", "premium", "general"]);
+    expect(myRoles({ id: "x", email: "", full_name: "", role: "admin" })).toEqual(["admin", "moderator", "premium", "general", "other"]);
     expect(myRoles({ id: "x", email: "", full_name: "", role: "member", roles: [] })).toEqual(["general"]);
     expect(myRoles({ id: "x", email: "", full_name: "", role: "pending", roles: [] })).toEqual([]);
   });
