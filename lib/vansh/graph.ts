@@ -5,12 +5,11 @@ export type Graph = ReturnType<typeof createGraph>;
 
 export const ROLE_L: Record<Role, string> = {
   general: "सामान्य सदस्य",
-  other: "अन्य",
   premium: "बंशज सदस्य",
   moderator: "मोडरेटर",
   admin: "एडमिन",
 };
-export const ORDER: Role[] = ["admin", "moderator", "premium", "general", "other"];
+export const ORDER: Role[] = ["admin", "moderator", "premium", "general"];
 
 export function createGraph(people: VPerson[]) {
   const byId: Record<string, VPerson> = Object.fromEntries(people.map((p) => [p.id, p]));
@@ -176,8 +175,18 @@ export function computeAccess(g: Graph, me: VProfile | null, act: Role | null): 
   if (!me) return { acc, edits };
   if (g.people.some((p) => p.is_locked)) acc = new Set(g.people.filter((p) => !p.is_locked).map((p) => p.id));
   if (act === "premium") {
-    const gr = premiumGrand(g, me);
-    edits = gr ? g.downSet(gr.id) : new Set();
+    // anything visible may be changed; inside the own branch (below the grandfather) it applies at once, elsewhere it needs approval
+    edits = new Set(g.people.filter((p) => !p.is_locked).map((p) => p.id));
+  } else if (act === "general") {
+    // own record and immediate family; always needs approval
+    const own = me.position_person_id ? g.byId[me.position_person_id] : undefined;
+    edits = new Set<string>();
+    if (own) {
+      edits.add(own.id);
+      g.spousesOf(own).forEach((s) => edits!.add(s));
+      [own.father_id, own.mother_id].forEach((x) => x && edits!.add(x));
+      g.kidsOf(own).forEach((c) => edits!.add(c.id));
+    }
   }
   return { acc, edits };
 }
@@ -200,9 +209,9 @@ export function makePerms(act: Role | null, access: Access): Perms {
     act,
     isAdm,
     isStaff,
-    seesAll: act !== "general" && act !== "other",
+    seesAll: act !== "general",
     can,
-    canEdit: (id) => isStaff || (act === "premium" && !!access.edits && access.edits.has(id)),
+    canEdit: (id) => isStaff || ((act === "premium" || act === "general") && !!access.edits && access.edits.has(id)),
     nm: (p) => (can(p.id) ? p.name : "••••••"),
   };
 }

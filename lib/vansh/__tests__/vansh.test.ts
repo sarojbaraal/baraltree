@@ -153,7 +153,7 @@ describe("kinship labels", () => {
 
 describe("access rules", () => {
   it("expands admin to all roles and maps legacy member", () => {
-    expect(myRoles({ id: "x", email: "", full_name: "", role: "admin" })).toEqual(["admin", "moderator", "premium", "general", "other"]);
+    expect(myRoles({ id: "x", email: "", full_name: "", role: "admin" })).toEqual(["admin", "moderator", "premium", "general"]);
     expect(myRoles({ id: "x", email: "", full_name: "", role: "member", roles: [] })).toEqual(["general"]);
     expect(myRoles({ id: "x", email: "", full_name: "", role: "pending", roles: [] })).toEqual([]);
   });
@@ -168,7 +168,9 @@ describe("access rules", () => {
     expect(perms.nm(g.byId.anil)).toBe("••••••");
     expect(perms.canEdit("kiran")).toBe(true);
     const general = makePerms("general", computeAccess(g, me, "general"));
-    expect(general.canEdit("ram")).toBe(false);
+    expect(general.canEdit("ram")).toBe(true); // own record
+    expect(general.canEdit("sita")).toBe(true); // immediate family
+    expect(general.canEdit("gopal")).toBe(false); // anyone else
     expect(makePerms("moderator", computeAccess(g, me, "moderator")).canEdit("anil")).toBe(true);
   });
 });
@@ -238,13 +240,14 @@ describe("requests", () => {
   });
   it("applies role guards", () => {
     const perm = (gr: typeof g, act: "general" | "premium" | "admin") => makePerms(act, computeAccess(gr, me, act));
-    expect(guardRequest(perm(g, "general"), "update", "ram", {})).toMatch(/भूमिका/);
+    expect(guardRequest(perm(g, "general"), "update", "ram", {})).toBeNull();
+    expect(guardRequest(perm(g, "general"), "update", "gopal", {})).toMatch(/सम्पादन क्षेत्र/);
     expect(guardRequest(perm(g, "premium"), "update", "ram", {})).toBeNull();
     expect(guardRequest(perm(g, "admin"), "update", "ram", {})).toBeNull();
-    const outside = createGraph([...family(), person({ id: "far", name: "टाढा", gender: "M" })]);
+    const outside = createGraph([...family(), person({ id: "far", name: "टाढा", gender: "M", is_locked: true })]);
     const pm = perm(outside, "premium");
     expect(guardRequest(pm, "update", "far", {})).toMatch(/सम्पादन क्षेत्र/);
-    expect(guardRequest(pm, "add", null, { name: "x" })).toMatch(/क्षेत्रभित्र/);
+    expect(guardRequest(pm, "add", null, { name: "x" })).toMatch(/नजिकको परिवार/);
     expect(guardRequest(pm, "add", null, { father_id: "ram" })).toBeNull();
   });
   it("builds batched child requests", () => {

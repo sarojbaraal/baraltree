@@ -10,6 +10,7 @@ import { Sx, personOptions, useSx } from "./ui";
 import { AcctDialog, AvatarsDialog } from "./AdminDialogs";
 import { AnchorDialog } from "./PersonDialogs";
 import ReviewPanel, { reviewCount } from "./ReviewPanel";
+import { PreviewAsPanel, ViewRequestsPanel } from "./ViewAccess";
 import { reviewIssues } from "@/lib/vansh/review";
 
 function Req({ r, byId }: { r: ChangeRequest; byId: Record<string, VPerson> }) {
@@ -73,7 +74,7 @@ export function MineView() {
 }
 
 // ---------------- admin ----------------
-type Sec = "req" | "new" | "mem" | "hist" | "rev";
+type Sec = "req" | "new" | "mem" | "hist" | "rev" | "view" | "as";
 const REQ_SEL = "*, profiles!change_requests_requested_by_fkey(full_name,email)";
 
 function RoleBoxes({ roles, onChange }: { roles: string[]; onChange: (r: string[]) => void }) {
@@ -174,6 +175,7 @@ export function AdminView() {
   const [sec, setSec] = useState<Sec>("req");
   const [reqCat, setReqCat] = useState("all");
   const [histOpen, setHistOpen] = useState<string[]>([]);
+  const [viewN, setViewN] = useState(0);
   const [data, setData] = useState<{ reqs: ChangeRequest[]; users: VProfile[]; hist: ChangeRequest[] } | null>(null);
 
   const fetchAll = useCallback(async () => {
@@ -184,6 +186,10 @@ export function AdminView() {
         ? db.from("change_requests").select(REQ_SEL).neq("status", "pending").order("created_at", { ascending: false }).limit(200)
         : Promise.resolve({ data: [] }),
     ]);
+    if (adm) {
+      const { data: vr } = await db.rpc("admin_view_requests");
+      setViewN(((vr as { status: string }[]) || []).filter((r) => r.status === "pending").length);
+    }
     setData({ reqs: (reqs as ChangeRequest[]) || [], users: (users as VProfile[]) || [], hist: (hist as ChangeRequest[]) || [] });
   }, [db, adm]);
   useEffect(() => {
@@ -204,7 +210,7 @@ export function AdminView() {
   const groups = groupBatches(reqs);
   const okIds = hist.filter((r) => r.status === "approved").map((r) => r.id);
   const cn = (c: string) => (c === "all" ? groups.length : groups.filter((x) => x.items[0].action === c).length);
-  const keys: Sec[] = adm ? ["req", "new", "mem", "rev", "hist"] : ["req"];
+  const keys: Sec[] = adm ? ["req", "view", "new", "mem", "rev", "as", "hist"] : ["req"];
   const cur: Sec = keys.includes(sec) ? sec : keys[0];
 
   const approve = async (ids: string[]) => {
@@ -268,6 +274,8 @@ export function AdminView() {
     req: ["📨 परिवर्तन अनुरोध", groups.length],
     rev: ["🧭 सम्बन्ध समीक्षा", revN],
     hist: ["🕘 अनुरोध इतिहास", hist.length],
+    view: ["👁 हेर्ने अनुमति", viewN],
+    as: ["🔎 पूर्वावलोकन", 0],
   };
 
   const CATS: [string, string][] = [["all", "सबै"], ["add", "➕ थप्ने"], ["update", "✏ सच्याउने"], ["delete", "🗑 हटाउने"]];
@@ -318,6 +326,10 @@ export function AdminView() {
     );
   } else if (cur === "rev") {
     body = <ReviewPanel />;
+  } else if (cur === "view") {
+    body = <ViewRequestsPanel onCount={setViewN} />;
+  } else if (cur === "as") {
+    body = <PreviewAsPanel />;
   } else if (cur === "new") {
     body = <>{pend.map((u) => <UserCard key={u.id} u={u} isNew onSave={saveUser} onAnchor={() => anchorFor(u)} onSuspend={suspend} onDelete={delUser} />)}</>;
   } else if (cur === "mem") {
@@ -376,7 +388,7 @@ export function AdminView() {
   }
 
   const [ttl, cnt] = sections[cur];
-  const empty = cnt === 0 && cur !== "hist" && cur !== "rev";
+  const empty = cnt === 0 && cur !== "hist" && cur !== "rev" && cur !== "view" && cur !== "as";
   return (
     <div className="adm">
       <div className="adm-main">

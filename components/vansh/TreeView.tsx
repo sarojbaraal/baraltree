@@ -444,7 +444,7 @@ export default function TreeView() {
         {!people.length && (
           <div className="empty">
             <p>अझै कोही थपिएको छैन।</p>
-            {act !== "general" && act !== "other" && (
+            {(
               <button onClick={() => openDialog(<PersonForm action="add" />, true)}>
                 {isAdm ? "पहिलो व्यक्ति थप्ने" : "पहिलो व्यक्ति थप्ने अनुरोध"}
               </button>

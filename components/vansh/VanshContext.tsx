@@ -1,5 +1,6 @@
 "use client";
 // App state for the Vansavali UI: session, profile, active role, people, tab, selection, dialogs, toast.
+import { ViewRequestDialog } from "./ViewAccess";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
@@ -41,6 +42,9 @@ export interface Vansh {
   g: Graph;
   access: Access;
   perms: Perms;
+  /** admin preview: see the site as this person (read only) */
+  previewAs: string | null;
+  setPreviewAs: (id: string | null) => void;
   tab: TabKey;
   setTab: (t: TabKey) => void;
   sel: string | null;
@@ -100,6 +104,8 @@ export function VanshProvider({ children }: { children: React.ReactNode }) {
   const bootSeq = useRef(0);
   const userId = useRef<string | null>(null);
   const actRef = useRef<Role | null>(null);
+  const asRef = useRef<string | null>(null);
+  const [previewAs, setPreviewAsState] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [online, setOnline] = useState(true);
   const [outbox, setOutbox] = useState<OutboxItem[]>([]);
@@ -131,7 +137,7 @@ export function VanshProvider({ children }: { children: React.ReactNode }) {
 
   const loadPeople = useCallback(
     async (role: Role | null) => {
-      const { data, error } = await db.rpc("get_people", { p_role: role });
+      const { data, error } = await db.rpc("get_people", { p_role: role, p_as_person: asRef.current });
       if (error) {
         if (isNetErr(error.message)) {
           // no connection: show the last copy we received for this role
@@ -153,6 +159,15 @@ export function VanshProvider({ children }: { children: React.ReactNode }) {
   const reload = useCallback(async () => {
     await loadPeople(actRef.current);
   }, [loadPeople]);
+
+  const setPreviewAs = useCallback(
+    (id: string | null) => {
+      asRef.current = id;
+      setPreviewAsState(id);
+      loadPeople(actRef.current);
+    },
+    [loadPeople]
+  );
 
   const boot = useCallback(async () => {
     const seq = ++bootSeq.current;
@@ -270,7 +285,7 @@ export function VanshProvider({ children }: { children: React.ReactNode }) {
       try {
         localStorage.setItem("vv_role", r);
       } catch {}
-      if ((r === "general" || r === "other" || r === "premium") && tab === "admin") setTabState("fam");
+      if ((r === "general" || r === "premium") && tab === "admin") setTabState("fam");
       loadPeople(r);
     },
     [loadPeople, tab]
@@ -284,12 +299,12 @@ export function VanshProvider({ children }: { children: React.ReactNode }) {
   const pick = useCallback(
     (id: string) => {
       if (!perms.can(id)) {
-        toast("🔒 यो शाखा तपाईंको पहुँचमा छैन");
+        setDialog({ node: <ViewRequestDialog personId={id} />, ed: false });
         return;
       }
       setSel(id);
     },
-    [perms, toast]
+    [perms]
   );
   const unpick = useCallback(() => setSel(null), []);
 
@@ -323,8 +338,13 @@ export function VanshProvider({ children }: { children: React.ReactNode }) {
   const submit = useCallback(
     async (rows: NewRequest[], okMsg: string, opts?: { photo?: { blob: Blob; name: string } }): Promise<string | null> => {
       if (navigator.onLine === false) return queue(rows, okMsg, opts?.photo);
-      const { data, error } = await db.from("change_requests").insert(rows).select("id");
+      const { data, error } = await db.rpc("submit_request", { p_rows: rows });
       if (error) return isNetErr(error.message) ? queue(rows, okMsg, opts?.photo) : error.message;
+      if (!perms.isAdm && ((data as { applied: boolean }[]) || []).some((r) => r.applied)) {
+        toast("✅ तपाईंको शाखामा सीधै लागू भयो");
+        await reload();
+        return null;
+      }
       if (perms.isAdm) {
         for (const r of (data as { id: string }[]) || []) {
           const { error: e } = await db.rpc("review_request", { req: r.id, approve: true });
@@ -363,7 +383,7 @@ export function VanshProvider({ children }: { children: React.ReactNode }) {
           if (rows[0]) rows[0].payload.photo_url = db.storage.from("profile-photos").getPublicUrl(item.photo.name).data.publicUrl;
         }
         const known = new Set(peopleRef.current.filter((p) => !p.id.startsWith("tmp-")).map((p) => p.id));
-        const { data, error } = await db.from("change_requests").insert(rows).select("id");
+        const { data, error } = await db.rpc("submit_request", { p_rows: rows });
         if (error) {
           if (isNetErr(error.message)) break;
           item.error = error.message;
@@ -440,6 +460,7 @@ export function VanshProvider({ children }: { children: React.ReactNode }) {
       recovering.current = v;
     },
     myPosId: myPos(me),
+    previewAs, setPreviewAs,
     invite: invTok,
     clearInvite: () => {
       try {

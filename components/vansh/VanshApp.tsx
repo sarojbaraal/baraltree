@@ -65,7 +65,7 @@ function InstallButton() {
 }
 
 function Shell() {
-  const { db, phase, me, act, roles, setAct, tab, setTab, sel, perms, treeApi, people, openDialog, online, outbox, syncNow, discardOutbox } = useVansh();
+  const { db, phase, me, act, roles, setAct, tab, setTab, sel, perms, treeApi, people, openDialog, online, outbox, syncNow, discardOutbox, previewAs, setPreviewAs, g } = useVansh();
   const { theme, toggle } = useTheme();
   const [wide, setWide] = useState(true);
   const [hdrH, setHdrH] = useState(72);
@@ -105,7 +105,7 @@ function Shell() {
   useDailyEvents(inApp);
   const todayTxt = useTodayLabel();
   const eff: TabKey =
-    (tab === "mine" && (act === "general" || act === "other")) || ((tab === "admin" || tab === "ov") && !perms.isStaff) ? "fam" : tab;
+    ((tab === "admin" || tab === "ov") && !perms.isStaff) ? "fam" : tab;
   const panelOpen = inApp && !!sel && !!people.length;
   const pushed = panelOpen && wide;
 
@@ -118,7 +118,7 @@ function Shell() {
     ["fam", "🏡 परिवार"],
     ["tree", "🌳 चार्ट"],
     ["mem", "👥 सदस्य"],
-    ...(act !== "general" && act !== "other" ? ([["mine", "📋 अनुरोध"]] as [TabKey, string][]) : []),
+    ["mine", "📋 अनुरोध"],
     ...(perms.isStaff ? ([["admin", "⚙ एडमिन"]] as [TabKey, string][]) : []),
   ];
 
@@ -134,6 +134,12 @@ function Shell() {
   }, [db, phase]);
   const showWho = phase === "app" || phase === "pos" || phase === "pending";
 
+  const banner = previewAs ? (
+    <div className="card" role="status" style={{ margin: ".5rem 0", borderColor: "var(--mg)" }}>
+      🔎 पूर्वावलोकन: <b>{g.byId[previewAs]?.name}</b> ले देख्ने दृश्य (भूमिका: {act}) — केवल हेर्न मात्र।{" "}
+      <button className="ghost" onClick={() => setPreviewAs(null)}>बन्द गर्ने</button>
+    </div>
+  ) : null;
   let body: React.ReactNode = null;
   if (phase === "auth") body = <AuthView />;
   else if (phase === "reset") body = <ResetView />;
@@ -228,7 +234,7 @@ function Shell() {
         </div>
       )}
       <main id="app" className={inApp && eff === "tree" ? "wide" : ""} style={pushed ? { marginLeft: "calc(var(--det-w, 460px) + 18px)", marginRight: 0 } : undefined}>
-        {phase === "loading" ? null : body}
+        {phase === "loading" ? null : <>{banner}{body}</>}
       </main>
       {panelOpen && (
         <div style={pushed ? ({ ["--det-top" as string]: `${hdrH}px` } as React.CSSProperties) : undefined}>

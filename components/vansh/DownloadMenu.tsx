@@ -1,6 +1,6 @@
 "use client";
 // Download / import entry (shown in the Family section). The button opens one window that explains every option.
-import React, { useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { exportJSON, exportCSV, exportXLSX, jpgBlob, loadPhotos, svgBlob } from "@/lib/vansh/exporters";
 import { bestLayout, posterSvg, svgSize } from "@/lib/vansh/poster";
 import { mainXlsxBlob, nearGraph } from "@/lib/vansh/exportMain";
@@ -14,6 +14,7 @@ import { np } from "@/lib/vansh/text";
 import { buildTemplate, parseTemplate, templateName, type NewPersonDraft, type TemplateParse } from "@/lib/vansh/template";
 import { download, stamp } from "@/lib/vansh/exporters";
 import { guardRequest, makeRequest } from "@/lib/vansh/requests";
+import { createGraph, premiumGrand } from "@/lib/vansh/graph";
 
 function Opt({ icon, title, info, children, disabled }: { icon: string; title: string; info: React.ReactNode; children: React.ReactNode; disabled?: boolean }) {
   return (
@@ -26,8 +27,15 @@ function Opt({ icon, title, info, children, disabled }: { icon: string; title: s
 }
 
 export function DownloadDialog() {
-  const { g, perms, myPosId, closeDialog, openDialog, toast } = useVansh();
+  const { g: gAll, me, db, perms, myPosId, closeDialog, openDialog, toast } = useVansh();
   const { can, nm, isAdm, isStaff } = perms;
+  // one basis for printing: बंशज print what lies below their own grandfather; moderators and admin print what they can see
+  const g = useMemo(() => {
+    if (perms.act !== "premium") return gAll;
+    const gr = me ? premiumGrand(gAll, me) : null;
+    const set = gr ? gAll.downSet(gr.id) : new Set<string>();
+    return createGraph(gAll.people.filter((p) => set.has(p.id)));
+  }, [gAll, me, perms.act]);
   const [busy, setBusy] = useState("");
   const [paper, setPaper] = useState<Paper>("a3");
   const run = async (key: string, fn: () => Promise<unknown> | unknown, ok?: string) => {
@@ -45,6 +53,7 @@ export function DownloadDialog() {
   const prep = (key: string, fn: () => Promise<Prepared>) =>
     run(key, async () => {
       const data = await fn();
+      db.rpc("log_print", { p_scope: `${key}|${perms.act}|${g.people.length}` }).then(() => {}, () => {});
       openDialog(<DownloadPreview data={data} onCancel={() => openDialog(<DownloadDialog />)} />);
     });
   const full = () => bestLayout(g, 420, 297);
@@ -56,8 +65,12 @@ export function DownloadDialog() {
   return (
     <div className="dlw">
       <h3>⇩ वंशावली डाउनलोड</h3>
-      <p className="mut">तपाईंले हेर्न पाउने व्यक्तिहरूको मात्र डाटा आउँछ। बन्द (locked) शाखा समावेश हुँदैन।</p>
+      <p className="mut">{perms.act === "premium" ? "तपाईंको हजुरबुबादेखि तलको शाखा मात्र आउँछ।" : "तपाईंले हेर्न पाउने व्यक्तिहरूको मात्र डाटा आउँछ। बन्द (locked) शाखा समावेश हुँदैन।"}</p>
 
+      {perms.act === "general" ? (
+        <p className="card">छाप्ने र डाउनलोड गर्ने सुविधा तपाईंको भूमिकामा उपलब्ध छैन। चाहिए भने एडमिनसँग सम्पर्क गर्नुहोस्।</p>
+      ) : (
+        <>
       <Opt icon="📷" title="फोटो (JPG)" info={<>चार्ट ठूलो हुँदा फोटोको गुणस्तर स्पष्ट नहुने भएकाले यसमा तपाईंको स्थानभन्दा ७ पुस्ता माथि (सिधा पुर्खा) र ७ पुस्ता तल (सन्तान), पति/पत्नीसहित आउँछ। प्रोफाइल फोटो भएकाको फोटो नै देखिन्छ। फोन/कम्प्युटरको ग्यालरीमा हेर्न मिल्छ।</>}>
         <button disabled={!!busy} onClick={() => prep("jpg", async () => {
           const l = near();
@@ -101,6 +114,8 @@ export function DownloadDialog() {
         })}>{busy === "xlsx" ? "बन्दैछ…" : "Excel हेर्ने / डाउनलोड"}</button>
       </Opt>
 
+        </>
+      )}
       <Opt icon="🔁" title="आयात / निर्यात" info={isAdm ? "Excel टेम्प्लेट डाउनलोड, भरेर अपलोड (नयाँ व्यक्ति थप्न), तथा पूर्ण ब्याकअप।" : "Excel टेम्प्लेट डाउनलोड गरी नयाँ व्यक्ति भरेर अपलोड गर्ने — एडमिनको स्वीकृतिका लागि अनुरोध बन्छ।"}>
         <button className="ghost" onClick={() => openDialog(<ImportExportDialog />)}>विन्डो खोल्ने</button>
       </Opt>

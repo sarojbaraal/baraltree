@@ -86,10 +86,10 @@ export function guardRequest(
   payload: Record<string, unknown>
 ): string | null {
   if (perms.isStaff) return null;
-  if (perms.act !== "premium") return "तपाईंको भूमिकाले परिवर्तन अनुरोध पठाउन मिल्दैन।";
+  if (perms.act !== "premium" && perms.act !== "general") return "तपाईंको भूमिकाले परिवर्तन अनुरोध पठाउन मिल्दैन।";
   if (personId && !perms.canEdit(personId)) return "यो व्यक्ति तपाईंको सम्पादन क्षेत्रमा हुनुहुन्न।";
   if (action === "add" && !["father_id", "mother_id", "spouse_id"].some((k) => payload[k] && perms.canEdit(String(payload[k]))))
-    return "आफ्नो क्षेत्रभित्रको बुबा/आमा/जोडी छान्नुहोस्।";
+    return "आफ्नो नजिकको परिवारभित्रको बुबा/आमा/जोडी छान्नुहोस्।";
   if (payload.add_spouse_id && !perms.canEdit(String(payload.add_spouse_id))) return "यो व्यक्ति तपाईंको सम्पादन क्षेत्रमा हुनुहुन्न।";
   return null;
 }
