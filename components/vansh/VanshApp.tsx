@@ -15,6 +15,7 @@ import DetailPanel from "./DetailPanel";
 import { AdminView, MineView } from "./RequestViews";
 import OverviewView from "./OverviewView";
 import { PasswordDialog } from "./PersonDialogs";
+import { useDailyEvents, useTodayLabel } from "./HeroAi";
 
 const APP_VER = process.env.NEXT_PUBLIC_APP_VER || "dev";
 
@@ -101,6 +102,8 @@ function Shell() {
   }, []);
 
   const inApp = phase === "app";
+  useDailyEvents(inApp);
+  const todayTxt = useTodayLabel();
   const eff: TabKey =
     (tab === "mine" && act === "general") || ((tab === "admin" || tab === "ov") && !perms.isStaff) ? "fam" : tab;
   const panelOpen = inApp && !!sel && !!people.length;
@@ -203,7 +206,7 @@ function Shell() {
         <button className="ghost" id="tm" aria-label="डार्क/लाइट मोड" title={theme === "dark" ? "लाइट मोड" : "डार्क मोड"} onClick={toggle}>
           {theme === "dark" ? "☀️" : "🌙"}
         </button>
-        <span id="ver" tabIndex={0} aria-label="संस्करण" data-t={perms.isAdm ? `Build: ${APP_VER}` : APP_VER}>
+        <span id="ver" tabIndex={0} aria-label="संस्करण" data-t={`आज ${todayTxt}${perms.isAdm ? ` · Build: ${APP_VER}` : ` · ${APP_VER}`}`}>
           ⓘ
         </span>
       </header>

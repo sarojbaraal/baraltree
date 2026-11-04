@@ -4,8 +4,8 @@ import { adToBs, bsToAd } from "@sbmdkl/nepali-date-converter";
 import { MONTHS_NE, na, np } from "./text";
 
 /** Range the conversion tables cover. */
-export const AD_MIN_YEAR = 1943;
-export const AD_MAX_YEAR = 2043;
+export const AD_MIN_YEAR = 1924;
+export const AD_MAX_YEAR = 2042;
 
 const z = (n: number) => String(n).padStart(2, "0");
 

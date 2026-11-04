@@ -29,6 +29,9 @@ export interface VPerson {
   facebook?: string | null;
   photo_url?: string | null;
   ai_summary?: string | null;
+  /** Second-person "तपाईंको कथा" for the person's own home screen. */
+  ai_summary_self?: string | null;
+  ai_summary_self_at?: string | null;
   ai_tags?: string[] | null;
   is_locked?: boolean;
   name_only?: boolean;

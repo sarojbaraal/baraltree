@@ -10,7 +10,7 @@ import { Avatar, KidCount } from "./ui";
 import PersonSearch from "./PersonSearch";
 import { AnchorDialog, PersonForm } from "./PersonDialogs";
 import DownloadMenu from "./DownloadMenu";
-import { Birthdays, StoryCard, TodayLine } from "./HeroAi";
+import { EventChips, StoryCard } from "./HeroAi";
 
 // search text survives tab switches, like the original
 export const qText = { tree: "", fam: "" };
@@ -98,16 +98,15 @@ export function FamView() {
         <div className="hello">
           <span className="hchip">{act ? ROLE_L[act] : ""}</span>
           <h2>नमस्ते, {meName}</h2>
-          <TodayLine />
           <p>{msg}</p>
           <div className="stats">
             <span><b>{np(ic)}</b> मुख्य परिवार</span>
             <span><b>{np(access.acc ? access.acc.size : people.length)}</b> खुला</span>
             <span><b>{np(people.length)}</b> कुल सदस्य</span>
           </div>
-          <Birthdays onOpen={(id) => { showCard(id); pick(id); }} />
+          <EventChips onOpen={(id) => { showCard(id); pick(id); }} />
         </div>
-        {base && <StoryCard person={base} />}
+        {me?.position_person_id && byId[me.position_person_id] && <StoryCard person={byId[me.position_person_id]} />}
         <div className="row">
           {act !== "general" && (
             <button className="ghost" onClick={() => openDialog(<PersonForm action="add" />, true)}>
