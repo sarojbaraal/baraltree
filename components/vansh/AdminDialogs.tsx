@@ -89,11 +89,13 @@ export function AcctDialog({ onDone }: { onDone: () => void }) {
   const [done, setDone] = useState("");
   const site = `${location.origin}${location.pathname}`;
 
-  if (done)
+  if (done) {
+    const enc = encodeURIComponent(done);
     return (
       <>
         <h3>✅ खाता बन्यो</h3>
-        <p>
+        <p className="mut">इमेल स्वतः पठाइएको छैन। तलको सन्देश आफैँ पठाउनुहोस्।</p>
+        <p style={{ background: "var(--bg2, #f4f4f4)", padding: ".6rem", borderRadius: 8, userSelect: "all" }}>
           {done.split("\n").map((l, i) => (
             <React.Fragment key={i}>
               {l}
@@ -103,10 +105,14 @@ export function AcctDialog({ onDone }: { onDone: () => void }) {
         </p>
         <div className="row">
           <button onClick={() => { navigator.clipboard?.writeText(done); toast("कपी भयो"); }}>कपी</button>
+          <a className="ghost abtn" href={`https://wa.me/?text=${enc}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+          <a className="ghost abtn" href={`mailto:${email.trim()}?subject=${encodeURIComponent("वंशावलीमा तपाईंको खाता")}&body=${enc}`}>इमेल</a>
+          <a className="ghost abtn" href={`sms:?&body=${enc}`}>SMS</a>
           <button className="ghost" onClick={() => { closeDialog(); onDone(); }}>बन्द</button>
         </div>
       </>
     );
+  }
 
   return (
     <>
@@ -151,7 +157,7 @@ export function AcctDialog({ onDone }: { onDone: () => void }) {
         Facebook लिंक (इमेल नभए निम्तोका लागि)
         <input value={fb} onChange={(e) => setFb(e.target.value)} placeholder="https://facebook.com/..." />
       </label>
-      <p className="mut">इमेल निम्तो पठाइँदैन। पहिलो लगइनमा पासवर्ड बदल्नैपर्छ।</p>
+      <p className="mut">खाता बनेपछि लगइन विवरण कपी/WhatsApp/इमेल/SMS बाट आफैँ पठाउनुहोस् (स्वचालित इमेल जाँदैन)। पहिलो लगइनमा पासवर्ड बदल्नैपर्छ।</p>
       <div className="msg" id="fm">{err}</div>
       <div className="row">
         <button

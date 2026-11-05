@@ -925,3 +925,6 @@ dialog.moved { box-shadow: 0 14px 50px rgba(0, 0, 0, .45); }
 .evr { display: flex; justify-content: space-between; gap: .6rem; text-align: left; width: 100%; padding: .55rem .8rem; border-radius: 12px; border: 1px solid var(--line-2); background: none; color: var(--ink); font-size: .9rem; }
 .evr.shraddha { border-left: 3px solid var(--mut); } .evr.birthday { border-left: 3px solid var(--cy); } .evr.anniversary { border-left: 3px solid var(--mg); }
 @media (max-width: 860px) { .hero2 { grid-template-columns: 1fr; } .story { padding: 1rem; } .story blockquote { font-size: 1rem; } }
+
+a.abtn { display: inline-flex; align-items: center; min-height: 40px; padding: 0 .9rem; border-radius: 999px; text-decoration: none; font-weight: 600; color: var(--ink); border: 1px solid var(--line-2); }
+a.abtn:hover { color: var(--cy); border-color: var(--cy); }
