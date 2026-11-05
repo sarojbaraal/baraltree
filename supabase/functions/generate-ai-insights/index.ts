@@ -17,7 +17,9 @@ const CORS = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
-const MODEL = "gemini-flash-lite-latest";
+// Gemini is sometimes overloaded (503): try the next model, and each one twice
+const MODELS = ["gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-flash-latest"];
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const cut = (v: unknown, n = 400) => String(v ?? "").replace(/\s+/g, " ").trim().slice(0, n);
 
@@ -81,17 +83,28 @@ async function gemini(key: string, ctx: Ctx, self = false): Promise<{ summary: s
 - सन्तान: ${cut(ctx.children, 400)}
 - टिपोट: ${cut(ctx.notes, 600) || "छैन"}
 `;
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: `${self ? SYSTEM_SELF : SYSTEM}\n\n${user}` }] }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 700, responseMimeType: "application/json" },
-    }),
+  const payload = JSON.stringify({
+    contents: [{ role: "user", parts: [{ text: `${self ? SYSTEM_SELF : SYSTEM}\n\n${user}` }] }],
+    generationConfig: { temperature: 0.2, maxOutputTokens: 700, responseMimeType: "application/json" },
   });
-  if (!res.ok) {
-    console.error("gemini", res.status, (await res.text()).slice(0, 300));
-    throw new Error(res.status === 429 ? "AI सेवा अहिले व्यस्त छ, केही बेरपछि फेरि प्रयास गर्नुहोस्।" : "AI सेवाले उत्तर दिएन।");
+  let res: Response | null = null;
+  let last = 0;
+  outer: for (const model of MODELS) {
+    for (let i = 0; i < 2; i++) {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+        body: payload,
+      });
+      if (r.ok) { res = r; break outer; }
+      last = r.status;
+      console.error("gemini", model, r.status, (await r.text()).slice(0, 200));
+      if (![429, 500, 502, 503, 504].includes(r.status)) break; // not transient: try the next model
+      await sleep(700);
+    }
+  }
+  if (!res) {
+    throw new Error(last === 429 || last === 503 ? "AI सेवा अहिले व्यस्त छ, केही बेरपछि फेरि प्रयास गर्नुहोस्।" : "AI सेवाले उत्तर दिएन।");
   }
   const raw = (await res.json())?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
   let out: { summary?: unknown; tags?: unknown };
