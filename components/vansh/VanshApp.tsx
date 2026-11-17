@@ -10,6 +10,7 @@ import { VanshProvider, useVansh } from "./VanshContext";
 import { DialogHost, Toast } from "./ui";
 import { AuthView, PendingView, PosView, ResetView } from "./AuthViews";
 import { FamView, MemView } from "./ListViews";
+import IntroView from "./IntroView";
 import TreeView from "./TreeView";
 import DetailPanel from "./DetailPanel";
 import { AdminView, MineView } from "./RequestViews";
@@ -115,6 +116,7 @@ function Shell() {
   }, [pushed]);
 
   const tabs: [TabKey, string][] = [
+    ["intro", "📜 बंश परिचय"],
     ["fam", "🏡 परिवार"],
     ["tree", "🌳 चार्ट"],
     ["mem", "👥 सदस्य"],
@@ -147,6 +149,7 @@ function Shell() {
   else if (phase === "pending") body = <PendingView />;
   else if (inApp)
     body = {
+      intro: <IntroView />,
       fam: <FamView />,
       tree: <TreeView />,
       mem: <MemView />,
@@ -166,7 +169,7 @@ function Shell() {
           title="मुख्य पृष्ठ"
           onClick={() => {
             if (!me || !roles.length) return;
-            setTab("fam");
+            setTab("intro");
             scrollTo(0, 0);
           }}
         >
