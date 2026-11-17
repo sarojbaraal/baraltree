@@ -95,7 +95,7 @@ export function VanshProvider({ children }: { children: React.ReactNode }) {
   const [me, setMe] = useState<VProfile | null>(null);
   const [act, setActState] = useState<Role | null>(null);
   const [people, setPeople] = useState<VPerson[]>([]);
-  const [tab, setTabState] = useState<TabKey>("fam");
+  const [tab, setTabState] = useState<TabKey>("intro");
   const [sel, setSel] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState("");
   const [dialog, setDialog] = useState<DialogState | null>(null);
