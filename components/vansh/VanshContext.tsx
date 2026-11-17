@@ -176,7 +176,7 @@ export function VanshProvider({ children }: { children: React.ReactNode }) {
       data: { session },
     } = await db.auth.getSession();
     if (stale()) return;
-    const useSnap = (sn: Snapshot) => {
+    const applySnap = (sn: Snapshot) => {
       userId.current = sn.userId;
       snap.current = sn;
       setMe(sn.me);
@@ -190,7 +190,7 @@ export function VanshProvider({ children }: { children: React.ReactNode }) {
       // offline with an expired token: the stored copy still opens (read + queue changes)
       const sn = await loadSnapshot();
       if (stale()) return;
-      if (sn && (navigator.onLine === false)) return useSnap(sn);
+      if (sn && (navigator.onLine === false)) return applySnap(sn);
       userId.current = null;
       setMe(null);
       setPeople([]);
@@ -202,12 +202,14 @@ export function VanshProvider({ children }: { children: React.ReactNode }) {
       setPhase("reset");
       return;
     }
-    let { data, error: pe } = await db.from("profiles").select("*").eq("id", session.user.id).single();
+    const profRes = await db.from("profiles").select("*").eq("id", session.user.id).single();
+    let data = profRes.data;
+    const pe = profRes.error;
     if (stale()) return;
     if (pe && isNetErr(pe.message)) {
       const sn = await loadSnapshot();
       if (stale()) return;
-      if (sn && sn.userId === session.user.id) return useSnap(sn);
+      if (sn && sn.userId === session.user.id) return applySnap(sn);
     }
     let profile = data as VProfile | null;
     const md = session.user.user_metadata || {};
