@@ -94,7 +94,7 @@ export function applyLocal(people: VPerson[], rows: NewRequest[], photoUrl?: str
       if (r.person_id) list = list.filter((p) => p.id !== r.person_id).map((p) => ({ ...p, father_id: p.father_id === r.person_id ? null : p.father_id, mother_id: p.mother_id === r.person_id ? null : p.mother_id, spouse_id: p.spouse_id === r.person_id ? null : p.spouse_id }));
       continue;
     }
-    const FIELDS = ["name", "gender", "father_id", "mother_id", "spouse_id", "is_living", "birth_bs", "death_bs", "phone", "address", "notes", "maiden_name", "married_name", "birth_place", "death_place", "education", "occupation", "marriage_bs", "photo_url", "facebook"];
+    const FIELDS = ["name", "gender", "father_id", "mother_id", "spouse_id", "is_living", "birth_bs", "death_bs", "phone", "address", "notes", "maiden_name", "married_name", "birth_place", "death_place", "education", "occupation", "marriage_bs", "marital_status", "organization", "documents", "photo_url", "facebook"];
     const pick = () => Object.fromEntries(Object.entries(pl).filter(([k, v]) => FIELDS.includes(k) && !(k.endsWith("_id") && v === "")).map(([k, v]) => [k, v === "" ? null : v]));
     let target: VPerson;
     if (r.action === "add") {
