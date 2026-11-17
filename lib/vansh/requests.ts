@@ -1,7 +1,7 @@
 // Change-request building and validation (ported from the original app.js: form submit / send / desc).
-import type { ChangeRequest, NewRequest, RequestAction, VPerson, VProfile } from "./types";
+import type { ChangeRequest, NewRequest, PersonDoc, RequestAction, VPerson, VProfile } from "./types";
 import type { Perms } from "./graph";
-import { DATE_RE, FIELDS, LABEL, XL, surnameOf, wifeNames } from "./text";
+import { DATE_RE, FIELDS, LABEL, XL, maritalLabel, surnameOf, wifeNames } from "./text";
 
 export const STATUS: Record<string, string> = { pending: "पर्खाइमा", approved: "स्वीकृत", rejected: "अस्वीकृत" };
 export const ACT: Record<string, string> = { add: "थप्ने", update: "सच्याउने", delete: "हटाउने" };
@@ -18,7 +18,11 @@ export interface FormInput {
   married: boolean;
   facebook?: string; // only present when editing
   photoUrl?: string; // set when a new profile photo was uploaded
+  /** PDFs after the edit (already uploaded); only sent when the list differs from the stored one. */
+  documents?: PersonDoc[];
 }
+
+const docKey = (l?: PersonDoc[] | null) => (l || []).map((d) => d.path).join("|");
 
 export interface BuildResult {
   error?: string;
@@ -36,6 +40,10 @@ export function buildPersonPayload(inp: FormInput, fbOkFn: (u: string) => boolea
     cur[k] = k === "is_living" ? v === true || v === "true" : String(v ?? "").trim();
   });
   if (inp.photoUrl) cur.photo_url = inp.photoUrl;
+  cur.marital_status = String(cur.marital_status || "unknown");
+  if (cur.marital_status === "unmarried" && (p?.spouse_id || p?.more_spouse_ids?.length))
+    return { error: "जोडी जोडिएको व्यक्तिलाई अविवाहित राख्न मिल्दैन। स्थिति बदल्नुहोस्।" };
+  const docsChanged = inp.documents !== undefined && docKey(inp.documents) !== docKey(p?.documents);
   const fb = (inp.facebook ?? "").trim();
   const fbChg = inp.facebook !== undefined && fb !== (p?.facebook || "");
 
@@ -68,12 +76,14 @@ export function buildPersonPayload(inp: FormInput, fbOkFn: (u: string) => boolea
   if (action === "update" && p) {
     payload = {};
     FIELDS.forEach((k) => {
-      const old = (p as unknown as Record<string, unknown>)[k] ?? (k === "is_living" ? true : "");
+      // a person cached before the field existed counts as "unknown", never as a change to blank
+      const old = k === "marital_status" ? p.marital_status || "unknown" : (p as unknown as Record<string, unknown>)[k] ?? (k === "is_living" ? true : "");
       if (String(cur[k]) !== String(old)) payload[k] = cur[k];
     });
     if (inp.photoUrl) payload.photo_url = inp.photoUrl;
+    if (docsChanged) payload.documents = inp.documents;
     if (!Object.keys(payload).length && !fbChg) return { error: "कुनै परिवर्तन गरिएको छैन।" };
-  }
+  } else if (docsChanged) payload.documents = inp.documents;
   if (fbChg && fb && !fbOkFn(fb)) return { error: "Facebook लिंक https://facebook.com/... जस्तो हुनुपर्छ।" };
   return { payload, facebookChanged: fbChg, facebook: fb };
 }
@@ -169,7 +179,12 @@ export function describeRequest(
   const lines = Object.entries(r.payload || {})
     .filter(([k]) => k !== "batch")
     .map(([k, v]) => {
-      const val = k.endsWith("_id") ? byId[String(v)]?.name || "—" : v === true ? "हो" : v === false ? "होइन" : (v as string) || "—";
+      const val =
+        k === "documents" && Array.isArray(v)
+          ? v.length ? v.map((d: { name?: string }) => d?.name || "PDF").join(", ") : "सबै हटाइयो"
+          : k === "marital_status"
+            ? maritalLabel(String(v)) || "—"
+            : k.endsWith("_id") ? byId[String(v)]?.name || "—" : v === true ? "हो" : v === false ? "होइन" : (v as string) || "—";
       return `${LABEL[k] || XL[k] || k}: ${val}`;
     });
   return { action: ACT[r.action] || r.action, who, lines, note: r.note };

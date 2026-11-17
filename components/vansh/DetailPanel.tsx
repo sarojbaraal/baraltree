@@ -7,7 +7,8 @@ import type { VPerson } from "@/lib/vansh/types";
 import { chartGoto } from "@/lib/vansh/chartGoto";
 import { neDate } from "@/lib/vansh/bs";
 import { generateAiSummary } from "@/lib/vansh/aiSummary";
-import { ageN, dispName, fbOk, np, yr } from "@/lib/vansh/text";
+import { ageN, dispName, fbOk, maritalLabel, np, yr } from "@/lib/vansh/text";
+import { openDoc } from "@/lib/vansh/docs";
 import { useVansh } from "./VanshContext";
 import { Avatar, KidCount } from "./ui";
 import { AddMenu, DeleteDialog, InviteDialog, PersonForm } from "./PersonDialogs";
@@ -331,6 +332,8 @@ export default function DetailPanel({
           {!p.is_living && <Box c="#6B7280" ic="🪦" l="मृत्यु स्थान" mg>{p.death_place}</Box>}
           <Box c="" ic="🎓" l="शिक्षा" mg>{p.education}</Box>
           <Box c="" ic="💼" l="पेशा" mg>{p.occupation}</Box>
+          <Box c="" ic="🏢" l="कार्यरत संस्था" mg>{p.organization}</Box>
+          <Box c="" ic="👫" l="बैवाहिक स्थिति" mg>{p.marital_status && p.marital_status !== "unknown" ? maritalLabel(p.marital_status) : null}</Box>
           <Box c="" ic="💒" l="विवाह मिति" mg>{neDate(p.marriage_bs)}</Box>
           {p.gender === "F" && (
             <>
@@ -348,6 +351,15 @@ export default function DetailPanel({
             </Box>
           )}
           <Box c="#D97706" ic="📝" l="टिप्पणी">{p.notes}</Box>
+          {!!p.documents?.length && (
+            <Box c="#0EA5E9" ic="📎" l="कागजात (PDF)">
+              <span className="dl">
+                {p.documents.map((d) => (
+                  <button key={d.path} type="button" className="ghost" onClick={async () => { const e = await openDoc(db, d.path); if (e) toast(e); }}>📄 {d.name}</button>
+                ))}
+              </span>
+            </Box>
+          )}
           </Sec>
         </>
       )}

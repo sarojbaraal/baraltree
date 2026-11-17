@@ -4,6 +4,16 @@ export type Gender = "M" | "F" | "O" | "" | null;
 export type Role = "admin" | "moderator" | "premium" | "general";
 export type TabKey = "fam" | "tree" | "mem" | "mine" | "admin" | "ov";
 
+/** unknown is the default; married / divorced show the spouse block in the edit form. */
+export type MaritalStatus = "married" | "unmarried" | "divorced" | "unknown";
+
+/** A PDF kept in the private `person-docs` bucket (handwriting, written works). `path` is the object key. */
+export interface PersonDoc {
+  path: string;
+  name: string;
+  size: number;
+}
+
 export interface VPerson {
   id: string;
   name: string;
@@ -25,6 +35,10 @@ export interface VPerson {
   education?: string | null;
   occupation?: string | null;
   marriage_bs?: string | null;
+  marital_status?: MaritalStatus | null;
+  /** workplace / organisation (next to education and occupation) */
+  organization?: string | null;
+  documents?: PersonDoc[] | null;
   email?: string | null;
   facebook?: string | null;
   photo_url?: string | null;

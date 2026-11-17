@@ -31,15 +31,29 @@ export const LABEL: Record<string, string> = {
   education: "शिक्षा ",
   occupation: "पेशा ",
   marriage_bs: "विवाह मिति (BS) ",
+  marital_status: "बैवाहिक स्थिति ",
+  organization: "कार्यरत संस्था ",
   photo_url: "प्रोफाइल फोटो ",
 };
 export const XL: Record<string, string> = {
+  documents: "कागजात (PDF)",
   facebook: "Facebook लिंक",
   add_spouse_id: "अर्को पति/पत्नी",
   add_spouse_name: "अर्को पति/पत्नी (नयाँ नाम)",
 };
 /** Editable person fields sent in change requests. */
 export const FIELDS = Object.keys(LABEL).filter((k) => k !== "photo_url");
+
+/** Marital status choices; "unknown" (थाहा नभएको) is the default. */
+export const MARITAL_OPTIONS: { v: string; l: string }[] = [
+  { v: "married", l: "विवाहित" },
+  { v: "unmarried", l: "अविवाहित" },
+  { v: "divorced", l: "सम्बन्ध विच्छेद" },
+  { v: "unknown", l: "थाहा नभएको" },
+];
+export const maritalLabel = (v?: string | null): string => MARITAL_OPTIONS.find((o) => o.v === v)?.l || "";
+/** The other partner's gender: a man marries a woman and a woman a man. "" when this one is unknown / other. */
+export const oppositeGender = (g?: string | null): string => (g === "M" ? "F" : g === "F" ? "M" : "");
 
 // Devanagari → rough Latin skeleton so that "ram" matches "राम".
 const DM: Record<string, string> = {

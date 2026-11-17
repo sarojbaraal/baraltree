@@ -3,12 +3,13 @@
 // spouseForm, parentForm, addMenu, inviteForm).
 import PhotoCrop, { type PhotoCropHandle } from "./PhotoCrop";
 import React, { useEffect, useRef, useState } from "react";
-import type { VPerson, NewRequest } from "@/lib/vansh/types";
+import type { VPerson, NewRequest, PersonDoc } from "@/lib/vansh/types";
 import { ORDER, ROLE_L } from "@/lib/vansh/graph";
 import {
   GOT, buildKidRequests, buildPersonPayload, makeRequest, type KidDraft,
 } from "@/lib/vansh/requests";
-import { ageN, fbOk, np, surnameOf, wifeNames, yr } from "@/lib/vansh/text";
+import { MARITAL_OPTIONS, ageN, fbOk, np, oppositeGender, surnameOf, wifeNames, yr } from "@/lib/vansh/text";
+import { checkNewDocs, openDoc, uploadDocs } from "@/lib/vansh/docs";
 import { genNo, relMap } from "@/lib/vansh/relations";
 import { BRANCH_LEVELS, branchPrint } from "@/lib/vansh/branchPrint";
 import { loadPhotos } from "@/lib/vansh/exporters";
@@ -92,8 +93,14 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
   });
   const { byId } = g;
 
-  const [gender, setGender] = useState(v.gender || "");
-  const [married, setMarried] = useState(!!(v.spouse_id || v.married_name || v.maiden_name || v.more_spouse_ids?.length));
+  const [genderSel, setGender] = useState(v.gender || "");
+  // बैवाहिक स्थिति: default "थाहा नभएको". विवाहित / सम्बन्ध विच्छेद ले जोडीको खण्ड खोल्छ।
+  const [marital, setMarital] = useState<string>(() =>
+    v.marital_status && v.marital_status !== "unknown"
+      ? v.marital_status
+      : v.spouse_id || v.married_name || v.maiden_name || v.more_spouse_ids?.length ? "married" : "unknown"
+  );
+  const married = marital === "married" || marital === "divorced";
   const [name, setName] = useState(v.name || "");
   const [maiden, setMaiden] = useState(v.maiden_name || "");
   const [marriedName, setMarriedName] = useState(v.married_name || "");
@@ -104,6 +111,9 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
   const [deathPlace, setDeathPlace] = useState(v.death_place || "");
   const [education, setEducation] = useState(v.education || "");
   const [occupation, setOccupation] = useState(v.occupation || "");
+  const [organization, setOrganization] = useState(v.organization || "");
+  const [docs, setDocs] = useState<PersonDoc[]>(v.documents || []);
+  const [newDocs, setNewDocs] = useState<File[]>([]);
   const [marriageBs, setMarriageBs] = useState(v.marriage_bs || "");
   const [phone, setPhone] = useState(v.phone || "");
   const [fb, setFb] = useState(v.facebook || "");
@@ -130,6 +140,10 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
   const spouse = useSx({ value: v.spouse_id, label: lab(v.spouse_id) });
   const opts = personOptions(g, perms);
   const spn = v.spouse_id && byId[v.spouse_id] ? byId[v.spouse_id].name : "";
+  // a man marries a woman and a woman a man: while the gender is not chosen it follows the chosen spouse's
+  const spG = spouse.value ? byId[spouse.value]?.gender : "";
+  const gender = genderSel || (married && (spG === "M" || spG === "F") ? oppositeGender(spG) : "");
+  const sameGender = married && !!spouse.value && (gender === "M" || gender === "F") && spG === gender;
 
   /** A wife takes her husband's surname: keeps name / maiden / married names consistent. */
   const marriedNames = (): { name: string; maiden: string; married: string } | null => {
@@ -201,23 +215,39 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
         setErr("");
       }
 
-      const res = buildPersonPayload(
-        {
-          action,
-          person: p,
-          married,
-          facebook: action === "update" ? fb : undefined,
-          photoUrl,
-          values: {
-            name: finalName, gender, father_id: father.value, mother_id: mother.value, spouse_id: spouse.value,
-            father_name: father.newName, mother_name: mother.newName, spouse_name: spouse.newName,
-            is_living: living, birth_bs: birth, death_bs: death, phone, address, notes,
-            maiden_name: finalMaiden, married_name: finalMarried, birth_place: birthPlace,
-            death_place: deathPlace, education, occupation, marriage_bs: married ? marriageBs : "",
+      const mk = (documents: PersonDoc[]) =>
+        buildPersonPayload(
+          {
+            action,
+            person: p,
+            married,
+            facebook: action === "update" ? fb : undefined,
+            photoUrl,
+            documents,
+            values: {
+              name: finalName, gender, father_id: father.value, mother_id: mother.value, spouse_id: spouse.value,
+              father_name: father.newName, mother_name: mother.newName, spouse_name: spouse.newName,
+              is_living: living, birth_bs: birth, death_bs: death, phone, address, notes,
+              maiden_name: finalMaiden, married_name: finalMarried, birth_place: birthPlace,
+              death_place: deathPlace, education, occupation, organization, marital_status: marital,
+              marriage_bs: married ? marriageBs : "",
+            },
           },
-        },
-        fbOk
-      );
+          fbOk
+        );
+      // validate before any PDF is uploaded, so a typo does not leave orphan files in the bucket
+      const probe = mk([...docs, ...newDocs.map((f) => ({ path: "pending", name: f.name, size: f.size }))]);
+      if (probe.error || !probe.payload) return setErr(probe.error || "");
+      let allDocs = docs;
+      if (newDocs.length) {
+        if (navigator.onLine === false) return setErr("PDF अपलोड गर्न इन्टरनेट चाहिन्छ।");
+        setErr("📎 PDF अपलोड हुँदैछ...");
+        const up = await uploadDocs(db, p?.id ?? null, newDocs);
+        if (up.error || !up.docs) return setErr("❌ " + (up.error || "PDF अपलोड असफल"));
+        allDocs = [...docs, ...up.docs];
+        setErr("");
+      }
+      const res = newDocs.length ? mk(allDocs) : probe;
       if (res.error || !res.payload) return setErr(res.error || "");
       const payload = res.payload;
       if (res.facebookChanged && p) {
@@ -288,26 +318,8 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
             {radio("gx", "F", "महिला", gender, setGender)}
             {radio("gx", "O", "अन्य / अज्ञात", gender, setGender)}
           </div>
-          <label className="rcb" style={{ marginTop: ".9rem" }}>
-            <input type="checkbox" checked={married} onChange={(e) => setMarried(e.target.checked)} /> विवाहित हो
-          </label>
-          <div className="mbk" hidden={!married}>
-            <label>
-              पति/पत्नी{spn ? ": " + spn : ""}
-              <Sx st={spouse} options={opts} allowNew />
-            </label>
-            <div className="edg">
-              <div>
-                <label>विवाह मिति</label>
-                <DateField value={marriageBs} onChange={setMarriageBs} />
-              </div>
-              <label hidden={gender !== "F"}>
-                विवाहपछिको थर (पतिको थरबाट स्वतः)
-                <input value={marriedName} onChange={(e) => onMarriedName(e.target.value)} />
-              </label>
-            </div>
-          </div>
-          <label>
+          {sameGender && <p className="mut" style={{ margin: ".4rem 0 0" }}>⚠ दुवैको लिङ्ग एउटै छ — पति/पत्नीको लिङ्ग जाँच्नुहोस्।</p>}
+          <label style={{ marginTop: ".9rem" }}>
             नाम
             <input value={name} onChange={(e) => setName(e.target.value)} />
           </label>
@@ -324,6 +336,37 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
               जन्म स्थान
               <input value={birthPlace} onChange={(e) => setBirthPlace(e.target.value)} />
             </label>
+          </div>
+          <hr />
+          <div className="sech">विवाह</div>
+          <label>
+            बैवाहिक स्थिति
+            <select value={marital} onChange={(e) => setMarital(e.target.value)}>
+              {MARITAL_OPTIONS.map((o) => (
+                <option key={o.v} value={o.v}>{o.l}</option>
+              ))}
+            </select>
+          </label>
+          <div className="mbk" hidden={!married}>
+            <label>
+              पति/पत्नी{spn ? ": " + spn : ""}
+              <Sx st={spouse} options={opts} allowNew />
+            </label>
+            <div className="edg">
+              <div>
+                <label>विवाह मिति</label>
+                <DateField value={marriageBs} onChange={setMarriageBs} />
+                {v.more_spouse_ids?.length ? (
+                  <small className="mut">एकभन्दा बढी जोडी भएकाले यो मिति मुख्य जोडीको मात्र हो; अर्को जोडीसँग स्वतः मिल्दैन।</small>
+                ) : spouse.value || spouse.newName ? (
+                  <small className="mut">पति/पत्नी दुवैको विवाह मिति एउटै हुन्छ — एकमा राख्दा दुवैमा सच्चिन्छ।</small>
+                ) : null}
+              </div>
+              <label hidden={gender !== "F"}>
+                विवाहपछिको थर (पतिको थरबाट स्वतः)
+                <input value={marriedName} onChange={(e) => onMarriedName(e.target.value)} />
+              </label>
+            </div>
           </div>
           <hr />
           <div className="rad">
@@ -352,6 +395,10 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
               <input value={occupation} onChange={(e) => setOccupation(e.target.value)} placeholder="जस्तै: शिक्षक, किसान" />
             </label>
           </div>
+          <label>
+            कार्यरत संस्था
+            <input value={organization} onChange={(e) => setOrganization(e.target.value)} placeholder="जस्तै: विद्यालय, बैंक, कार्यालयको नाम" />
+          </label>
           <hr />
           <div className="sech">परिवार</div>
           <div className="edg">
@@ -390,6 +437,40 @@ export function PersonForm({ action, p = null, parent = null, pre = null }: Pers
             टिप्पणी
             <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </label>
+          <hr />
+          <div className="sech">थप कागजात (PDF)</div>
+          <p className="mut" style={{ margin: ".3rem 0" }}>नोटभन्दा बढी जानकारी, हस्तलेखन वा कृतिहरू। PDF मात्र, एउटा बढीमा १०MB, बढीमा १० फाइल।</p>
+          {(docs.length > 0 || newDocs.length > 0) && (
+            <ul className="docs">
+              {docs.map((d) => (
+                <li key={d.path}>
+                  <button type="button" className="ghost" title="खोल्ने" onClick={async () => { const e = await openDoc(db, d.path); if (e) setErr(e); }}>📄 {d.name}</button>
+                  <button type="button" className="ghost dx" aria-label={`${d.name} हटाउने`} onClick={() => setDocs((l) => l.filter((x) => x.path !== d.path))}>✕</button>
+                </li>
+              ))}
+              {newDocs.map((f, i) => (
+                <li key={f.name + i}>
+                  <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📄 {f.name} <em>(सुरक्षित गर्दा अपलोड हुन्छ)</em></span>
+                  <button type="button" className="ghost dx" aria-label={`${f.name} हटाउने`} onClick={() => setNewDocs((l) => l.filter((_, j) => j !== i))}>✕</button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <input
+            type="file"
+            accept="application/pdf,.pdf"
+            multiple
+            aria-label="PDF थप्ने"
+            onChange={(e) => {
+              const fl = Array.from(e.target.files || []);
+              e.target.value = "";
+              if (!fl.length) return;
+              const msg = checkNewDocs(docs.length + newDocs.length, fl);
+              if (msg) return setErr(msg);
+              setErr("");
+              setNewDocs((l) => [...l, ...fl]);
+            }}
+          />
           <Note label="एडमिनलाई सन्देश (स्रोत/प्रमाण)" value={nt} onChange={setNt} />
           <div className="msg" id="fm">{err}</div>
         </div>

@@ -4,6 +4,7 @@ import type { Graph } from "./graph";
 import { CW, CH, GEN, type Layout } from "./layout";
 import { yr } from "./text";
 import { getSiteAvatars } from "./avatars";
+import { blobToSquare } from "./decode";
 import { SPRITE_INNER } from "../../components/vansh/spriteInner";
 import { BRAND, NOTICE, wrapChars, type Stamp } from "./notice";
 
@@ -141,21 +142,15 @@ export async function exportXLSX(g: Graph) {
  */
 export async function loadPhotos(people: VPerson[], can: (id: string) => boolean, size = 96): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
-  const fetchSquare = async (url: string) => {
+  const fetchSquare = async (url: string, png = false) => {
     const ctl = new AbortController();
     const t = setTimeout(() => ctl.abort(), 10000);
     try {
       const res = await fetch(url, { signal: ctl.signal, mode: "cors" });
       if (!res.ok) return "";
-      const bmp = await createImageBitmap(await res.blob());
-      const cv = document.createElement("canvas");
-      cv.width = cv.height = size;
-      const c = cv.getContext("2d");
-      if (!c) return "";
-      const m = Math.min(bmp.width, bmp.height);
-      c.drawImage(bmp, (bmp.width - m) / 2, (bmp.height - m) / 2, m, m, 0, 0, size, size);
-      return cv.toDataURL("image/jpeg", 0.82);
-    } catch {
+      return await blobToSquare(await res.blob(), size, { png });
+    } catch (e) {
+      console.warn("चित्र लोड भएन:", url, e);
       return "";
     } finally {
       clearTimeout(t);
@@ -167,15 +162,27 @@ export async function loadPhotos(people: VPerson[], can: (id: string) => boolean
     if (d) out[p.id] = d;
   };
   for (let i = 0; i < todo.length; i += 8) await Promise.all(todo.slice(i, i + 8).map(one));
+  // The chart shows the site default avatar (admin-uploaded, often SVG) for everyone without a photo, and the male one
+  // when gender is unknown. Kept as transparent PNG: the card colour behind it is drawn by the exporter.
   const site = getSiteAvatars();
   for (const k of ["M", "F"] as const) {
-    if (site[k] && people.some((p) => !out[p.id] && p.gender === k)) {
-      const d = await fetchSquare(site[k]!);
+    if (site[k] && people.some((p) => !out[p.id] && avKey(p) === k)) {
+      const d = await fetchSquare(site[k]!, true);
       if (d) out["__" + k] = d;
     }
   }
   return out;
 }
+
+/** Which default avatar the chart shows for this person: female for F, otherwise (M / unknown) male. */
+export const avKey = (p: { gender?: string | null }): "M" | "F" => (p.gender === "F" ? "F" : "M");
+
+/** The site default avatars once per file (<symbol>), so every card only references them with <use>. */
+export const siteSymbols = (photos: Record<string, string>): string =>
+  (["M", "F"] as const)
+    .filter((k) => photos["__" + k])
+    .map((k) => `<symbol id="site${k}" viewBox="0 0 96 96"><image href="${photos["__" + k]}" x="0" y="0" width="96" height="96"/></symbol>`)
+    .join("");
 
 export const symbol = (id: "avM" | "avF") => (SPRITE_INNER.match(new RegExp(`<symbol id="${id}"[\\s\\S]*?</symbol>`)) || [""])[0];
 
@@ -184,17 +191,15 @@ export function svgText(layout: Layout, can: (id: string) => boolean, nm: (p: VP
   const F = 'font-family="Noto Sans Devanagari,sans-serif"';
   const cut = (s: string) => xmlEsc(s.length > 20 ? s.slice(0, 19) + "…" : s);
   const defaultFace = (p: VPerson, i: number, cx: number, cy: number, fill: string) => {
-    const k = p.gender === "F" ? "F" : "M";
+    const k = avKey(p);
     const clip = `<clipPath id="df${i}"><circle cx="${cx}" cy="${cy}" r="19"/></clipPath>`;
     const ring = `<circle cx="${cx}" cy="${cy}" r="19" fill="none" stroke="${fill}" stroke-width="2"/>`;
     if (!can(p.id)) return `<circle cx="${cx}" cy="${cy}" r="19" fill="${fill}"/><text x="${cx}" y="${cy + 6}" text-anchor="middle" font-size="16" ${F}>🔒</text>`;
-    if (photos["__" + k] && (p.gender === "M" || p.gender === "F"))
-      return clip + `<image href="${photos["__" + k]}" x="${cx - 19}" y="${cy - 19}" width="38" height="38" preserveAspectRatio="xMidYMid slice" clip-path="url(#df${i})"/>` + ring;
-    if (p.gender !== "M" && p.gender !== "F")
-      return `<circle cx="${cx}" cy="${cy}" r="19" fill="${fill}"/><circle cx="${cx}" cy="${cy - 5}" r="6.5" fill="#fff"/><path d="M${cx - 11} ${cy + 15} a11 10 0 0 1 22 0z" fill="#fff"/>`;
+    if (photos["__" + k])
+      return `<circle cx="${cx}" cy="${cy}" r="19" fill="${fill}"/>` + clip + `<g clip-path="url(#df${i})"><use href="#site${k}" x="${cx - 19}" y="${cy - 19}" width="38" height="38"/></g>` + ring;
     return `<circle cx="${cx}" cy="${cy}" r="19" fill="#EAF2F3"/>` + clip + `<g clip-path="url(#df${i})"><use href="#av${k}" x="${cx - 19}" y="${cy - 19}" width="38" height="${k === "F" ? 52 : 54}"/></g>` + ring;
   };
-  const defs = `<defs>${symbol("avM")}${symbol("avF")}</defs>`;
+  const defs = `<defs>${symbol("avM")}${symbol("avF")}${siteSymbols(photos)}</defs>`;
   const body =
     lines
       .map((l) => `<path d="${l.d}" fill="none" stroke="#8A9A9C" stroke-width="1.5"${l.m ? ' stroke-dasharray="5 4"' : ""}/>`)

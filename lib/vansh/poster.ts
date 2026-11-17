@@ -4,7 +4,7 @@
 import type { VPerson } from "./types";
 import { computeLayout, POSTER_DIMS, type Layout } from "./layout";
 import type { Graph } from "./graph";
-import { symbol } from "./exporters";
+import { avKey, siteSymbols, symbol } from "./exporters";
 import { BRAND, NOTICE, wrapChars, type Stamp } from "./notice";
 import { np, yr } from "./text";
 
@@ -34,14 +34,13 @@ const LINE = "#BBA999";
 export const PGEN = ["#E57A6B", "#2FB58A", "#6A5FE0", "#F06BA8", "#D9A62E", "#7DB83A", "#17B6C9", "#E8467C", "#EE6A24", "#B65AD6"];
 
 function face(p: VPerson, i: number, cx: number, cy: number, r: number, col: string, can: (id: string) => boolean, photos: Record<string, string>) {
-  const k = p.gender === "F" ? "F" : "M";
+  const k = avKey(p);
   const clip = `<clipPath id="pf${i}"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath>`;
   const ring = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${col}" stroke-width="1.5"/>`;
   if (!can(p.id)) return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#E9DFD6"/><text x="${cx}" y="${cy + 5}" text-anchor="middle" font-size="15" ${F}>🔒</text>`;
-  const img = photos[p.id] || ((p.gender === "M" || p.gender === "F") && photos["__" + k]);
-  if (img) return clip + `<image href="${img}" x="${cx - r}" y="${cy - r}" width="${2 * r}" height="${2 * r}" preserveAspectRatio="xMidYMid slice" clip-path="url(#pf${i})"/>` + ring;
-  if (p.gender !== "M" && p.gender !== "F")
-    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#D9CFC6"/><circle cx="${cx}" cy="${cy - 4}" r="5.5" fill="#fff"/><path d="M${cx - 10} ${cy + 14} a10 9 0 0 1 20 0z" fill="#fff"/>`;
+  if (photos[p.id]) return clip + `<image href="${photos[p.id]}" x="${cx - r}" y="${cy - r}" width="${2 * r}" height="${2 * r}" preserveAspectRatio="xMidYMid slice" clip-path="url(#pf${i})"/>` + ring;
+  // the site default avatar, exactly what the chart shows (male when gender is unknown)
+  if (photos["__" + k]) return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#F1E8DF"/>${clip}<g clip-path="url(#pf${i})"><use href="#site${k}" x="${cx - r}" y="${cy - r}" width="${2 * r}" height="${2 * r}"/></g>` + ring;
   const w = 2 * r, h = k === "F" ? w * 1.37 : w * 1.42;
   return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#F1E8DF"/>${clip}<g clip-path="url(#pf${i})"><use href="#av${k}" x="${cx - r}" y="${cy - r}" width="${w}" height="${h}"/></g>` + ring;
 }
@@ -106,7 +105,7 @@ export function posterSvg(layout: Layout, can: (id: string) => boolean, nm: (p: 
   const meta = o.stamp ? `<metadata>${esc(BRAND + " | " + o.stamp.line + " | " + NOTICE)}</metadata>` : "";
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${TW}" height="${TH}" viewBox="0 0 ${TW} ${TH}">${meta}` +
-    `<defs>${symbol("avM")}${symbol("avF")}</defs><rect width="${TW}" height="${TH}" fill="${POSTER_BG}"/>${title}${banner}` +
+    `<defs>${symbol("avM")}${symbol("avF")}${siteSymbols(photos)}</defs><rect width="${TW}" height="${TH}" fill="${POSTER_BG}"/>${title}${banner}` +
     `<g transform="translate(${PAD} ${TOP})">${lineSvg}${heartSvg}${cardSvg}</g>` +
     `<g transform="translate(0 0)">${legend}</g>${foot}</svg>`
   );

@@ -3,7 +3,7 @@
 import { BRAND, NOTICE } from "./notice";
 import type { VPerson } from "./types";
 import type { Graph } from "./graph";
-import { DATE_RE, fbOk, yr } from "./text";
+import { DATE_RE, MARITAL_OPTIONS, fbOk, maritalLabel, yr } from "./text";
 import { stamp } from "./exporters";
 
 export const SHEET = "वंशावली";
@@ -19,7 +19,7 @@ const COLS = [
 const C = Object.fromEntries(COLS.map((c, i) => [c, i + 1])) as Record<(typeof COLS)[number], number>;
 const WIDTH: Partial<Record<(typeof COLS)[number], number>> = { नाम: 24, हजुरबुबा: 22, बुबा: 34, आमा: 34, ठेगाना: 26, "पति/पत्नी": 24, "facebook link": 28, टिप्पणी: 30, "id (नछुने)": 10 };
 const GENDER = ["पुरुष", "महिला", "अन्य"];
-const MARITAL = ["अविवाहित", "विवाहित"];
+const MARITAL = MARITAL_OPTIONS.map((o) => o.l); // विवाहित, अविवाहित, सम्बन्ध विच्छेद, थाहा नभएको
 const STATE = ["जीवित", "दिवंगत"];
 
 export interface TemplateCtx {
@@ -97,7 +97,7 @@ export async function buildTemplate(g: Graph, ctx: TemplateCtx, signature?: stri
     const vals: Record<string, string> = {
       नाम: p.name, लिङ्ग: GNE[p.gender || ""] || "", हजुरबुबा: f ? nameOf(f.father_id) : "", बुबा: nameOf(p.father_id), आमा: nameOf(p.mother_id),
       "जन्म मिति": p.birth_bs || "", "जन्म स्थान": p.birth_place || "", ठेगाना: p.address || "", शिक्षा: p.education || "", पेशा: p.occupation || "",
-      "वैवाहिक अवस्था": g.isMarriedP(p) ? "विवाहित" : "अविवाहित", "विवाह मिति": p.marriage_bs || "",
+      "वैवाहिक अवस्था": maritalLabel(p.marital_status) || (g.isMarriedP(p) ? "विवाहित" : "थाहा नभएको"), "विवाह मिति": p.marriage_bs || "",
       "पति/पत्नी": g.spousesOf(p).map(nameOf).filter(Boolean).join("; "), "सम्पर्क नम्बर": private_ ? p.phone || "" : "",
       अवस्था: p.is_living ? "जीवित" : "दिवंगत", "मृत्यु मिति": p.death_bs || "", "मृत्यु स्थान": p.death_place || "",
       email: private_ ? p.email || "" : "", "facebook link": p.facebook || "", टिप्पणी: p.notes || "", "id (नछुने)": p.id,
@@ -263,6 +263,8 @@ export async function parseTemplate(file: File, g: Graph, ctx: TemplateCtx): Pro
     const marital = v("वैवाहिक अवस्था");
     const sp = v("पति/पत्नी");
     if (marital === "अविवाहित" && sp) { err("अविवाहित भनेर पति/पत्नी लेखिएको छ"); bad = true; }
+    const ms = MARITAL_OPTIONS.find((o) => o.l === marital);
+    if (marital && !ms) { err(`वैवाहिक अवस्था "${marital}" मान्य छैन`); bad = true; } else if (ms) payload.marital_status = ms.v;
     if (sp) payload.spouse_name = sp.split(/\s*[;|；]\s*/)[0];
     const fb = v("facebook link");
     if (fb && !fbOk(fb)) { err("Facebook लिंक https://facebook.com/… जस्तो हुनुपर्छ"); bad = true; } else if (fb) payload.facebook = fb;
