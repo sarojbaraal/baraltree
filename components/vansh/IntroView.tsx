@@ -38,12 +38,12 @@ export default function IntroView() {
         <p className="nm">॥ श्री घृतकौशिकाय नमः ॥</p>
         <h2>घृतकौशिक गोत्रीय बराल वंश</h2>
         <p className="lead">
-          हामी कहाँबाट आयौँ, कसरी &lsquo;बराल&rsquo; भयौँ र कता-कता फैलियौँ — यहाँ परिवारका हस्तलिखित कागजसँग जोडेर राखिएको छ।
-          हरेक कुनामा प्रमाणको स्तर पनि लेखिएको छ, ताकि परम्परा र प्रमाण छुट्टिन सकून्।
+          हामी कहाँबाट आयौँ, कसरी &lsquo;बराल&rsquo; भयौँ र कता-कता फैलियौँ —  यहि कुरालाई यहाँ हस्तलिखित कागजसँग जोडेर राख्ने प्रयास गरिएको छ।
+          परम्परा र प्रमाण छुट्टिन सकून् भनेर हरेकमा प्रमाणको आधार पनि लेखिएको छ।
         </p>
         <div className="row">
-          <button onClick={() => setTab("fam")}>🏡 परिवार हेर्नुहोस्</button>
-          <button className="ghost" onClick={() => setTab("tree")}>🌳 चार्ट खोल्नुहोस्</button>
+          <button onClick={() => setTab("fam")}>आफ्नो परिवार हेर्नुहोस्</button>
+          <button className="ghost" onClick={() => setTab("tree")}>वंशवृक्ष खोल्नुहोस्</button>
         </div>
         <p className="legend">
           {(Object.keys(BASIS) as Basis[]).map((b) => (
@@ -70,7 +70,7 @@ export default function IntroView() {
       <section className="card">
         <h2>लिखित प्रमाण: &ldquo;बरालको मूल आधार&rdquo;</h2>
         <p className="mut">
-          वि.सं. २०३४ मा काशीमा बसेर पं. शिवराज शर्माले हातले बनाएको कुलद्रुम (वंशवृक्ष)। फेदमा आदिपुर्ख, काण्डमा पुस्ता र हाँगामा बसोबासका ठाउँ छन्।
+          वि.सं. २०३४ मा काशीमा बसेर पं. शिवराज शर्माले हातले बनाएको कुलद्रुम (वंशवृक्ष)।
         </p>
         <div className="two">
           <button className="scan" onClick={() => setZoom({ src: "/vansh/baral-tree-root.jpg", alt: "घृतकौशिक गोत्रीय बरालको मूल आधार — वंशवृक्ष", w: 1200, h: 2046 })} aria-label="वंशवृक्ष ठूलो गरी हेर्ने">
@@ -78,7 +78,7 @@ export default function IntroView() {
             <span>🔍 ठूलो गरेर हेर्नुहोस्</span>
           </button>
           <div>
-            <h3>काण्डको पुस्ता (तलबाट माथि)</h3>
+            <h3>पुस्ता (तलबाट माथि)</h3>
             <ol className="ladder">
               {[...LADDER].reverse().map((x) => (
                 <li key={x.n}>
@@ -96,7 +96,7 @@ export default function IntroView() {
       </section>
 
       <section className="card">
-        <h2>उत्पत्ति: दुवेदेखि बरालसम्म</h2>
+        <h2>उत्पत्ति: 'दुवे' देखि 'बराल' सम्म</h2>
         <ol className="steps">
           {STAGES.map((s) => (
             <li key={s.t}>
@@ -120,7 +120,7 @@ export default function IntroView() {
           ))}
         </div>
         <p className="mut">
-          नेपाल, सुतार कार्की, बराल र खनालबीच दाजुभाइको साइनो र गोत्र एउटै रहेको कुरा बाहिरी वंशावली स्रोतले पनि भन्छ। यो वंश बंगालको सुवर्ण वणिक समुदायमा पाइने &lsquo;बराल&rsquo; थरसँग सम्बन्धित होइन; नाम मिल्छ, समूह फरक हो।
+          नेपाल, सुतार कार्की, बराल र खनालबीच दाजुभाइको साइनो र गोत्र एउटै रहेको कुरा बाहिरी वंशावली स्रोतले पनि भन्छ। यो वंश बंगालको सुवर्ण वणिक समुदायमा पाइने &lsquo;बराल&rsquo; थरसँग सम्बन्धित होइन; थर मिल्छ, तर समूह फरक हो।
         </p>
       </section>
 
