@@ -143,7 +143,7 @@ export default function IntroView() {
 
       <section className="card">
         <h2>हाम्रा हस्तलिखित अभिलेख</h2>
-        <p className="mut">पुराना कागजहरू स्क्यान गरेर राख्दा आउने पुस्ताले पनि हेर्न पाउँछन्।</p>
+        <p className="mut">आउने पुस्ताले पनि पुराना हस्तलिखित कागजहरू हेर्न पाऊन् भनेर यहाँ हस्तलिखित अभिलेख राखिएको छ।</p>
         <div className="grid3">
           {DOCS.map((d) => (
             <figure key={d.id} className="doc">
@@ -165,22 +165,15 @@ export default function IntroView() {
       </section>
 
       <details className="card srcs">
-        <summary>स्रोत र पुरानो लेखमा के सच्याइयो</summary>
-        <h3>सच्याइएका कुरा</h3>
+        <summary>थप कुराहरु</summary>
+        <h3>नोट:</h3>
         <ul>
           {FIXES.map((f) => (
             <li key={f}>{f}</li>
           ))}
         </ul>
         <h3>स्रोत</h3>
-        <ul>
-          {SOURCES.map((s) => (
-            <li key={s.u}>
-              <a href={s.u} target="_blank" rel="noopener noreferrer">{s.t}</a>
-            </li>
-          ))}
-        </ul>
-        <p className="mut">यी वेबसाइटहरूले पनि वंशावलीकै आधारमा लेखेका हुन्; निर्णायक प्रमाण होइनन्। मूल पाना र कुल पुरोहितको जानकारी नै अन्तिम आधार हुन्।</p>
+        <p className="mut">स्पस्ट गर्नुपर्ने कुरा: यी वेबसाइटहरूले पनि वंशावलीकै आधारमा लेखेका हुन्; निर्णायक प्रमाण होइनन्। मूल पाना र कुल पुरोहितको जानकारी नै अन्तिम आधार हुन्।</p>
       </details>
 
       {zoom && <Lightbox {...zoom} onClose={() => setZoom(null)} />}
