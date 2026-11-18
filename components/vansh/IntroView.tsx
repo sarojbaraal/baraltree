@@ -96,7 +96,7 @@ export default function IntroView() {
       </section>
 
       <section className="card">
-        <h2>उत्पत्ति: 'दुवे' देखि 'बराल' सम्म</h2>
+        <h2>उत्पत्ति: &lsquo;दुवे&rsquo; देखि &lsquo;बराल&rsquo; सम्म</h2>
         <ol className="steps">
           {STAGES.map((s) => (
             <li key={s.t}>
