@@ -276,17 +276,10 @@ export default function IntroView() {
         </div>
       </section>
 
-<<<<<<< HEAD
-      <section className="card">
-        <h2>हाम्रा हस्तलिखित अभिलेख</h2>
-        <p className="mut">आउने पुस्ताले पनि पुराना हस्तलिखित कागजहरू हेर्न पाऊन् भनेर यहाँ हस्तलिखित अभिलेख राखिएको छ।</p>
-        <div className="grid3">
-=======
       <section className="sec" aria-labelledby="h-dc">
         <h2 id="h-dc">हाम्रा हस्तलिखित अभिलेख</h2>
-        <p className="lede">पुराना कागज स्क्यान गरेर राख्दा आउने पुस्ताले पनि पढ्न पाउँछन्।</p>
+        <p className="lede">आउने पुस्ताले पनि पुराना हस्तलिखित कागजहरू हेर्न पाऊन् भनेर यहाँ हस्तलिखित अभिलेख राखिएको छ।</p>
         <div className="docs3">
->>>>>>> edd60e25c39920e6a245647b97069db122b97567
           {DOCS.map((d) => (
             <figure key={d.id} className="doc">
               {d.src ? (
@@ -303,24 +296,15 @@ export default function IntroView() {
         </div>
       </section>
 
-<<<<<<< HEAD
-      <details className="card srcs">
-        <summary>थप कुराहरु</summary>
-        <h3>नोट:</h3>
-=======
       <details className="sec srcs">
-        <summary>स्रोत र पुरानो लेखमा के सच्याइयो</summary>
-        <h3>सच्याइएका कुरा</h3>
->>>>>>> edd60e25c39920e6a245647b97069db122b97567
+        <summary>थप कुराहरु: स्रोत र पुरानो लेखमा के सच्याइयो</summary>
+        <h3>नोट: सच्याइएका कुरा</h3>
         <ul>
           {FIXES.map((f) => (
             <li key={f}>{f}</li>
           ))}
         </ul>
         <h3>स्रोत</h3>
-<<<<<<< HEAD
-        <p className="mut">स्पस्ट गर्नुपर्ने कुरा: यी वेबसाइटहरूले पनि वंशावलीकै आधारमा लेखेका हुन्; निर्णायक प्रमाण होइनन्। मूल पाना र कुल पुरोहितको जानकारी नै अन्तिम आधार हुन्।</p>
-=======
         <ul>
           {SOURCES.map((s) => (
             <li key={s.u}>
@@ -328,8 +312,7 @@ export default function IntroView() {
             </li>
           ))}
         </ul>
-        <p className="mut">यी वेबसाइटले पनि वंशावलीकै आधारमा लेखेका हुन्; निर्णायक प्रमाण होइनन्। मूल पाना र कुल पुरोहितको जानकारी नै अन्तिम आधार हुन्।</p>
->>>>>>> edd60e25c39920e6a245647b97069db122b97567
+        <p className="mut">स्पस्ट गर्नुपर्ने कुरा: यी वेबसाइटहरूले पनि वंशावलीकै आधारमा लेखेका हुन्; निर्णायक प्रमाण होइनन्। मूल पाना र कुल पुरोहितको जानकारी नै अन्तिम आधार हुन्।</p>
       </details>
 
       <div className="end">
