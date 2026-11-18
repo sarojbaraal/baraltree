@@ -168,12 +168,13 @@ export default function IntroView() {
         </p>
         <div className="row">
           <a className="cta" href="#katha" onClick={(e) => { e.preventDefault(); document.getElementById("katha")?.scrollIntoView({ behavior: "smooth" }); }}>कथा पढ्न सुरु गर्नुहोस्</a>
-          <button className="ghost" onClick={() => setTab("fam")}>मेरो परिवार खोल्नुहोस्</button>
+          <button className="ghost" onClick={() => setTab("fam")}>आफ्नो परिवार हेर्नुहोस्</button>
         </div>
       </section>
 
       <section className="sec" aria-labelledby="h-id">
         <h2 id="h-id">परिचय</h2>
+        <p className="lede">हामी कहाँबाट आयौँ, कसरी &lsquo;बराल&rsquo; भयौँ र कता-कता फैलियौँ — यहि कुरालाई यहाँ हस्तलिखित कागजसँग जोडेर राख्ने प्रयास गरिएको छ। परम्परा र प्रमाण छुट्टिन सकून् भनेर हरेकमा प्रमाणको आधार पनि लेखिएको छ।</p>
         <dl className="facts">
           {IDENTITY.map((x) => (
             <div key={x.k}>
@@ -194,7 +195,7 @@ export default function IntroView() {
       </section>
 
       <section className="sec" id="katha" aria-labelledby="h-st">
-        <h2 id="h-st">दुवेदेखि बरालसम्म</h2>
+        <h2 id="h-st">उत्पत्ति: &lsquo;दुवे&rsquo; देखि &lsquo;बराल&rsquo; सम्म</h2>
         <ol className="spine">
           {STAGES.map((s, i) => (
             <Stage key={s.h} s={s} last={i === STAGES.length - 1} />
@@ -232,12 +233,12 @@ export default function IntroView() {
       <section className="sec paper" aria-labelledby="h-pr">
         <h2 id="h-pr">कागजमा लेखिएको प्रमाण</h2>
         <p className="lede">
-          वि.सं. २०३४ मा काशीमा बसेर पं. शिवराज शर्माले हातले बनाएको कुलद्रुम। फेदमा आदिपुर्ख, काण्डमा पुस्ता, हाँगामा बसोबासका ठाउँ। माउस घुमाएर सानो अक्षर पढ्नुहोस्।
+          वि.सं. २०३४ मा काशीमा बसेर पं. शिवराज शर्माले हातले बनाएको कुलद्रुम (वंशवृक्ष)। माउस घुमाएर सानो अक्षर पढ्नुहोस्।
         </p>
         <div className="two">
           <Scan z={rootPaper} onOpen={setZoom} priority />
           <div>
-            <h3>काण्डको पुस्ता</h3>
+            <h3>पुस्ता</h3>
             <ol className="ladder">
               {[...LADDER].reverse().map((x) => (
                 <li key={x.n}>
@@ -317,8 +318,8 @@ export default function IntroView() {
       <div className="end">
         <p>आफ्नो हाँगा खोज्न तयार हुनुहुन्छ?</p>
         <div className="row">
-          <button onClick={() => setTab("fam")}>मेरो परिवार खोल्नुहोस्</button>
-          <button className="ghost" onClick={() => setTab("tree")}>वंशवृक्ष हेर्नुहोस्</button>
+          <button onClick={() => setTab("fam")}>आफ्नो परिवार हेर्नुहोस्</button>
+          <button className="ghost" onClick={() => setTab("tree")}>वंशवृक्ष खोल्नुहोस्</button>
         </div>
       </div>
 
